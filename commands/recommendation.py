@@ -127,7 +127,7 @@ class Recommendation(commands.Cog):
         await ctx.send(embed=embed)
 
         # Save context for later
-        await ctx.send("To recommend '{}' as is, type only `rc!rec`.".format(query))
+        await ctx.reply("To recommend '{}' as is, type only `rc!rec`.".format(query))
         return context
 
 
@@ -162,7 +162,7 @@ class Recommendation(commands.Cog):
                 self.__add_recommendation_user(ctx.guild.id, user['id'], name, link)
             recipient = ", ".join(recipients)
 
-        await ctx.send(":white_check_mark: Recommended '**{0}**' to {1}".format(name, recipient))
+        await ctx.reply(":white_check_mark: Recommended '**{0}**' to {1}".format(name, recipient))
 
 
     @commands.command(aliases=['r', 'add', 'rec'])
@@ -196,7 +196,7 @@ class Recommendation(commands.Cog):
             if prev_ctx and "query" in prev_ctx and len(prev_ctx['query']):
                 await self.__add(ctx, prev_ctx['mentions'] if "mentions" in prev_ctx else [], name=prev_ctx['query'])
             else:
-                await ctx.send("Please specify something to recommend.")
+                await ctx.reply("Please specify something to recommend.")
 
 
     @commands.command(aliases=['recsel', 'rs'])
@@ -215,11 +215,11 @@ class Recommendation(commands.Cog):
                         'id': item
                     })
                 else:
-                    await ctx.send("Index {} is out of range.".format(index + 1))
+                    await ctx.reply("Index {} is out of range.".format(index + 1))
             else:
-                await ctx.send("Invalid previous search context, please try recommending again.")
+                await ctx.reply("Invalid previous search context, please try recommending again.")
         else:
-            await ctx.send("Incomplete command.")
+            await ctx.reply("Incomplete command.")
         self.__clear_search_context(ctx.author)
 
 
@@ -239,7 +239,7 @@ class Recommendation(commands.Cog):
     async def clear(self, ctx):
         """Clear your recommendations."""
         self.db.child("recommendations").child(str(ctx.guild.id)).child(str(ctx.author.id)).remove()
-        await ctx.send("Cleared recommendations for {}.".format(ctx.author.name))
+        await ctx.reply("Cleared recommendations for {}.".format(ctx.author.name))
 
 
     @commands.command(aliases=['clrsvr'])
@@ -247,6 +247,6 @@ class Recommendation(commands.Cog):
         """Clear the server recommendations."""
         if ctx.author.guild_permissions.administrator:
             self.db.child("recommendations").child(str(ctx.guild.id)).child("server").remove()
-            await ctx.send("Cleared server recommendations.")
+            await ctx.reply("Cleared server recommendations.")
         else:
-            await ctx.send("Only administrators can clear server recommendations.")
+            await ctx.reply("Only administrators can clear server recommendations.")
