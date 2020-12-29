@@ -194,7 +194,7 @@ class Recommendation(commands.Cog):
             # Check for previous context
             prev_ctx = self.__get_search_context(ctx.author).val()
             if prev_ctx and "query" in prev_ctx and len(prev_ctx['query']):
-                await self.__add(ctx, prev_ctx['mentions'], name=prev_ctx['query'])
+                await self.__add(ctx, prev_ctx['mentions'] if "mentions" in prev_ctx else [], name=prev_ctx['query'])
             else:
                 await ctx.send("Please specify something to recommend.")
 
@@ -210,7 +210,7 @@ class Recommendation(commands.Cog):
 
                 if index in range(0, len(items)):
                     item = items[index]
-                    await self.__add(ctx, prev_ctx['mentions'], uri={
+                    await self.__add(ctx, prev_ctx['mentions'] if "mentions" in prev_ctx else [], uri={
                         'type': args[0],
                         'id': item
                     })
