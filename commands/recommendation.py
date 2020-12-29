@@ -48,7 +48,7 @@ class Recommendation(commands.Cog):
 
             await paginator.run(embeds)
         else:
-            await ctx.send("{} recommendation list is currently empty.".format(name_if_empty))
+            await ctx.reply("{} recommendation list is currently empty.".format(name_if_empty))
 
 
     def __get_search_context(self, user):
