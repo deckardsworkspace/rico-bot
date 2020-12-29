@@ -9,5 +9,5 @@ class RicoClient(discord.Client):
         print('Message from {0.author}: {0.content}'.format(message))
 
 client = RicoClient()
-client.run(os.environ['discord-token'])
+client.run(os.environ['DISCORD_TOKEN'])
 
