@@ -1,5 +1,6 @@
-from discord import Client, Activity, ActivityType
+from discord import Activity, ActivityType
 from discord.ext.commands import Bot
+from discord.ext.tasks import loop
 import os
 import pyrebase
 
@@ -24,9 +25,13 @@ client = Bot(command_prefix='rc!')
 
 @client.event
 async def on_ready():
-    db.child('test').push({'user': '{}'.format(client.user)})
-    client.change_presence(activity=Activity(name='you | rc!help', type=ActivityType.listening))
     print('Logged on as {0}!'.format(client.user))
 
 
+@loop(seconds=120)
+async def update_presence():
+    await client.change_presence(activity=Activity(name='you | rc!help', type=ActivityType.listening))
+
+
+update_presence.start()
 client.run(os.environ['DISCORD_TOKEN'])
