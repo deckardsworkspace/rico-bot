@@ -1,4 +1,5 @@
 import discord
+import os
 
 class RicoClient(discord.Client):
     async def on_ready(self):
