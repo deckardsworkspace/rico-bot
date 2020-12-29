@@ -233,7 +233,7 @@ class Recommendation(commands.Cog):
     @commands.command()
     async def listsvr(self, ctx):
         """List stuff recommended to everyone on the server."""
-        await self.__get_recommendations(ctx, "server", ctx.guild.name, "This server's", Embed.Empty)
+        await self.__get_recommendations(ctx, "server", ctx.guild.name, "This server's", ctx.guild.icon_url)
 
 
     @commands.command(aliases=['clr'])
