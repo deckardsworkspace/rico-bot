@@ -2,12 +2,14 @@ from discord import Activity, ActivityType
 from discord.ext.commands import Bot
 from discord.ext.tasks import loop
 from config import get_var, get_pyrebase_config
+from util import Spotify
 import pyrebase
 import commands
 
 firebase = pyrebase.initialize_app(get_pyrebase_config())
 auth = firebase.auth()
 db = firebase.database()
+spotify = Spotify()
 client = Bot(command_prefix='rc!')
 
 
@@ -37,4 +39,5 @@ async def update_presence_before():
 
 
 update_presence.start()
+client.add_cog(commands.Recommendation(client, db, spotify))
 client.run(get_var('DISCORD_TOKEN'))
