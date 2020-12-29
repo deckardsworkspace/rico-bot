@@ -48,7 +48,7 @@ class Recommendation(commands.Cog):
 
             await paginator.run(embeds)
         else:
-            await ctx.message.reply("{} recommendation list is currently empty.".format(name_if_empty))
+            await ctx.send("{} recommendation list is currently empty.".format(name_if_empty))
 
 
     def __get_search_context(self, user):
@@ -127,7 +127,7 @@ class Recommendation(commands.Cog):
         await ctx.send(embed=embed)
 
         # Save context for later
-        await ctx.message.reply("{0}: To recommend '{1}' as is, type only `rc!rec`.".format(ctx.author.mention, query))
+        await ctx.send("{0}: To recommend '{1}' as is, type only `rc!rec`.".format(ctx.author.mention, query))
         return context
 
 
@@ -163,7 +163,7 @@ class Recommendation(commands.Cog):
             recipient = ", ".join(recipients)
 
         success = ":white_check_mark: {0} recommended '**{1}**' to {2}".format(ctx.author.mention, name, recipient)
-        await ctx.message.reply(success)
+        await ctx.send(success)
 
 
     @commands.command(aliases=['r', 'add', 'rec'])
@@ -197,7 +197,7 @@ class Recommendation(commands.Cog):
             if prev_ctx and "query" in prev_ctx and len(prev_ctx['query']):
                 await self.__add(ctx, prev_ctx['mentions'] if "mentions" in prev_ctx else [], name=prev_ctx['query'])
             else:
-                await ctx.message.reply("{}, please specify something to recommend.".format(ctx.author.mention))
+                await ctx.send("{}, please specify something to recommend.".format(ctx.author.mention))
 
 
     @commands.command(aliases=['recsel', 'rs'])
@@ -216,11 +216,11 @@ class Recommendation(commands.Cog):
                         'id': item
                     })
                 else:
-                    await ctx.message.reply("{0}: Index {1} is out of range.".format(ctx.author.mention, index + 1))
+                    await ctx.send("{0}: Index {1} is out of range.".format(ctx.author.mention, index + 1))
             else:
-                await ctx.message.reply("{}: Invalid search context, please try recommending again.".format(ctx.author.mention))
+                await ctx.send("{}: Invalid search context, please try recommending again.".format(ctx.author.mention))
         else:
-            await ctx.message.reply("{}: Incomplete command.".format(ctx.author.mention))
+            await ctx.send("{}: Incomplete command.".format(ctx.author.mention))
         self.__clear_search_context(ctx.author)
 
 
@@ -240,7 +240,7 @@ class Recommendation(commands.Cog):
     async def clear(self, ctx):
         """Clear your recommendations."""
         self.db.child("recommendations").child(str(ctx.guild.id)).child(str(ctx.author.id)).remove()
-        await ctx.message.reply("Cleared recommendations for {}.".format(ctx.author.mention))
+        await ctx.send("Cleared recommendations for {}.".format(ctx.author.mention))
 
 
     @commands.command(aliases=['clrsvr'])
@@ -248,6 +248,6 @@ class Recommendation(commands.Cog):
         """Clear the server recommendations."""
         if ctx.author.guild_permissions.administrator:
             self.db.child("recommendations").child(str(ctx.guild.id)).child("server").remove()
-            await ctx.message.reply("{}: Cleared server recommendations.".format(ctx.author.mention))
+            await ctx.send("{}: Cleared server recommendations.".format(ctx.author.mention))
         else:
-            await ctx.message.reply("{}, only administrators can clear server recommendations.".format(ctx.author.mention))
+            await ctx.send("{}, only administrators can clear server recommendations.".format(ctx.author.mention))
