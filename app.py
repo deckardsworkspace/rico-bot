@@ -33,5 +33,10 @@ async def update_presence():
     await client.change_presence(activity=Activity(name='you | rc!help', type=ActivityType.listening))
 
 
+@update_presence.before_loop
+async def update_presence_before():
+    await client.wait_until_ready()
+
+
 update_presence.start()
 client.run(os.environ['DISCORD_TOKEN'])
