@@ -244,26 +244,26 @@ class Recommendation(commands.Cog):
         self.__clear_search_context(ctx.author)
 
 
-    @commands.command()
+    @commands.command(aliases=['l'])
     async def list(self, ctx):
         """List stuff recommended to you."""
         await self.__get_recommendations(ctx, str(ctx.author.id), ctx.author.name, "Your", ctx.author.avatar_url)
 
 
-    @commands.command()
+    @commands.command(aliases=['ls'])
     async def listsvr(self, ctx):
         """List stuff recommended to everyone on the server."""
         await self.__get_recommendations(ctx, "server", ctx.guild.name, "This server's", ctx.guild.icon_url)
 
 
-    @commands.command(aliases=['clr'])
+    @commands.command(aliases=['clr', 'c'])
     async def clear(self, ctx):
         """Clear your recommendations."""
         self.db.child("recommendations").child(str(ctx.guild.id)).child(str(ctx.author.id)).remove()
         await ctx.send("Cleared recommendations for {}.".format(ctx.author.mention))
 
 
-    @commands.command(aliases=['clrsvr'])
+    @commands.command(aliases=['clrsvr', 'cs'])
     async def clearsvr(self, ctx):
         """Clear the server recommendations."""
         if ctx.author.guild_permissions.administrator:
