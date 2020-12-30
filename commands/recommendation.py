@@ -93,6 +93,9 @@ class Recommendation(commands.Cog):
 
 
     async def __search(self, ctx, query):
+        if not len(query):
+            return
+
         # Search for matches in Spotify
         title = "Top 5 matching Spotify {0}s for '{1}'"
         description = "To recommend a result, type `rc!recselect {} <index>`."
