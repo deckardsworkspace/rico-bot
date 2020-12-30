@@ -247,7 +247,7 @@ class Recommendation(commands.Cog):
                     await ctx.send("{0}: Index {1} is out of range.".format(ctx.author.mention, index + 1))
             elif self.__is_actually_int(args[0]):
                 msg = "{0}: Seems like you forgot to specify recommendation type! ".format(ctx.author.mention)
-                msg += "Try again like this: `{0} track {1}`".format(ctx.command.name, args[0])
+                msg += "Try again like this: `rc!{0} track {1}`".format(ctx.command.name, args[0])
                 await ctx.send(msg)
             else:
                 await ctx.send("{}: Invalid search context, please try recommending again.".format(ctx.author.mention))
