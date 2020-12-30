@@ -103,7 +103,7 @@ class Recommendation(commands.Cog):
             for item in enumerate(results['tracks']['items']):
                 ms = item[1]['duration_ms']
                 duration_sec = ceil((ms/1000)%60) if ms > 10000 else "0{}".format(ceil((ms/1000)%60))
-                duration = "{0}:{1}".format(floor((ms/(1000*60))%60), duration_sec)
+                duration = "{0}m {1}s".format(floor((ms/(1000*60))%60), duration_sec)
                 field_name = "{0} {1} ({2})".format(self.__num_to_emoji(item[0] + 1), item[1]['name'], duration)
                 field_value = item[1]['artists'][0]['name']
                 embed.add_field(name=field_name, value=field_value, inline=False)
