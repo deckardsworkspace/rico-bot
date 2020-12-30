@@ -28,6 +28,14 @@ class Recommendation(commands.Cog):
         })
 
 
+    def __is_actually_int(self, string):
+        try:
+            int(string)
+            return True
+        except ValueError:
+            return False
+
+
     async def __get_recommendations(self, ctx, id, name, name_if_empty, image):
         # Get all recommendations for user/server
         rec_list = self.db.child("recommendations").child(str(ctx.guild.id)).child(id).get().val()
@@ -237,6 +245,10 @@ class Recommendation(commands.Cog):
                     })
                 else:
                     await ctx.send("{0}: Index {1} is out of range.".format(ctx.author.mention, index + 1))
+            elif self.__is_actually_int(args[0]):
+                msg = "{0}: Seems like you forgot to specify recommendation type! ".format(ctx.author.mention)
+                msg += "Try again like this: `{0} track {1}`".format(ctx.command.name, args[0])
+                await ctx.send(msg)
             else:
                 await ctx.send("{}: Invalid search context, please try recommending again.".format(ctx.author.mention))
         else:
