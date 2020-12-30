@@ -192,9 +192,14 @@ class Recommendation(commands.Cog):
     @commands.command(aliases=['r', 'add', 'rec'])
     async def recommend(self, ctx, *args):
         """
-        Recommend something. Supports Spotify links.
-        To recommend something to a specific person, mention them after the command,
+        Recommend something to someone or the server.
+        Supports Spotify links, or if a link isn't found, will search for matches on Spotify.
+
+        To recommend something to a specific person, @mention them after the command,
         e.g. rc!rec @person sugar brockhampton.
+
+        To recommend something to the server, no need to @mention anyone, just type the recommendation.
+        e.g. rc!rec HONNE
         """
         if len(args):
             non_links = []
@@ -232,7 +237,7 @@ class Recommendation(commands.Cog):
 
     @commands.command(aliases=['recsel', 'rs'])
     async def recselect(self, ctx, *args):
-        """Select which item to recommend from results given by rc!rec."""
+        """Select which item to recommend from results given by rc!recommend."""
         if len(args):
             prev_ctx = self.__get_search_context(ctx.author).val()
             if prev_ctx and args[0] in prev_ctx:
@@ -260,7 +265,12 @@ class Recommendation(commands.Cog):
 
     @commands.command(aliases=['l'])
     async def list(self, ctx):
-        """List stuff recommended to you or other people."""
+        """
+        List stuff recommended to you or other people.
+
+        To see other people's lists, mention them after the command.
+        e.g. rc!list @someone @someone-else...
+        """
         if not len(ctx.message.mentions):
             await self.__get_recommendations(ctx, str(ctx.author.id), ctx.author.name, "Your", ctx.author.avatar_url)
         else:
@@ -283,7 +293,10 @@ class Recommendation(commands.Cog):
 
     @commands.command(aliases=['clrsvr', 'cs'])
     async def clearsvr(self, ctx):
-        """Clear the server recommendations."""
+        """
+        Clear the server recommendations.
+        Only a member with the Administrator permission can issue this command.
+        """
         if ctx.author.guild_permissions.administrator:
             self.db.child("recommendations").child(str(ctx.guild.id)).child("server").remove()
             await ctx.send("{}: Cleared server recommendations.".format(ctx.author.mention))
