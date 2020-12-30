@@ -3,6 +3,7 @@ from discord import Embed
 from math import floor, ceil
 from itertools import islice
 from DiscordUtils.Pagination import AutoEmbedPaginator
+from spotipy.exceptions import SpotifyException
 import re
 
 
@@ -143,21 +144,26 @@ class Recommendation(commands.Cog):
     async def __add(self, ctx, mentions, uri=None, name=""):
         """Add recommendation to list. If uri is specified, recommendation details are pulled from Spotify."""
         if uri is not None:
-            if uri['type'] == 'album':
-                result = self.spotify.album(uri['id'])
-            elif uri['type'] == 'artist':
-                result = self.spotify.artist(uri['id'])
-            elif uri['type'] == 'track':
-                result = self.spotify.track(uri['id'])
-            elif uri['type'] == 'playlist':
-                result = self.spotify.playlist(uri['id'])
-            if not result:
-                await ctx.send("Invalid Spotify identifier {}".format(uri['id']))
-                return
+            try:
+                if uri['type'] == 'album':
+                    result = self.spotify.album(uri['id'])
+                elif uri['type'] == 'artist':
+                    result = self.spotify.artist(uri['id'])
+                elif uri['type'] == 'track':
+                    result = self.spotify.track(uri['id'])
+                elif uri['type'] == 'playlist':
+                    result = self.spotify.playlist(uri['id'])
+                if not result:
+                    await ctx.send("Invalid Spotify identifier {}".format(uri['id']))
+                    return
 
-            # Add to recommendation recipients
-            name = "Spotify {}: {}".format(uri['type'], result['name'])
-            link = "Recommended by {0} - https://open.spotify.com/{1}/{2}".format(ctx.author.name, uri['type'], uri['id'])
+                # Add to recommendation recipients
+                name = "Spotify {}: {}".format(uri['type'], result['name'])
+                link = "Recommended by {0} - https://open.spotify.com/{1}/{2}".format(ctx.author.name, uri['type'], uri['id'])
+            except SpotifyException as e:
+                await ctx.send("{0}: An error occurred while searching for '{1}' on Spotify.".format(ctx.author.mention, uri['id']))
+                await ctx.send("Error: {}".format(str(r)))
+                return
         else:
             link = "Recommended by {}".format(ctx.author.name)
 
