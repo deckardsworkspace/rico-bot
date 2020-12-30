@@ -201,20 +201,22 @@ class Recommendation(commands.Cog):
 
             # Iterate throught each argument, so we can add multiple tracks at once
             for arg in args:
-                # Check if we are dealing with a Spotify link
-                if re.match(r"https?:\/\/open\.spotify\.com\/(track|artist|album|playlist)\/[a-zA-Z0-9]+", arg):
-                    # Strip link down to Spotify URI format
-                    clean_query = re.sub(r"\?[a-zA-Z0-9]+=.*$", "", arg)
-                    clean_query = re.sub(r"https?:\/\/open\.spotify\.com\/", "", clean_query)
-                    clean_query = re.sub(r"\/", ":", clean_query)
-                    split_query = clean_query.split(":")
-                    mentions = [{"id": user.id, "name": user.name} for user in ctx.message.mentions]
-                    await self.__add(ctx, mentions, uri={
-                        'type': split_query[0],
-                        'id': split_query[1]
-                    })
-                else:
-                    non_links.append(arg)
+                # Check that this argument isn't a @mention
+                if not re.match(r"<((@(&|!)?)|#)(\d+)>", arg):
+                    # Check if we are dealing with a Spotify link
+                    if re.match(r"https?:\/\/open\.spotify\.com\/(track|artist|album|playlist)\/[a-zA-Z0-9]+", arg):
+                        # Strip link down to Spotify URI format
+                        clean_query = re.sub(r"\?[a-zA-Z0-9]+=.*$", "", arg)
+                        clean_query = re.sub(r"https?:\/\/open\.spotify\.com\/", "", clean_query)
+                        clean_query = re.sub(r"\/", ":", clean_query)
+                        split_query = clean_query.split(":")
+                        mentions = [{"id": user.id, "name": user.name} for user in ctx.message.mentions]
+                        await self.__add(ctx, mentions, uri={
+                            'type': split_query[0],
+                            'id': split_query[1]
+                        })
+                    else:
+                        non_links.append(arg)
 
             # Process everything that isn't a Spotify link
             search_ctx = await self.__search(ctx, " ".join(non_links))
