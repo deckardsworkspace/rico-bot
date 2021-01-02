@@ -13,13 +13,11 @@ class Recommendation(commands.Cog):
         self.db = db
         self.spotify = spotify
 
-
     def __add_recommendation(self, server_id, name, rec):
         self.db.child("recommendations").child(str(server_id)).child("server").push({
             "name": name,
             "link": rec
         })
-
 
     def __add_recommendation_user(self, server_id, user_id, name, rec):
         self.db.child("recommendations").child(str(server_id)).child(str(user_id)).push({
@@ -27,14 +25,12 @@ class Recommendation(commands.Cog):
             "link": rec
         })
 
-
     def __is_actually_int(self, string):
         try:
             int(string)
             return True
         except ValueError:
             return False
-
 
     async def __get_recommendations(self, ctx, id, name, name_if_empty, image):
         # Get all recommendations for user/server
@@ -59,18 +55,14 @@ class Recommendation(commands.Cog):
         else:
             await ctx.send("{} recommendation list is currently empty.".format(name_if_empty))
 
-
     def __get_search_context(self, user):
         return self.db.child("contexts").child(str(user.id)).get()
-
 
     def __set_search_context(self, user, ctx):
         self.db.child("contexts").child(str(user.id)).set(ctx)
 
-
     def __clear_search_context(self, user):
         self.db.child("contexts").child(str(user.id)).remove()
-
 
     def __num_to_emoji(self, num: int):
         if num == 1:
@@ -85,12 +77,10 @@ class Recommendation(commands.Cog):
             return ":five:"
         return ""
 
-
     def __dict_chunks(self, data):
         it = iter(data)
         for i in range(0, len(data), 10):
-            yield {k:data[k] for k in islice(it, 10)}
-
+            yield {k: data[k] for k in islice(it, 10)}
 
     async def __search(self, ctx, query):
         if not len(query):
@@ -113,8 +103,8 @@ class Recommendation(commands.Cog):
             embed = Embed(title=title.format("track", query), description=description.format("track"), color=0x20ce09)
             for item in enumerate(results['tracks']['items']):
                 ms = item[1]['duration_ms']
-                duration_sec = ceil((ms/1000)%60) if ms > 10000 else "0{}".format(ceil((ms/1000)%60))
-                duration = "{0}m {1}s".format(floor((ms/(1000*60))%60), duration_sec)
+                duration_sec = ceil((ms / 1000) % 60) if ms > 10000 else "0{}".format(ceil((ms / 1000) % 60))
+                duration = "{0}m {1}s".format(floor((ms / (1000 * 60)) % 60), duration_sec)
                 field_name = "{0} {1} ({2})".format(self.__num_to_emoji(item[0] + 1), item[1]['name'], duration)
                 field_value = item[1]['artists'][0]['name']
                 embed.add_field(name=field_name, value=field_value, inline=False)
@@ -151,7 +141,6 @@ class Recommendation(commands.Cog):
         await ctx.send("{0}: To recommend '{1}' as is, type only `rc!rec`.".format(ctx.author.mention, query))
         return context
 
-
     async def __add(self, ctx, mentions, uri=None, name=""):
         """Add recommendation to list. If uri is specified, recommendation details are pulled from Spotify."""
         if uri is not None:
@@ -170,9 +159,11 @@ class Recommendation(commands.Cog):
 
                 # Add to recommendation recipients
                 name = "Spotify {}: {}".format(uri['type'], result['name'])
-                link = "Recommended by {0} - https://open.spotify.com/{1}/{2}".format(ctx.author.name, uri['type'], uri['id'])
+                link = "Recommended by {0} - https://open.spotify.com/{1}/{2}".format(ctx.author.name, uri['type'],
+                                                                                      uri['id'])
             except SpotifyException as e:
-                await ctx.send("{0}: An error occurred while searching for '{1}' on Spotify.".format(ctx.author.mention, uri['id']))
+                await ctx.send("{0}: An error occurred while searching for '{1}' on Spotify.".format(ctx.author.mention,
+                                                                                                     uri['id']))
                 await ctx.send("Error: {}".format(str(e)))
                 return
         else:
@@ -190,7 +181,6 @@ class Recommendation(commands.Cog):
 
         success = ":white_check_mark: {0} recommended '**{1}**' to {2}".format(ctx.author.mention, name, recipient)
         await ctx.send(success)
-
 
     @commands.command(aliases=['r', 'add', 'rec'])
     async def recommend(self, ctx, *args):
@@ -237,7 +227,6 @@ class Recommendation(commands.Cog):
             else:
                 await ctx.send("{}, please specify something to recommend.".format(ctx.author.mention))
 
-
     @commands.command(aliases=['recsel', 'rs'])
     async def recselect(self, ctx, *args):
         """Select which item to recommend from results given by rc!recommend."""
@@ -265,7 +254,6 @@ class Recommendation(commands.Cog):
             await ctx.send("{}: Incomplete command.".format(ctx.author.mention))
         self.__clear_search_context(ctx.author)
 
-
     @commands.command(aliases=['l'])
     async def list(self, ctx):
         """
@@ -278,21 +266,19 @@ class Recommendation(commands.Cog):
             await self.__get_recommendations(ctx, str(ctx.author.id), ctx.author.name, "Your", ctx.author.avatar_url)
         else:
             for user in ctx.message.mentions:
-                await self.__get_recommendations(ctx, str(user.id), user.name, "{}'s".format(user.name), user.avatar_url)
-
+                await self.__get_recommendations(ctx, str(user.id), user.name, "{}'s".format(user.name),
+                                                 user.avatar_url)
 
     @commands.command(aliases=['ls'])
     async def listsvr(self, ctx):
         """List stuff recommended to everyone on the server."""
         await self.__get_recommendations(ctx, "server", ctx.guild.name, "This server's", ctx.guild.icon_url)
 
-
     @commands.command(aliases=['clr', 'c'])
     async def clear(self, ctx):
         """Clear your recommendations."""
         self.db.child("recommendations").child(str(ctx.guild.id)).child(str(ctx.author.id)).remove()
         await ctx.send("Cleared recommendations for {}.".format(ctx.author.mention))
-
 
     @commands.command(aliases=['clrsvr', 'cs'])
     async def clearsvr(self, ctx):
