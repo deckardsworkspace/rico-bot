@@ -268,9 +268,8 @@ class Recommendation(commands.Cog):
         if not len(ctx.message.mentions):
             await self.__get_recommendations(ctx, str(ctx.author.id), ctx.author.name, "Your", ctx.author.avatar_url)
         else:
-            for user in ctx.message.mentions:
-                await self.__get_recommendations(ctx, str(user.id), user.name, "{}'s".format(user.name),
-                                                 user.avatar_url)
+            user = ctx.message.mentions[0]
+            await self.__get_recommendations(ctx, str(user.id), user.name, "{}'s".format(user.name), user.avatar_url)
 
     @commands.command(aliases=['ls'])
     async def listsvr(self, ctx):
