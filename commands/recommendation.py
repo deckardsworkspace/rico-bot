@@ -7,6 +7,34 @@ from spotipy.exceptions import SpotifyException
 import re
 
 
+def is_actually_int(string):
+    try:
+        int(string)
+        return True
+    except ValueError:
+        return False
+
+
+def num_to_emoji(num: int):
+    if num == 1:
+        return ":one:"
+    elif num == 2:
+        return ":two:"
+    elif num == 3:
+        return ":three:"
+    elif num == 4:
+        return ":four:"
+    elif num == 5:
+        return ":five:"
+    return ""
+
+
+def dict_chunks(data):
+    it = iter(data)
+    for i in range(0, len(data), 10):
+        yield {k: data[k] for k in islice(it, 10)}
+
+
 class Recommendation(commands.Cog):
     def __init__(self, client, db, spotify):
         self.client = client
@@ -25,13 +53,6 @@ class Recommendation(commands.Cog):
             "link": rec
         })
 
-    def __is_actually_int(self, string):
-        try:
-            int(string)
-            return True
-        except ValueError:
-            return False
-
     async def __get_recommendations(self, ctx, id, name, name_if_empty, image):
         # Get all recommendations for user/server
         rec_list = self.db.child("recommendations").child(str(ctx.guild.id)).child(id).get().val()
@@ -43,7 +64,7 @@ class Recommendation(commands.Cog):
             embed_title = "Recommendations for {}".format(name)
             embed_desc = "{} items total".format(len(rec_list.keys()))
 
-            for chunk in self.__dict_chunks(rec_list):
+            for chunk in dict_chunks(rec_list):
                 embed = Embed(title=embed_title, description=embed_desc, color=0x20ce09)
                 embed.set_thumbnail(url=image)
                 for key in chunk:
@@ -63,24 +84,6 @@ class Recommendation(commands.Cog):
 
     def __clear_search_context(self, user):
         self.db.child("contexts").child(str(user.id)).remove()
-
-    def __num_to_emoji(self, num: int):
-        if num == 1:
-            return ":one:"
-        elif num == 2:
-            return ":two:"
-        elif num == 3:
-            return ":three:"
-        elif num == 4:
-            return ":four:"
-        elif num == 5:
-            return ":five:"
-        return ""
-
-    def __dict_chunks(self, data):
-        it = iter(data)
-        for i in range(0, len(data), 10):
-            yield {k: data[k] for k in islice(it, 10)}
 
     async def __search(self, ctx, query):
         if not len(query):
@@ -105,7 +108,7 @@ class Recommendation(commands.Cog):
                 ms = item[1]['duration_ms']
                 duration_sec = ceil((ms / 1000) % 60) if ms > 10000 else "0{}".format(ceil((ms / 1000) % 60))
                 duration = "{0}m {1}s".format(floor((ms / (1000 * 60)) % 60), duration_sec)
-                field_name = "{0} {1} ({2})".format(self.__num_to_emoji(item[0] + 1), item[1]['name'], duration)
+                field_name = "{0} {1} ({2})".format(num_to_emoji(item[0] + 1), item[1]['name'], duration)
                 field_value = item[1]['artists'][0]['name']
                 embed.add_field(name=field_name, value=field_value, inline=False)
                 context["track"].append(item[1]['id'])
@@ -117,7 +120,7 @@ class Recommendation(commands.Cog):
         if len(results['albums']['items']):
             embed = Embed(title=title.format("album", query), description=description.format("album"), color=0x20ce09)
             for item in enumerate(results['albums']['items']):
-                field_name = "{0} {1}".format(self.__num_to_emoji(item[0] + 1), item[1]['name'])
+                field_name = "{0} {1}".format(num_to_emoji(item[0] + 1), item[1]['name'])
                 field_value = "{0}, {1}".format(item[1]['artists'][0]['name'], item[1]['release_date'])
                 embed.add_field(name=field_name, value=field_value, inline=False)
                 context["album"].append(item[1]['id'])
@@ -129,7 +132,7 @@ class Recommendation(commands.Cog):
         if len(results['artists']['items']):
             embed = Embed(title=title.format("artist", query), description=description.format("artist"), color=0x20ce09)
             for item in enumerate(results['artists']['items']):
-                field_name = "{0} - {1}".format(self.__num_to_emoji(item[0] + 1), item[1]['name'])
+                field_name = "{0} - {1}".format(num_to_emoji(item[0] + 1), item[1]['name'])
                 field_value = "{} followers".format(item[1]['followers']['total'])
                 embed.add_field(name=field_name, value=field_value, inline=False)
                 context["artist"].append(item[1]['id'])
@@ -244,7 +247,7 @@ class Recommendation(commands.Cog):
                     })
                 else:
                     await ctx.send("{0}: Index {1} is out of range.".format(ctx.author.mention, index + 1))
-            elif self.__is_actually_int(args[0]):
+            elif is_actually_int(args[0]):
                 msg = "{0}: Seems like you forgot to specify recommendation type! ".format(ctx.author.mention)
                 msg += "Try again like this: `rc!{0} track {1}`".format(ctx.command.name, args[0])
                 await ctx.send(msg)
