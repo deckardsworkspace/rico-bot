@@ -4,10 +4,11 @@ from math import floor, ceil
 from itertools import islice
 from DiscordUtils.Pagination import AutoEmbedPaginator
 from spotipy.exceptions import SpotifyException
+import asyncio
 import re
 
 
-def is_actually_int(string):
+def is_int(string):
     try:
         int(string)
         return True
@@ -31,8 +32,8 @@ def num_to_emoji(num: int):
 
 def dict_chunks(data):
     it = iter(data)
-    for i in range(0, len(data), 10):
-        yield {k: data[k] for k in islice(it, 10)}
+    for i in range(0, len(data), 5):
+        yield {k: data[k] for k in islice(it, 5)}
 
 
 class Recommendation(commands.Cog):
@@ -53,9 +54,13 @@ class Recommendation(commands.Cog):
             "link": rec
         })
 
-    async def __get_recommendations(self, ctx, id, name, name_if_empty, image):
+    def __get_raw_recommendations(self, guild_id, user_id):
+        return self.db.child("recommendations").child(str(guild_id)).child(user_id)
+
+    async def __get_recommendations(self, ctx, user_id, name, name_if_empty, image):
         # Get all recommendations for user/server
-        rec_list = self.db.child("recommendations").child(str(ctx.guild.id)).child(id).get().val()
+        rec_list = self.__get_raw_recommendations(ctx.guild.id, user_id).get().val()
+        index = 1
 
         if rec_list and len(rec_list.keys()):
             # Create paginated embeds
@@ -69,12 +74,63 @@ class Recommendation(commands.Cog):
                 embed.set_thumbnail(url=image)
                 for key in chunk:
                     item = rec_list[key]
-                    embed.add_field(name=item['name'], value=item['link'] or "No link available", inline=False)
+                    field_name = "{0} - {1}".format(index, item['name'])
+                    embed.add_field(name=field_name, value=item['link'] or "No link available", inline=False)
+                    index += 1
                 embeds.append(embed)
 
             await paginator.run(embeds)
         else:
             await ctx.send("{} recommendation list is currently empty.".format(name_if_empty))
+
+    async def __remove_recommendation(self, ctx, index, server=False):
+        # Check if user has recommendations and if requested index is in range
+        user_id = "server" if server else ctx.author.id
+        owner = "the server's" if server else "{}'s".format(ctx.author.mention)
+        rec_list = self.__get_raw_recommendations(ctx.guild.id, user_id).get().val()
+
+        if rec_list and len(rec_list):
+            if len(rec_list) >= index:
+                index = list(rec_list.keys())[index - 1]
+                rec_name = rec_list[index]['name']
+
+                # Show dialog embed
+                embed = Embed(title="Really remove the following recommendation?",
+                              description="React :thumbsup: within the next 10 seconds to confirm",
+                              color=0xff6600)
+                embed.set_thumbnail(url=ctx.guild.icon_url if server else ctx.author.avatar_url)
+                embed.add_field(name=rec_name, value=rec_list[index]['link'])
+                dialog = await ctx.send(embed=embed)
+
+                # Add reactions
+                up = '\U0001f44d'
+                down = '\U0001f44e'
+                await dialog.add_reaction(up)
+                await dialog.add_reaction(down)
+
+                # Wait for user reaction
+                try:
+                    def check(r, u):
+                        return str(r.emoji) in [up, down] and u == ctx.author
+                    reaction, user = await self.client.wait_for("reaction_add", timeout=10.0, check=check)
+
+                    if str(reaction.emoji) == up:
+                        # Delete
+                        self.__get_raw_recommendations(ctx.guild.id, user_id).child(index).remove()
+                        await dialog.delete()
+                        await ctx.send(
+                            ":white_check_mark: Removed **'{0}'** from {1} recommendations".format(rec_name, owner))
+                    elif str(reaction.emoji) == down:
+                        await dialog.delete()
+                        await ctx.send("{0}: Got it, not removing recommendation.".format(ctx.author.mention))
+                except asyncio.exceptions.TimeoutError:
+                    await dialog.remove_reaction(up, self.client.user)
+                    await dialog.remove_reaction(down, self.client.user)
+                    await ctx.send("{}: Timed out, not removing recommendation.".format(ctx.author.mention))
+            else:
+                await ctx.send("{0}: Index {1} is out of range.".format(ctx.author.mention, index))
+        else:
+            await ctx.send("{0}: Nothing found in {1} recommendation list.".format(ctx.author.mention, owner))
 
     def __get_search_context(self, user):
         return self.db.child("contexts").child(str(user.id)).get()
@@ -247,7 +303,7 @@ class Recommendation(commands.Cog):
                     })
                 else:
                     await ctx.send("{0}: Index {1} is out of range.".format(ctx.author.mention, index + 1))
-            elif is_actually_int(args[0]):
+            elif is_int(args[0]):
                 msg = "{0}: Seems like you forgot to specify recommendation type! ".format(ctx.author.mention)
                 msg += "Try again like this: `rc!{0} track {1}`".format(ctx.command.name, args[0])
                 await ctx.send(msg)
@@ -263,7 +319,7 @@ class Recommendation(commands.Cog):
         List stuff recommended to you or other people.
 
         To see other people's lists, mention them after the command.
-        e.g. rc!list @someone @someone-else...
+        e.g. rc!list @someone
         """
         if not len(ctx.message.mentions):
             await self.__get_recommendations(ctx, str(ctx.author.id), ctx.author.name, "Your", ctx.author.avatar_url)
@@ -293,3 +349,30 @@ class Recommendation(commands.Cog):
             await ctx.send("{}: Cleared server recommendations.".format(ctx.author.mention))
         else:
             await ctx.send("{}, only administrators can clear server recommendations.".format(ctx.author.mention))
+
+    @commands.command(aliases=['rm', 'del'])
+    async def remove(self, ctx, *args):
+        """
+        Remove a recommendation from your list.
+        To use, type rc!remove <index>, where <index> is the number of the recommendation
+        you wish to remove, as listed by rc!list.
+        """
+        if len(args) and is_int(args[0]):
+            await self.__remove_recommendation(ctx, int(args[0]))
+        else:
+            await ctx.send("{}: Invalid or missing index.".format(ctx.author.mention))
+
+    @commands.command(aliases=['rms', 'dels'])
+    async def removesvr(self, ctx, *args):
+        """
+        Remove a recommendation from the server's list.
+        To use, type rc!remove <index>, where <index> is the number of the recommendation
+        you wish to remove, as listed by rc!listsvr.
+        """
+        if ctx.author.guild_permissions.administrator:
+            if len(args) and is_int(args[0]):
+                await self.__remove_recommendation(ctx, int(args[0]), server=True)
+            else:
+                await ctx.send("{}: Invalid or missing index.".format(ctx.author.mention))
+        else:
+            await ctx.send("{}, only administrators can remove server recommendations.".format(ctx.author.mention))
