@@ -56,6 +56,46 @@ class Recommendation(commands.Cog):
             "link": rec
         })
 
+    async def __create_remove_dialog(self, ctx, server=False, field_name=None, field_value=None):
+        is_clearing = not field_name and not field_value
+        title = "Really remove the following recommendation?"
+        if is_clearing:
+            owner = ctx.guild.name if server else ctx.author.name
+            title = "Really remove all recommendations for {}?".format(owner)
+
+        # Show dialog embed
+        embed = Embed(title=title,
+                      description="React :thumbsup: within the next 10 sec to confirm. This action is irreversible!",
+                      color=0xff6600)
+        embed.set_thumbnail(url=ctx.guild.icon_url if server else ctx.author.avatar_url)
+        if not is_clearing:
+            embed.add_field(name=field_name, value=field_value)
+        dialog = await ctx.send(embed=embed)
+
+        # Add reactions
+        up = '\U0001f44d'
+        down = '\U0001f44e'
+        await dialog.add_reaction(up)
+        await dialog.add_reaction(down)
+
+        # Wait for user reaction
+        try:
+            def check(r, u):
+                return str(r.emoji) in [up, down] and u == ctx.author
+            reaction, user = await self.client.wait_for("reaction_add", timeout=10.0, check=check)
+
+            if str(reaction.emoji) == up:
+                await dialog.delete()
+                return True
+            elif str(reaction.emoji) == down:
+                await dialog.delete()
+                await ctx.send("{}: Got it, not removing.".format(ctx.author.mention))
+        except asyncio.exceptions.TimeoutError:
+            await dialog.remove_reaction(up, self.client.user)
+            await dialog.remove_reaction(down, self.client.user)
+            await ctx.send("{}: Timed out, not removing.".format(ctx.author.mention))
+        return False
+
     def __get_raw_recommendations(self, guild_id, user_id):
         return self.db.child("recommendations").child(str(guild_id)).child(user_id)
 
@@ -96,43 +136,14 @@ class Recommendation(commands.Cog):
                 index = list(rec_list.keys())[index - 1]
                 rec_name = rec_list[index]['name']
 
-                # Show dialog embed
-                embed = Embed(title="Really remove the following recommendation?",
-                              description="React :thumbsup: within the next 10 seconds to confirm",
-                              color=0xff6600)
-                embed.set_thumbnail(url=ctx.guild.icon_url if server else ctx.author.avatar_url)
-                embed.add_field(name=rec_name, value=rec_list[index]['link'])
-                dialog = await ctx.send(embed=embed)
+                if await self.__create_remove_dialog(ctx, server, rec_name, rec_list[index]['link']):
+                    self.__get_raw_recommendations(ctx.guild.id, user_id).child(index).remove()
+                    await ctx.send(":white_check_mark: Removed **'{0}'** from {1} list".format(rec_name, owner))
 
-                # Add reactions
-                up = '\U0001f44d'
-                down = '\U0001f44e'
-                await dialog.add_reaction(up)
-                await dialog.add_reaction(down)
-
-                # Wait for user reaction
-                try:
-                    def check(r, u):
-                        return str(r.emoji) in [up, down] and u == ctx.author
-                    reaction, user = await self.client.wait_for("reaction_add", timeout=10.0, check=check)
-
-                    if str(reaction.emoji) == up:
-                        # Delete
-                        self.__get_raw_recommendations(ctx.guild.id, user_id).child(index).remove()
-                        await dialog.delete()
-                        await ctx.send(
-                            ":white_check_mark: Removed **'{0}'** from {1} recommendations".format(rec_name, owner))
-                    elif str(reaction.emoji) == down:
-                        await dialog.delete()
-                        await ctx.send("{0}: Got it, not removing recommendation.".format(ctx.author.mention))
-                except asyncio.exceptions.TimeoutError:
-                    await dialog.remove_reaction(up, self.client.user)
-                    await dialog.remove_reaction(down, self.client.user)
-                    await ctx.send("{}: Timed out, not removing recommendation.".format(ctx.author.mention))
             else:
                 await ctx.send("{0}: Index {1} is out of range.".format(ctx.author.mention, index))
         else:
-            await ctx.send("{0}: Nothing found in {1} recommendation list.".format(ctx.author.mention, owner))
+            await ctx.send("{0}: Nothing found in {1} list.".format(ctx.author.mention, owner))
 
     def __get_search_context(self, user):
         return self.db.child("contexts").child(str(user.id)).get()
@@ -316,8 +327,9 @@ class Recommendation(commands.Cog):
     @commands.command(aliases=['clr', 'c'])
     async def clear(self, ctx):
         """Clear your recommendations."""
-        self.db.child("recommendations").child(str(ctx.guild.id)).child(str(ctx.author.id)).remove()
-        await ctx.send("Cleared recommendations for {}.".format(ctx.author.mention))
+        if await self.__create_remove_dialog(ctx, server=False):
+            self.db.child("recommendations").child(str(ctx.guild.id)).child(str(ctx.author.id)).remove()
+            await ctx.send("{}: Cleared your recommendations.".format(ctx.author.mention))
 
     @commands.command(aliases=['clrsvr', 'cs'])
     async def clearsvr(self, ctx):
@@ -326,8 +338,9 @@ class Recommendation(commands.Cog):
         Only a member with the Administrator permission can issue this command.
         """
         if ctx.author.guild_permissions.administrator:
-            self.db.child("recommendations").child(str(ctx.guild.id)).child("server").remove()
-            await ctx.send("{}: Cleared server recommendations.".format(ctx.author.mention))
+            if await self.__create_remove_dialog(ctx, server=True):
+                self.db.child("recommendations").child(str(ctx.guild.id)).child("server").remove()
+                await ctx.send("{}: Cleared server recommendations.".format(ctx.author.mention))
         else:
             await ctx.send("{}, only administrators can clear server recommendations.".format(ctx.author.mention))
 
