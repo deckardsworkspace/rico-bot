@@ -6,7 +6,7 @@ from DiscordUtils.Pagination import AutoEmbedPaginator
 from spotipy.exceptions import SpotifyException
 import asyncio
 import re
-from util import SpotifyRecommendation
+from util import SpotifyRecommendation, SpotifyNotFoundError, SpotifyInvalidURLError
 
 
 def is_int(string):
@@ -249,6 +249,9 @@ class Recommendation(commands.Cog):
                             err = "{}: Spotify link detected, but it doesn't point to a valid Spotify item.".format(
                                 ctx.author.mention
                             )
+                            await ctx.send(err)
+                        except (SpotifyInvalidURLError, SpotifyNotFoundError) as e:
+                            err = "{0}: {1}".format(ctx.author.mention, e)
                             await ctx.send(err)
                     else:
                         non_links.append(arg)
