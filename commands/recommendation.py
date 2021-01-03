@@ -205,7 +205,7 @@ class Recommendation(commands.Cog):
     async def __add(self, ctx, mentions, name, description=""):
         """Add recommendation to list. If uri is specified, recommendation details are pulled from Spotify."""
         if not len(description):
-            description = "Recommended by {}".format(ctx.author.name)
+            description = "Added by {}".format(ctx.author.name)
 
         if not len(mentions):
             recipient = "the server"
@@ -236,7 +236,7 @@ class Recommendation(commands.Cog):
             non_links = []
             mentions = [{"id": user.id, "name": user.name} for user in ctx.message.mentions]
 
-            # Iterate throught each argument, so we can add multiple tracks at once
+            # Iterate through each argument, so we can add multiple tracks at once
             for arg in args:
                 # Check that this argument isn't a @mention
                 if not re.match(r"<((@[&!]?)|#)(\d+)>", arg):
@@ -250,7 +250,6 @@ class Recommendation(commands.Cog):
                                 ctx.author.mention
                             )
                             await ctx.send(err)
-                    # Check if we are dealing with a YouTube link
                     else:
                         non_links.append(arg)
 
@@ -276,10 +275,10 @@ class Recommendation(commands.Cog):
 
                 if index in range(0, len(items)):
                     item = items[index]
-                    await self.__add(ctx, prev_ctx['mentions'] if "mentions" in prev_ctx else [], uri={
-                        'type': args[0],
-                        'id': item
-                    })
+                    mentions = prev_ctx['mentions'] if "mentions" in prev_ctx else []
+                    spotify_uri = "spotify:{0}:{1}".format(args[0], item)
+                    name, desc = self.spotify_rec.parse(spotify_uri, ctx.author.name)
+                    await self.__add(ctx, mentions, name, desc)
                 else:
                     await ctx.send("{0}: Index {1} is out of range.".format(ctx.author.mention, index + 1))
             elif is_int(args[0]):
