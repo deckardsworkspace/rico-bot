@@ -6,6 +6,7 @@ from DiscordUtils.Pagination import AutoEmbedPaginator
 from spotipy.exceptions import SpotifyException
 import asyncio
 import re
+from util import SpotifyRecommendation
 
 
 def is_int(string):
@@ -41,6 +42,7 @@ class Recommendation(commands.Cog):
         self.client = client
         self.db = db
         self.spotify = spotify
+        self.spotify_rec = SpotifyRecommendation(spotify)
 
     def __add_recommendation(self, server_id, name, rec):
         self.db.child("recommendations").child(str(server_id)).child("server").push({
@@ -200,42 +202,19 @@ class Recommendation(commands.Cog):
         await ctx.send("{0}: To recommend '{1}' as is, type only `rc!rec`.".format(ctx.author.mention, query))
         return context
 
-    async def __add(self, ctx, mentions, uri=None, name=""):
+    async def __add(self, ctx, mentions, name, description=""):
         """Add recommendation to list. If uri is specified, recommendation details are pulled from Spotify."""
-        if uri is not None:
-            try:
-                if uri['type'] == 'album':
-                    result = self.spotify.album(uri['id'])
-                elif uri['type'] == 'artist':
-                    result = self.spotify.artist(uri['id'])
-                elif uri['type'] == 'track':
-                    result = self.spotify.track(uri['id'])
-                elif uri['type'] == 'playlist':
-                    result = self.spotify.playlist(uri['id'])
-                if not result:
-                    await ctx.send("Invalid Spotify identifier {}".format(uri['id']))
-                    return
-
-                # Add to recommendation recipients
-                name = "Spotify {}: {}".format(uri['type'], result['name'])
-                link = "Recommended by {0} - https://open.spotify.com/{1}/{2}".format(ctx.author.name, uri['type'],
-                                                                                      uri['id'])
-            except SpotifyException as e:
-                await ctx.send("{0}: An error occurred while searching for '{1}' on Spotify.".format(ctx.author.mention,
-                                                                                                     uri['id']))
-                await ctx.send("Error: {}".format(str(e)))
-                return
-        else:
-            link = "Recommended by {}".format(ctx.author.name)
+        if not len(description):
+            description = "Recommended by {}".format(ctx.author.name)
 
         if not len(mentions):
             recipient = "the server"
-            self.__add_recommendation(ctx.guild.id, name, link)
+            self.__add_recommendation(ctx.guild.id, name, description)
         else:
             recipients = []
             for user in mentions:
                 recipients.append(user['name'])
-                self.__add_recommendation_user(ctx.guild.id, user['id'], name, link)
+                self.__add_recommendation_user(ctx.guild.id, user['id'], name, description)
             recipient = ", ".join(recipients)
 
         success = ":white_check_mark: {0} recommended '**{1}**' to {2}".format(ctx.author.mention, name, recipient)
@@ -255,23 +234,23 @@ class Recommendation(commands.Cog):
         """
         if len(args):
             non_links = []
+            mentions = [{"id": user.id, "name": user.name} for user in ctx.message.mentions]
 
             # Iterate throught each argument, so we can add multiple tracks at once
             for arg in args:
                 # Check that this argument isn't a @mention
-                if not re.match(r"<((@(&|!)?)|#)(\d+)>", arg):
+                if not re.match(r"<((@[&!]?)|#)(\d+)>", arg):
                     # Check if we are dealing with a Spotify link
-                    if re.match(r"https?:\/\/open\.spotify\.com\/(track|artist|album|playlist)\/[a-zA-Z0-9]+", arg):
-                        # Strip link down to Spotify URI format
-                        clean_query = re.sub(r"\?[a-zA-Z0-9]+=.*$", "", arg)
-                        clean_query = re.sub(r"https?:\/\/open\.spotify\.com\/", "", clean_query)
-                        clean_query = re.sub(r"\/", ":", clean_query)
-                        split_query = clean_query.split(":")
-                        mentions = [{"id": user.id, "name": user.name} for user in ctx.message.mentions]
-                        await self.__add(ctx, mentions, uri={
-                            'type': split_query[0],
-                            'id': split_query[1]
-                        })
+                    if self.spotify_rec.match(arg):
+                        try:
+                            name, desc = self.spotify_rec.parse(arg, ctx.author.name)
+                            await self.__add(ctx, mentions, name, desc)
+                        except SpotifyException:
+                            err = "{}: Spotify link detected, but it doesn't point to a valid Spotify item.".format(
+                                ctx.author.mention
+                            )
+                            await ctx.send(err)
+                    # Check if we are dealing with a YouTube link
                     else:
                         non_links.append(arg)
 
