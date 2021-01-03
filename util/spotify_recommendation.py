@@ -27,23 +27,22 @@ class SpotifyRecommendation:
 
         entity_type = parsed_path[0]
         entity_id = parsed_path[1]
-        name = None
+        result = None
+        desc = ""
         if entity_type == 'album':
             result = self.spotify.album(entity_id)
-            name = "{0} (Spotify album by {1})".format(result['name'], result['artists'][0]['name'])
+            desc = "Spotify album by {}".format(result['artists'][0]['name'])
         elif entity_type == 'artist':
             result = self.spotify.artist(entity_id)
-            name = "{} (Spotify artist)".format(result['name'])
+            desc = "Spotify artist"
         elif entity_type == 'track':
             result = self.spotify.track(entity_id)
-            name = "{0} (Spotify track by {1})".format(result['name'], result['artists'][0]['name'])
+            desc = "Spotify track by {}".format(result['artists'][0]['name'])
         elif entity_type == 'playlist':
             result = self.spotify.playlist(entity_id)
-            owner = self.spotify.user(result['owner']['id'])['display_name']
-            name = "{0} (Spotify playlist by {1})".format(result['name'], owner)
-        if not name:
+            desc = "Spotify playlist by {}".format(self.spotify.user(result['owner']['id'])['display_name'])
+        if not result:
             raise SpotifyNotFoundError(entity_type, entity_id)
 
-        # Add to recommendation recipients
-        desc = "https://open.spotify.com/{0}/{1}\nAdded by {2}".format(entity_type, entity_id, recommender)
-        return name, desc
+        desc += "\nhttps://open.spotify.com/{0}/{1}\nAdded by {2}".format(entity_type, entity_id, recommender)
+        return result['name'], desc
