@@ -267,6 +267,7 @@ class Recommendation(commands.Cog):
                             await ctx.send(err)
                         except (SpotifyInvalidURLError, SpotifyNotFoundError) as e:
                             await ctx.send("{0}: {1}".format(ctx.author.mention, e))
+                    # Check if we are dealing with a YouTube video link
                     elif self.youtube_rec.match(arg):
                         try:
                             name, desc = self.youtube_rec.parse(arg, ctx.author.name)
