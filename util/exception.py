@@ -8,3 +8,9 @@ class SpotifyInvalidURLError(Exception):
     def __init__(self, url):
         self.message = "Invalid Spotify link or URI: {}".format(url)
         super().__init__(self.message)
+
+
+class YouTubeInvalidURLError(Exception):
+    def __init__(self, url):
+        self.message = "Invalid YouTube video link: {}".format(url)
+        super().__init__(self.message)
