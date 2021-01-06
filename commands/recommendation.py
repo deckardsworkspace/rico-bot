@@ -40,6 +40,15 @@ def dict_chunks(data):
         yield {k: data[k] for k in islice(it, 5)}
 
 
+async def remove_multiple_messages(ctx, ids):
+    for msg_id in ids:
+        try:
+            msg = await ctx.fetch_message(int(msg_id))
+            await msg.delete()
+        except Exception as e:
+            print("Error while trying to remove message: {}".format(e))
+
+
 class Recommendation(commands.Cog):
     def __init__(self, client, db, spotify, youtube_api_key):
         self.client = client
@@ -171,7 +180,8 @@ class Recommendation(commands.Cog):
             "query": query,
             "track": [],
             "album": [],
-            "artist": []
+            "artist": [],
+            "embeds": []
         }
 
         # Show matching tracks
@@ -185,9 +195,9 @@ class Recommendation(commands.Cog):
                 field_value = item[1]['artists'][0]['name']
                 embed.add_field(name=field_name, value=field_value, inline=False)
                 context["track"].append(item[1]['id'])
-            await ctx.send(embed=embed)
+            context["embeds"].append((await ctx.send(embed=embed)).id)
         else:
-            await ctx.send("No tracks matching '{}' found on Spotify.".format(query))
+            context["embeds"].append((await ctx.send("No tracks matching '{}' found on Spotify.".format(query))).id)
 
         # Show matching albums
         if len(results['albums']['items']):
@@ -197,9 +207,9 @@ class Recommendation(commands.Cog):
                 field_value = "{0}, {1}".format(item[1]['artists'][0]['name'], item[1]['release_date'])
                 embed.add_field(name=field_name, value=field_value, inline=False)
                 context["album"].append(item[1]['id'])
-            await ctx.send(embed=embed)
+            context["embeds"].append((await ctx.send(embed=embed)).id)
         else:
-            await ctx.send("No albums matching '{}' found on Spotify.".format(query))
+            context["embeds"].append((await ctx.send("No albums matching '{}' found on Spotify.".format(query))).id)
 
         # Show matching artists
         if len(results['artists']['items']):
@@ -209,12 +219,13 @@ class Recommendation(commands.Cog):
                 field_value = "{} followers".format(item[1]['followers']['total'])
                 embed.add_field(name=field_name, value=field_value, inline=False)
                 context["artist"].append(item[1]['id'])
-            await ctx.send(embed=embed)
+            context["embeds"].append((await ctx.send(embed=embed)).id)
         else:
-            await ctx.send("No artists matching '{}' found on Spotify.".format(query))
+            context["embeds"].append((await ctx.send("No artists matching '{}' found on Spotify.".format(query))).id)
 
         # Save context for later
-        await ctx.send("{0}: To recommend '{1}' as is, type only `rc!rec`.".format(ctx.author.mention, query))
+        msg = await ctx.send("{0}: To recommend '{1}' as is, type only `rc!rec`.".format(ctx.author.mention, query))
+        context["embeds"].append(msg.id)
         return context
 
     async def __add(self, ctx, mentions, name, description=""):
@@ -288,6 +299,7 @@ class Recommendation(commands.Cog):
             prev_ctx = self.__get_search_context(ctx.author).val()
             if prev_ctx and "query" in prev_ctx and len(prev_ctx['query']):
                 await self.__add(ctx, prev_ctx['mentions'] if "mentions" in prev_ctx else [], name=prev_ctx['query'])
+                await remove_multiple_messages(ctx, prev_ctx["embeds"])
             else:
                 await ctx.send("{}, please specify something to recommend.".format(ctx.author.mention))
 
@@ -296,6 +308,7 @@ class Recommendation(commands.Cog):
         """Select which item to recommend from results given by rc!recommend."""
         if len(args):
             prev_ctx = self.__get_search_context(ctx.author).val()
+
             if prev_ctx and args[0] in prev_ctx:
                 items = prev_ctx[args[0]]
                 index = int(args[1]) - 1
@@ -306,6 +319,8 @@ class Recommendation(commands.Cog):
                     spotify_uri = "spotify:{0}:{1}".format(args[0], item)
                     name, desc = self.spotify_rec.parse(spotify_uri, ctx.author.name)
                     await self.__add(ctx, mentions, name, desc)
+                    await remove_multiple_messages(ctx, prev_ctx["embeds"])
+                    self.__clear_search_context(ctx.author)
                 else:
                     await ctx.send("{0}: Index {1} is out of range.".format(ctx.author.mention, index + 1))
             elif is_int(args[0]):
@@ -314,9 +329,9 @@ class Recommendation(commands.Cog):
                 await ctx.send(msg)
             else:
                 await ctx.send("{}: Invalid search context, please try recommending again.".format(ctx.author.mention))
+                self.__clear_search_context(ctx.author)
         else:
             await ctx.send("{}: Incomplete command.".format(ctx.author.mention))
-        self.__clear_search_context(ctx.author)
 
     @commands.command(aliases=['l'])
     async def list(self, ctx):
