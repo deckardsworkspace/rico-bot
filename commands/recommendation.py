@@ -285,6 +285,7 @@ class Recommendation(commands.Cog):
                             await self.__add(ctx, mentions, name, desc)
                         except Exception as e:
                             await ctx.send("{0}: Error processing YouTube link. {1}".format(ctx.author.mention, e))
+                            await self.__add(ctx, mentions, "YouTube bookmark by {}".format(ctx.author.name), arg)
                     elif re.match(url_regex, arg):
                         # Generic link
                         await self.__add(ctx, mentions, "Bookmark by {}".format(ctx.author.name), arg)
