@@ -1,5 +1,5 @@
 import re
-from util import ellipsis_truncate
+from .string_util import ellipsis_truncate
 from .exception import *
 from urllib.parse import urlparse
 
