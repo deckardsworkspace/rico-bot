@@ -239,7 +239,7 @@ class Recommendation(commands.Cog):
         else:
             recipients = []
             for user in mentions:
-                recipients.append(user['name'])
+                recipients.append(user['mention'])
                 self.__add_recommendation_user(ctx.guild.id, user['id'], name, description)
             recipient = ", ".join(recipients)
 
