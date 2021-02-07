@@ -176,7 +176,7 @@ class Recommendation(commands.Cog):
         description = "To recommend a result, type `rc!recselect {} <index>`."
         results = self.spotify.search(query, limit=5, type='artist,album,track')
         context = {
-            "mentions": [{"id": user.id, "name": user.name} for user in ctx.message.mentions],
+            "mentions": [user.id for user in ctx.message.mentions],
             "query": query,
             "track": [],
             "album": [],
@@ -239,8 +239,8 @@ class Recommendation(commands.Cog):
         else:
             recipients = []
             for user in mentions:
-                recipients.append(user['mention'])
-                self.__add_recommendation_user(ctx.guild.id, user['id'], name, description)
+                recipients.append("<@{0}>".format(user))
+                self.__add_recommendation_user(ctx.guild.id, user, name, description)
             recipient = ", ".join(recipients)
 
         success = ":white_check_mark: {0} recommended '**{1}**' to {2}".format(ctx.author.mention, name, recipient)
@@ -260,7 +260,7 @@ class Recommendation(commands.Cog):
         """
         if len(args):
             non_links = []
-            mentions = [{"id": user.id, "name": user.name} for user in ctx.message.mentions]
+            mentions = [user.id for user in ctx.message.mentions]
 
             # Iterate through each argument, so we can add multiple tracks at once
             for arg in args:
