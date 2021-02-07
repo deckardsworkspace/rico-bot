@@ -1,4 +1,5 @@
 import re
+from util import ellipsis_truncate
 from .exception import *
 from urllib.parse import urlparse
 
@@ -44,5 +45,6 @@ class SpotifyRecommendation:
         if not result:
             raise SpotifyNotFoundError(entity_type, entity_id)
 
-        desc += "\nhttps://open.spotify.com/{0}/{1}\nAdded by {2}".format(entity_type, entity_id, recommender)
+        link = "\nhttps://open.spotify.com/{0}/{1}\nAdded by {2}".format(entity_type, entity_id, recommender)
+        desc = ellipsis_truncate(desc) + link
         return result['name'], desc

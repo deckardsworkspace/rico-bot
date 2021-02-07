@@ -59,13 +59,13 @@ class Recommendation(commands.Cog):
 
     def __add_recommendation(self, server_id, name, rec):
         self.db.child("recommendations").child(str(server_id)).child("server").push({
-            "name": name,
+            "name": ellipsis_truncate(name),
             "link": rec
         })
 
     def __add_recommendation_user(self, server_id, user_id, name, rec):
         self.db.child("recommendations").child(str(server_id)).child(str(user_id)).push({
-            "name": name,
+            "name": ellipsis_truncate(name),
             "link": rec
         })
 

@@ -2,6 +2,7 @@ import re
 import requests
 from urllib.parse import urlparse, parse_qs
 from .exception import YouTubeInvalidURLError
+from util import ellipsis_truncate
 
 
 def get_id_from_url(url):
@@ -46,7 +47,7 @@ class YouTubeRecommendation:
             r = requests.get("https://www.googleapis.com/youtube/v3/videos", params=params)
             snippet = r.json()['items'][0]['snippet']
             name = snippet['title']
-            desc = ("YouTube video by {0}\n"
+            desc = (ellipsis_truncate("YouTube video by {0}\n") +
                     "https://youtube.com/watch/{1}\n"
                     "Added by {2}").format(snippet['channelTitle'], video_id, recommender)
             return name, desc
