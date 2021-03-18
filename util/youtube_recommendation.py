@@ -46,10 +46,12 @@ class YouTubeRecommendation:
         try:
             r = requests.get("https://www.googleapis.com/youtube/v3/videos", params=params)
             snippet = r.json()['items'][0]['snippet']
-            name = snippet['title']
-            desc = (ellipsis_truncate("YouTube video by {0}\n") +
-                    "https://youtube.com/watch/{1}\n"
-                    "Added by {2}").format(snippet['channelTitle'], video_id, recommender)
-            return name, desc
+            return {
+                "name": snippet['title'],
+                "author": snippet['channelTitle'],
+                "type": "youtube-video",
+                "recommender": recommender,
+                "id": video_id
+            }
         except KeyError:
             raise YouTubeInvalidURLError(url)

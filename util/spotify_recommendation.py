@@ -29,22 +29,27 @@ class SpotifyRecommendation:
         entity_type = parsed_path[0]
         entity_id = parsed_path[1]
         result = None
-        desc = ""
+        author = ""
         if entity_type == 'album':
             result = self.spotify.album(entity_id)
-            desc = "Spotify album by {}".format(result['artists'][0]['name'])
+            author = result['artists'][0]['name']
         elif entity_type == 'artist':
             result = self.spotify.artist(entity_id)
-            desc = "Spotify artist"
         elif entity_type == 'track':
             result = self.spotify.track(entity_id)
-            desc = "Spotify track by {}".format(result['artists'][0]['name'])
+            author = result['artists'][0]['name']
         elif entity_type == 'playlist':
             result = self.spotify.playlist(entity_id)
-            desc = "Spotify playlist by {}".format(self.spotify.user(result['owner']['id'])['display_name'])
+            author = self.spotify.user(result['owner']['id'])['display_name']
         if not result:
             raise SpotifyNotFoundError(entity_type, entity_id)
 
-        link = "\nhttps://open.spotify.com/{0}/{1}\nAdded by {2}".format(entity_type, entity_id, recommender)
-        desc = ellipsis_truncate(desc) + link
-        return result['name'], desc
+        ret = {
+            "name": ellipsis_truncate(result['name']),
+            "type": "spotify-{}".format(entity_type),
+            "recommender": recommender,
+            "id": entity_id
+        }
+        if entity_type != 'artist':
+            ret["author"] = author
+        return ret

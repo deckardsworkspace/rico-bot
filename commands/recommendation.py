@@ -57,17 +57,8 @@ class Recommendation(commands.Cog):
         self.spotify_rec = SpotifyRecommendation(spotify)
         self.youtube_rec = YouTubeRecommendation(youtube_api_key)
 
-    def __add_recommendation(self, server_id, name, rec):
-        self.db.child("recommendations").child(str(server_id)).child("server").push({
-            "name": ellipsis_truncate(name),
-            "link": rec
-        })
-
-    def __add_recommendation_user(self, server_id, user_id, name, rec):
-        self.db.child("recommendations").child(str(server_id)).child(str(user_id)).push({
-            "name": ellipsis_truncate(name),
-            "link": rec
-        })
+    def __add_recommendation(self, entity_id, rec, server=False):
+        self.db.child("recommendations").child("server" if server else "user").child(str(entity_id)).push(rec)
 
     async def __create_remove_dialog(self, ctx, server=False, field_name=None, field_value=None):
         is_clearing = not field_name and not field_value
@@ -109,12 +100,13 @@ class Recommendation(commands.Cog):
             await ctx.send("{}: Timed out, not removing.".format(ctx.author.mention))
         return False
 
-    def __get_raw_recommendations(self, guild_id, user_id):
-        return self.db.child("recommendations").child(str(guild_id)).child(user_id)
+    def __get_raw_recommendations(self, entity_id, server=False):
+        return self.db.child("recommendations").child("server" if server else "user").child(str(entity_id))
 
-    async def __get_recommendations(self, ctx, user_id, name, name_if_empty, image):
+    async def __get_recommendations(self, ctx, name, image, server=False, entity_id=""):
         # Get all recommendations for user/server
-        rec_list = self.__get_raw_recommendations(ctx.guild.id, user_id).get().val()
+        entity = ctx.guild.id if server else entity_id
+        rec_list = self.__get_raw_recommendations(entity, server=server).get().val()
         index = 1
 
         if rec_list and len(rec_list.keys()):
@@ -129,28 +121,37 @@ class Recommendation(commands.Cog):
                 embed.set_thumbnail(url=image)
                 for key in chunk:
                     item = rec_list[key]
+                    desc = ""
+
+                    if "author" in item:
+                        desc += "by {}\n".format(item['author'])
+                    if "id" in item:
+                        desc += "{}\n".format(reconstruct_url(item['type'], item['id']))
+
+                    desc += "{0}\nAdded by {1}".format(item['type'], item['recommender'])
                     field_name = "{0} - {1}".format(index, item['name'])
-                    embed.add_field(name=field_name, value=item['link'] or "No link available", inline=False)
+                    embed.add_field(name=field_name, value=desc, inline=False)
                     index += 1
                 embeds.append(embed)
 
             await paginator.run(embeds)
         else:
-            await ctx.send("{} recommendation list is currently empty.".format(name_if_empty))
+            await ctx.send("Recommendation list for {} is currently empty.".format(name))
 
     async def __remove_recommendation(self, ctx, index, server=False):
         # Check if user has recommendations and if requested index is in range
-        user_id = "server" if server else ctx.author.id
+        entity_id = ctx.guild.id if server else ctx.author.id
         owner = "the server's" if server else "{}'s".format(ctx.author.mention)
-        rec_list = self.__get_raw_recommendations(ctx.guild.id, user_id).get().val()
+        rec_list = self.__get_raw_recommendations(entity_id, server=server).get().val()
 
         if rec_list and len(rec_list):
             if len(rec_list) >= index:
                 index = list(rec_list.keys())[index - 1]
                 rec_name = rec_list[index]['name']
+                recommender = "Added by {}".format(rec_list[index]['recommender'])
 
-                if await self.__create_remove_dialog(ctx, server, rec_name, rec_list[index]['link']):
-                    self.__get_raw_recommendations(ctx.guild.id, user_id).child(index).remove()
+                if await self.__create_remove_dialog(ctx, server, rec_name, recommender):
+                    self.__get_raw_recommendations(entity_id, server=server).child(index).remove()
                     await ctx.send(":white_check_mark: Removed **'{0}'** from {1} list".format(rec_name, owner))
 
             else:
@@ -228,22 +229,19 @@ class Recommendation(commands.Cog):
         context["embeds"].append(msg.id)
         return context
 
-    async def __add(self, ctx, mentions, name, description=""):
+    async def __add(self, ctx, mentions, rec):
         """Add recommendation to list. If uri is specified, recommendation details are pulled from Spotify."""
-        if not len(description):
-            description = "Added by {}".format(ctx.author.name)
-
         if not len(mentions):
             recipient = "the server"
-            self.__add_recommendation(ctx.guild.id, name, description)
+            self.__add_recommendation(ctx.guild.id, rec, server=True)
         else:
             recipients = []
             for user in mentions:
                 recipients.append("<@{0}>".format(user))
-                self.__add_recommendation_user(ctx.guild.id, user, name, description)
+                self.__add_recommendation(user, rec, server=False)
             recipient = ", ".join(recipients)
 
-        success = ":white_check_mark: {0} recommended '**{1}**' to {2}".format(ctx.author.mention, name, recipient)
+        success = ":white_check_mark: {0} recommended '**{1}**' to {2}".format(ctx.author.mention, rec['name'], recipient)
         await ctx.send(success)
 
     @commands.command(aliases=['r', 'add', 'rec'])
@@ -269,8 +267,7 @@ class Recommendation(commands.Cog):
                     # Check if we are dealing with a Spotify link
                     if self.spotify_rec.match(arg):
                         try:
-                            name, desc = self.spotify_rec.parse(arg, ctx.author.name)
-                            await self.__add(ctx, mentions, name, desc)
+                            await self.__add(ctx, mentions, self.spotify_rec.parse(arg, ctx.author.name))
                         except SpotifyException:
                             err = "{}: Spotify link detected, but it doesn't point to a valid Spotify item.".format(
                                 ctx.author.mention
@@ -281,14 +278,21 @@ class Recommendation(commands.Cog):
                     # Check if we are dealing with a YouTube video link
                     elif self.youtube_rec.match(arg):
                         try:
-                            name, desc = self.youtube_rec.parse(arg, ctx.author.name)
-                            await self.__add(ctx, mentions, name, desc)
+                            await self.__add(ctx, mentions, self.youtube_rec.parse(arg, ctx.author.name))
                         except Exception as e:
                             await ctx.send("{0}: Error processing YouTube link. {1}".format(ctx.author.mention, e))
-                            await self.__add(ctx, mentions, "YouTube bookmark by {}".format(ctx.author.name), arg)
+                            await self.__add(ctx, mentions, {
+                                "name": arg,
+                                "recommender": ctx.author.name,
+                                "type": "bookmark",
+                            })
                     elif re.match(url_regex, arg):
                         # Generic link
-                        await self.__add(ctx, mentions, "Bookmark by {}".format(ctx.author.name), arg)
+                        await self.__add(ctx, mentions, {
+                            "name": arg,
+                            "recommender": ctx.author.name,
+                            "type": "bookmark",
+                        })
                     else:
                         non_links.append(arg)
 
@@ -299,7 +303,11 @@ class Recommendation(commands.Cog):
             # Check for previous context
             prev_ctx = self.__get_search_context(ctx.author).val()
             if prev_ctx and "query" in prev_ctx and len(prev_ctx['query']):
-                await self.__add(ctx, prev_ctx['mentions'] if "mentions" in prev_ctx else [], name=prev_ctx['query'])
+                await self.__add(ctx, prev_ctx['mentions'] if "mentions" in prev_ctx else [], {
+                    "name": prev_ctx['query'],
+                    "recommender": ctx.author.name,
+                    "type": "text",
+                })
                 await remove_multiple_messages(ctx, prev_ctx["embeds"])
             else:
                 await ctx.send("{}, please specify something to recommend.".format(ctx.author.mention))
@@ -318,8 +326,7 @@ class Recommendation(commands.Cog):
                     item = items[index]
                     mentions = prev_ctx['mentions'] if "mentions" in prev_ctx else []
                     spotify_uri = "spotify:{0}:{1}".format(args[0], item)
-                    name, desc = self.spotify_rec.parse(spotify_uri, ctx.author.name)
-                    await self.__add(ctx, mentions, name, desc)
+                    await self.__add(ctx, mentions, self.spotify_rec.parse(spotify_uri, ctx.author.name))
                     await remove_multiple_messages(ctx, prev_ctx["embeds"])
                     self.__clear_search_context(ctx.author)
                 else:
@@ -343,21 +350,21 @@ class Recommendation(commands.Cog):
         e.g. rc!list @someone
         """
         if not len(ctx.message.mentions):
-            await self.__get_recommendations(ctx, str(ctx.author.id), ctx.author.name, "Your", ctx.author.avatar_url)
+            await self.__get_recommendations(ctx, ctx.author.name, ctx.author.avatar_url, server=False, entity_id=str(ctx.author.id))
         else:
             user = ctx.message.mentions[0]
-            await self.__get_recommendations(ctx, str(user.id), user.name, "{}'s".format(user.name), user.avatar_url)
+            await self.__get_recommendations(ctx, user.name, user.avatar_url, server=False, entity_id=str(user.id))
 
     @commands.command(aliases=['ls'])
     async def listsvr(self, ctx):
         """List stuff recommended to everyone on the server."""
-        await self.__get_recommendations(ctx, "server", ctx.guild.name, "This server's", ctx.guild.icon_url)
+        await self.__get_recommendations(ctx, ctx.guild.name, ctx.guild.icon_url, server=True)
 
     @commands.command(aliases=['clr', 'c'])
     async def clear(self, ctx):
         """Clear your recommendations."""
         if await self.__create_remove_dialog(ctx, server=False):
-            self.db.child("recommendations").child(str(ctx.guild.id)).child(str(ctx.author.id)).remove()
+            self.db.child("recommendations").child("user").child(str(ctx.author.id)).remove()
             await ctx.send("{}: Cleared your recommendations.".format(ctx.author.mention))
 
     @commands.command(aliases=['clrsvr', 'cs'])
@@ -368,7 +375,7 @@ class Recommendation(commands.Cog):
         """
         if ctx.author.guild_permissions.administrator:
             if await self.__create_remove_dialog(ctx, server=True):
-                self.db.child("recommendations").child(str(ctx.guild.id)).child("server").remove()
+                self.db.child("recommendations").child("server").child(str(ctx.guild.id)).remove()
                 await ctx.send("{}: Cleared server recommendations.".format(ctx.author.mention))
         else:
             await ctx.send("{}, only administrators can clear server recommendations.".format(ctx.author.mention))
