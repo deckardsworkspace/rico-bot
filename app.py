@@ -48,7 +48,7 @@ async def update_presence():
     num_users = 0
     for guild in client.guilds:
         num_users += guild.member_count - 1
-    status = '{0} people @ {1} servers | rc!help'.format(num_users, num_guilds)
+    status = '{0} ppl in {1} servers | rc!help'.format(num_users, num_guilds)
     activity = Activity(name=status, type=ActivityType.listening)
     await client.change_presence(activity=activity)
 
