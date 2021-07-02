@@ -355,6 +355,7 @@ class Recommendation(commands.Cog):
             user = ctx.message.mentions[0]
             await self.__get_recommendations(ctx, user.name, user.avatar_url, server=False, entity_id=str(user.id))
 
+    @commands.guild_only()
     @commands.command(aliases=['ls'])
     async def listsvr(self, ctx):
         """List stuff recommended to everyone on the server."""
@@ -367,6 +368,7 @@ class Recommendation(commands.Cog):
             self.db.child("recommendations").child("user").child(str(ctx.author.id)).remove()
             await ctx.send("{}: Cleared your recommendations.".format(ctx.author.mention))
 
+    @commands.guild_only()
     @commands.command(aliases=['clrsvr', 'cs'])
     async def clearsvr(self, ctx):
         """
@@ -392,6 +394,7 @@ class Recommendation(commands.Cog):
         else:
             await ctx.send("{}: Invalid or missing index.".format(ctx.author.mention))
 
+    @commands.guild_only()
     @commands.command(aliases=['rms', 'dels'])
     async def removesvr(self, ctx, *args):
         """
