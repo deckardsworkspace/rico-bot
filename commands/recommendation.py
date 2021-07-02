@@ -244,6 +244,7 @@ class Recommendation(commands.Cog):
         success = ":white_check_mark: {0} recommended '**{1}**' to {2}".format(ctx.author.mention, rec['name'], recipient)
         await ctx.send(success)
 
+    @commands.guild_only()
     @commands.command(aliases=['r', 'add', 'rec'])
     async def recommend(self, ctx, *args):
         """
@@ -312,6 +313,7 @@ class Recommendation(commands.Cog):
             else:
                 await ctx.send("{}, please specify something to recommend.".format(ctx.author.mention))
 
+    @commands.guild_only()
     @commands.command(aliases=['recsel', 'rs'])
     async def recselect(self, ctx, *args):
         """Select which item to recommend from results given by rc!recommend."""
