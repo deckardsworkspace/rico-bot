@@ -1,4 +1,4 @@
-from .spotify_client import create_spotify_client as Spotify
+from .spotify_client import Spotify
 from .spotify_recommendation import SpotifyRecommendation
 from .exception import *
 from .youtube_recommendation import YouTubeRecommendation

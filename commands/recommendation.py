@@ -53,7 +53,7 @@ class Recommendation(commands.Cog):
     def __init__(self, client, db, spotify, youtube_api_key):
         self.client = client
         self.db = db
-        self.spotify = spotify
+        self.spotify = spotify.get_client()
         self.spotify_rec = SpotifyRecommendation(spotify)
         self.youtube_rec = YouTubeRecommendation(youtube_api_key)
 

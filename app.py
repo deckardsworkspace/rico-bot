@@ -40,4 +40,5 @@ async def update_presence_before():
 
 update_presence.start()
 client.add_cog(commands.Recommendation(client, db, spotify, get_var('FIREBASE_KEY')))
+client.add_cog(commands.Export(client, db, spotify))
 client.run(get_var('DISCORD_TOKEN'))
