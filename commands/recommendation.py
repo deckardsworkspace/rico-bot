@@ -54,7 +54,7 @@ class Recommendation(commands.Cog):
         self.client = client
         self.db = db
         self.spotify = spotify.get_client()
-        self.spotify_rec = SpotifyRecommendation(spotify)
+        self.spotify_rec = SpotifyRecommendation(self.spotify)
         self.youtube_rec = YouTubeRecommendation(youtube_api_key)
 
     def __add_recommendation(self, entity_id, rec, server=False):
