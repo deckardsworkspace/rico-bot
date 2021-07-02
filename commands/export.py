@@ -13,10 +13,10 @@ class Export(commands.Cog):
         self.spotify = spotify
 
     async def __cancel_auth(self, ctx, message):
-        await ctx.author.send(message)
+        await ctx.send(message)
         self.db.child("spotify_auth").child(str(ctx.author.id)).remove()
 
-    @commands.command(name="startauth", aliases=["sa"])
+    @commands.command(name="auth", aliases=["startauth", "sa"])
     async def authenticate(self, ctx):
         """
         Authenticate Rico with your Spotify account, so you can export your recommended songs.
@@ -61,7 +61,7 @@ class Export(commands.Cog):
         # Get verifier and state
         auth_data = self.db.child("spotify_auth").child(str(ctx.author.id)).get().val()
         if "verifier" not in auth_data or "state" not in auth_data:
-            await self.__cancel_auth(ctx, "Invalid or no authentication data found. Maybe try `rc!startauth` again?")
+            await self.__cancel_auth(ctx, "Invalid or no authentication data found. Maybe try `rc!auth` again?")
             return
         verifier = auth_data['verifier']
         state = auth_data['state']
@@ -106,7 +106,7 @@ class Export(commands.Cog):
 
         # Exit if not authenticated
         if not token_data or "access_token" not in token_data:
-            await ctx.send("You aren't authenticated with Spotify yet. Try `rc!startauth`.")
+            await ctx.send("You aren't authenticated with Spotify yet. Try `rc!auth`.")
 
         # Get all Spotify tracks recommended to user
         recs = self.db.child("recommendations").child("user").child(str(ctx.author.id)).get().val()
