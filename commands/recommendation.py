@@ -136,7 +136,7 @@ class Recommendation(commands.Cog):
 
             await paginator.run(embeds)
         else:
-            await ctx.send("Recommendation list for {} is currently empty.".format(name))
+            await ctx.reply("Recommendation list for {} is currently empty.".format(name))
 
     async def __remove_recommendation(self, ctx, index, server=False):
         # Check if user has recommendations and if requested index is in range
@@ -152,12 +152,12 @@ class Recommendation(commands.Cog):
 
                 if await self.__create_remove_dialog(ctx, server, rec_name, recommender):
                     self.__get_raw_recommendations(entity_id, server=server).child(index).remove()
-                    await ctx.send(":white_check_mark: Removed **'{0}'** from {1} list".format(rec_name, owner))
+                    await ctx.reply(":white_check_mark: Removed **'{0}'** from {1} list".format(rec_name, owner))
 
             else:
-                await ctx.send("{0}: Index {1} is out of range.".format(ctx.author.mention, index))
+                await ctx.reply("Index {} is out of range.".format(index))
         else:
-            await ctx.send("{0}: Nothing found in {1} list.".format(ctx.author.mention, owner))
+            await ctx.reply("Nothing found in {} list.".format(owner))
 
     def __get_search_context(self, user):
         return self.db.child("contexts").child(str(user.id)).get()
@@ -225,7 +225,7 @@ class Recommendation(commands.Cog):
             context["embeds"].append((await ctx.send("No artists matching '{}' found on Spotify.".format(query))).id)
 
         # Save context for later
-        msg = await ctx.send("{0}: To recommend '{1}' as is, type only `rc!rec`.".format(ctx.author.mention, query))
+        msg = await ctx.reply("To recommend '{}' as text, type `rc!rec`.".format(query))
         context["embeds"].append(msg.id)
         return context
 
@@ -241,8 +241,8 @@ class Recommendation(commands.Cog):
                 self.__add_recommendation(user, rec, server=False)
             recipient = ", ".join(recipients)
 
-        success = ":white_check_mark: {0} recommended '**{1}**' to {2}".format(ctx.author.mention, rec['name'], recipient)
-        await ctx.send(success)
+        success = ":white_check_mark: Recommended '**{0}**' to {1}".format(rec['name'], recipient)
+        await ctx.reply(success)
 
     @commands.guild_only()
     @commands.command(aliases=['r', 'add', 'rec'])
@@ -270,18 +270,15 @@ class Recommendation(commands.Cog):
                         try:
                             await self.__add(ctx, mentions, self.spotify_rec.parse(arg, ctx.author.name))
                         except SpotifyException:
-                            err = "{}: Spotify link detected, but it doesn't point to a valid Spotify item.".format(
-                                ctx.author.mention
-                            )
-                            await ctx.send(err)
+                            await ctx.reply("Spotify link doesn't point to a valid Spotify item.")
                         except (SpotifyInvalidURLError, SpotifyNotFoundError) as e:
-                            await ctx.send("{0}: {1}".format(ctx.author.mention, e))
+                            await ctx.reply(e)
                     # Check if we are dealing with a YouTube video link
                     elif self.youtube_rec.match(arg):
                         try:
                             await self.__add(ctx, mentions, self.youtube_rec.parse(arg, ctx.author.name))
                         except Exception as e:
-                            await ctx.send("{0}: Error processing YouTube link. {1}".format(ctx.author.mention, e))
+                            await ctx.reply("Error processing YouTube link: {}".format(e))
                             await self.__add(ctx, mentions, {
                                 "name": arg,
                                 "recommender": ctx.author.name,
@@ -311,10 +308,10 @@ class Recommendation(commands.Cog):
                 })
                 await remove_multiple_messages(ctx, prev_ctx["embeds"])
             else:
-                await ctx.send("{}, please specify something to recommend.".format(ctx.author.mention))
+                await ctx.reply("Please specify something to recommend.")
 
     @commands.guild_only()
-    @commands.command(aliases=['recsel', 'rs'])
+    @commands.command(name='select', aliases=['recselect', 'recsel', 'rs'])
     async def recselect(self, ctx, *args):
         """Select which item to recommend from results given by rc!recommend."""
         if len(args):
@@ -332,16 +329,17 @@ class Recommendation(commands.Cog):
                     await remove_multiple_messages(ctx, prev_ctx["embeds"])
                     self.__clear_search_context(ctx.author)
                 else:
-                    await ctx.send("{0}: Index {1} is out of range.".format(ctx.author.mention, index + 1))
+                    await ctx.reply("Index {} is out of range.".format(index + 1))
             elif is_int(args[0]):
-                msg = "{0}: Seems like you forgot to specify recommendation type! ".format(ctx.author.mention)
-                msg += "Try again like this: `rc!{0} track {1}`".format(ctx.command.name, args[0])
-                await ctx.send(msg)
+                await ctx.reply('\n'.join([
+                    "Seems like you forgot to specify recommendation type!",
+                    "Try again like this: `rc!{0} track {1}`".format(ctx.invoked_with, args[0])
+                ]))
             else:
-                await ctx.send("{}: Invalid search context, please try recommending again.".format(ctx.author.mention))
+                await ctx.reply("Invalid search context, please try recommending again.")
                 self.__clear_search_context(ctx.author)
         else:
-            await ctx.send("{}: Incomplete command.".format(ctx.author.mention))
+            await ctx.reply("Incomplete command.")
 
     @commands.command(aliases=['l'])
     async def list(self, ctx):
@@ -368,7 +366,7 @@ class Recommendation(commands.Cog):
         """Clear your recommendations."""
         if await self.__create_remove_dialog(ctx, server=False):
             self.db.child("recommendations").child("user").child(str(ctx.author.id)).remove()
-            await ctx.send("{}: Cleared your recommendations.".format(ctx.author.mention))
+            await ctx.reply("Cleared your recommendations.")
 
     @commands.guild_only()
     @commands.command(aliases=['clrsvr', 'cs'])
@@ -380,9 +378,9 @@ class Recommendation(commands.Cog):
         if ctx.author.guild_permissions.administrator:
             if await self.__create_remove_dialog(ctx, server=True):
                 self.db.child("recommendations").child("server").child(str(ctx.guild.id)).remove()
-                await ctx.send("{}: Cleared server recommendations.".format(ctx.author.mention))
+                await ctx.reply("Cleared server recommendations.")
         else:
-            await ctx.send("{}, only administrators can clear server recommendations.".format(ctx.author.mention))
+            await ctx.reply("Only administrators can clear server recommendations.")
 
     @commands.command(aliases=['rm', 'del'])
     async def remove(self, ctx, *args):
@@ -394,7 +392,7 @@ class Recommendation(commands.Cog):
         if len(args) and is_int(args[0]):
             await self.__remove_recommendation(ctx, int(args[0]))
         else:
-            await ctx.send("{}: Invalid or missing index.".format(ctx.author.mention))
+            await ctx.reply("Invalid or missing index.")
 
     @commands.guild_only()
     @commands.command(aliases=['rms', 'dels'])
@@ -408,6 +406,6 @@ class Recommendation(commands.Cog):
             if len(args) and is_int(args[0]):
                 await self.__remove_recommendation(ctx, int(args[0]), server=True)
             else:
-                await ctx.send("{}: Invalid or missing index.".format(ctx.author.mention))
+                await ctx.reply("Invalid or missing index.")
         else:
-            await ctx.send("{}, only administrators can remove server recommendations.".format(ctx.author.mention))
+            await ctx.reply("Only administrators can remove server recommendations.")

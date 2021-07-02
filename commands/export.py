@@ -13,7 +13,7 @@ class Export(commands.Cog):
         self.spotify = spotify
 
     async def __cancel_auth(self, ctx, message):
-        await ctx.send(message)
+        await ctx.reply(message)
         self.db.child("spotify_auth").child(str(ctx.author.id)).remove()
 
     @commands.command(name="auth", aliases=["startauth", "sa"])
@@ -24,7 +24,7 @@ class Export(commands.Cog):
         # Check if already authenticated
         auth_data = self.db.child("spotify_auth").child(str(ctx.author.id)).get().val()
         if auth_data and "refresh_token" in auth_data:
-            await ctx.send("You're already authenticated with Spotify! To deauthenticate, DM me `rc!deauth`.")
+            await ctx.reply("You're already authenticated with Spotify! To deauthenticate, DM me `rc!deauth`.")
             return
 
         # Create auth URL
@@ -37,12 +37,13 @@ class Export(commands.Cog):
         })
 
         # Send direct message to user
-        msg = '\n'.join([
+        msg = '\n\n'.join([
             "Hi! To begin exporting your Spotify recommendations,",
             "1. Open {} in your browser to authenticate with Spotify.".format(auth_url),
             "2. You'll be given a random token. Send it here and you're done!"
         ])
         await ctx.author.send(msg)
+        await ctx.reply('Sent you a DM!')
 
     @commands.dm_only()
     @commands.command(name="deauth", aliases=["da"])
@@ -74,7 +75,7 @@ class Export(commands.Cog):
         if "error" in auth_result:
             cause = auth_result['error']
             if cause == "access_denied":
-                await self.__cancel_auth(ctx, "You denied access to your Spotify playlists :(")
+                await self.__cancel_auth(ctx, "You denied access to your Spotify playlists :pensive:")
             else:
                 await self.__cancel_auth(ctx, "Error while authenticating: {}. Please try again.".format(cause))
             return
@@ -93,7 +94,7 @@ class Export(commands.Cog):
             "expires_in": expires_in,
             "refresh_token": refresh_token
         })
-        await ctx.author.send("Authenticated! You may now use the `rc!dump` command to export recommendations.")
+        await ctx.author.send("Authenticated! :sparkles: You may now use the `rc!dump` command to export tracks.")
 
     @commands.command(name="dump")
     async def dump_spotify(self, ctx):
@@ -106,7 +107,7 @@ class Export(commands.Cog):
 
         # Exit if not authenticated
         if not token_data or "access_token" not in token_data:
-            await ctx.send("You aren't authenticated with Spotify yet. Try `rc!auth`.")
+            await ctx.reply("You aren't authenticated with Spotify yet. Try `rc!auth`.")
 
         # Get all Spotify tracks recommended to user
         recs = self.db.child("recommendations").child("user").child(str(ctx.author.id)).get().val()
@@ -123,10 +124,10 @@ class Export(commands.Cog):
                 result = self.spotify.create_playlist(token_data, ctx.author.name, tracks)
                 access_token, expires_in, refresh_token, playlist_name, playlist_id = result
             except requests.exceptions.HTTPError as e:
-                await ctx.send("Error communicating with Spotify: `{}`. Please try again later.".format(e))
+                await ctx.reply("Error communicating with Spotify: `{}`. Please try again later.".format(e))
                 return
             except RateLimitException:
-                await ctx.send("You are being rate-limited. Please try again later.")
+                await ctx.reply(":stop_sign: You are being rate-limited. Please try again later.")
                 return
 
             # Store new access tokens
@@ -150,10 +151,10 @@ class Export(commands.Cog):
                           color=0x20ce09)
             embed.add_field(name=playlist_name, value=desc)
             embed.set_thumbnail(url=icon)
-            await ctx.send(embed=embed)
+            await ctx.reply(embed=embed)
 
             # Delete tracks from rec list
             for item in to_remove:
                 self.db.child("recommendations").child("user").child(str(ctx.author.id)).child(item).remove()
         else:
-            await ctx.send("None of your recommendations are Spotify tracks, sorry :(")
+            await ctx.reply("None of your recommendations are Spotify tracks, sorry :pensive:")
