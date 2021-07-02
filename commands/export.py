@@ -111,10 +111,11 @@ class Export(commands.Cog):
         # Get all Spotify tracks recommended to user
         recs = self.db.child("recommendations").child("user").child(str(ctx.author.id)).get().val()
         tracks = []
+        to_remove = []
         for index, item in recs.items():
             if "id" in item and item['type'] == "spotify-track":
                 tracks.append("spotify:track:{}".format(item['id']))
-                self.db.child("recommendations").child("user").child(str(ctx.author.id)).child(index).remove()
+                to_remove.append(index)
 
         # Add to playlist
         if len(tracks):
@@ -150,5 +151,9 @@ class Export(commands.Cog):
             embed.add_field(name=playlist_name, value=desc)
             embed.set_thumbnail(url=icon)
             await ctx.send(embed=embed)
+
+            # Delete tracks from rec list
+            for item in to_remove:
+                self.db.child("recommendations").child("user").child(str(ctx.author.id)).child(item).remove()
         else:
             await ctx.send("None of your recommendations are Spotify tracks, sorry :(")
