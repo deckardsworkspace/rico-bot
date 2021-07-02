@@ -104,6 +104,10 @@ class Export(commands.Cog):
         # Get auth data
         token_data = self.db.child("spotify_auth").child(str(ctx.author.id)).get().val()
 
+        # Exit if not authenticated
+        if not token_data or "access_token" not in token_data:
+            await ctx.send("You aren't authenticated with Spotify yet. Try `rc!startauth`.")
+
         # Get all Spotify tracks recommended to user
         recs = self.db.child("recommendations").child("user").child(str(ctx.author.id)).get().val()
         tracks = []
