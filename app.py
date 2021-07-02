@@ -1,10 +1,10 @@
+import pyrebase
+import commands
 from discord import Activity, ActivityType
-from discord.ext.commands import Bot
+from discord.ext.commands import Bot, errors
 from discord.ext.tasks import loop
 from config import get_var, get_pyrebase_config
 from util import Spotify
-import pyrebase
-import commands
 
 firebase = pyrebase.initialize_app(get_pyrebase_config())
 auth = firebase.auth()
@@ -23,8 +23,20 @@ async def on_message(message):
     # Ignore messages sent by this bot
     if message.author == client.user:
         return
-
     await client.process_commands(message)
+
+
+@client.event
+async def on_command_error(ctx, error):
+    if type(error) in [errors.PrivateMessageOnly, errors.NoPrivateMessage]:
+        await ctx.send('{}: {}'.format(ctx.author.mention, str(error)))
+        await ctx.message.delete(delay=5.0)
+    else:
+        await ctx.send('\n'.join([
+            '{}: Error encountered while executing command {}.'.format(ctx.author.mention, ctx.invoked_with),
+            'Error `{}`: `{}`'.format(type(error).__name__, str(error)),
+            '\nPlease message NathanPrescott#3405 with this error for assistance.'
+        ]))
 
 
 @loop(seconds=120)
