@@ -111,9 +111,10 @@ class Export(commands.Cog):
         # Get all Spotify tracks recommended to user
         recs = self.db.child("recommendations").child("user").child(str(ctx.author.id)).get().val()
         tracks = []
-        for _, item in recs.items():
+        for index, item in recs.items():
             if "id" in item and item['type'] == "spotify-track":
                 tracks.append("spotify:track:{}".format(item['id']))
+                self.db.child("recommendations").child("user").child(str(ctx.author.id)).child(index).remove()
 
         # Add to playlist
         if len(tracks):
@@ -139,10 +140,14 @@ class Export(commands.Cog):
             icon = self.spotify.get_playlist_cover(playlist_id, default=ctx.author.avatar_url)
 
             # Link to new playlist
+            desc = '\n'.join([
+                "https://open.spotify.com/playlist/{}".format(playlist_id),
+                "Added to your Spotify library"
+            ])
             embed = Embed(title="Playlist created",
-                          description="{} track(s)".format(len(tracks)),
+                          description="{} tracks moved from your list to Spotify".format(len(tracks)),
                           color=0x20ce09)
-            embed.add_field(name=playlist_name, value="https://open.spotify.com/playlist/{}".format(playlist_id))
+            embed.add_field(name=playlist_name, value=desc)
             embed.set_thumbnail(url=icon)
             await ctx.send(embed=embed)
         else:
