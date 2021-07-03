@@ -11,6 +11,7 @@ auth = firebase.auth()
 db = firebase.database()
 spotify = Spotify()
 client = Bot(command_prefix='rc!')
+status_guilds = False
 
 
 @client.event
@@ -43,14 +44,20 @@ async def on_command_error(ctx, error):
 
 @loop(seconds=120)
 async def update_presence():
-    # Count users
-    num_guilds = len(client.guilds)
-    num_users = 0
-    for guild in client.guilds:
-        num_users += guild.member_count - 1
-    status = '{0} ppl in {1} servers | rc!help'.format(num_users, num_guilds)
+    global status_guilds
+
+    status_template = "{0} {1} | rc!help"
+    if status_guilds:
+        status = status_template.format(len(client.guilds), "servers")
+    else:
+        num_users = 0
+        for guild in client.guilds:
+            num_users += guild.member_count - 1
+        status = status_template.format(num_users, "users")
+
     activity = Activity(name=status, type=ActivityType.listening)
     await client.change_presence(activity=activity)
+    status_guilds = not status_guilds
 
 
 @update_presence.before_loop
