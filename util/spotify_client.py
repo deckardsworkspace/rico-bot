@@ -20,7 +20,7 @@ def get_chunks(lst):
 
 class Spotify:
     def __init__(self):
-        self.redirect_uri = "https://rico.jared.gq/spotify_auth"
+        self.redirect_uri = "https://rico.dantis.me/spotify_auth"
         self.client_id = get_var("SPOTIFY_ID")
         client_secret = get_var("SPOTIFY_SECRET")
         auth_manager = SpotifyClientCredentials(client_id=self.client_id, client_secret=client_secret)
