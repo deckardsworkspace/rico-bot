@@ -1,8 +1,8 @@
 import pyrebase
 import commands
-from discord import Activity, ActivityType
-from discord.ext.commands import Bot, errors, CommandNotFound
-from discord.ext.tasks import loop
+from nextcord import Activity, ActivityType
+from nextcord.ext.commands import Bot, errors, CommandNotFound
+from nextcord.ext.tasks import loop
 from config import get_var, get_pyrebase_config
 from util import Spotify
 

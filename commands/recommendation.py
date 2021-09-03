@@ -1,5 +1,5 @@
-from discord.ext import commands
-from discord import Embed
+from nextcord.ext import commands
+from nextcord import Embed
 from math import floor, ceil
 from itertools import islice
 from DiscordUtils.Pagination import AutoEmbedPaginator

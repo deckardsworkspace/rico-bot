@@ -1,8 +1,8 @@
 import base64
 import json
 import requests.exceptions
-from discord import Embed
-from discord.ext import commands
+from nextcord import Embed
+from nextcord.ext import commands
 from ratelimit import RateLimitException
 
 
