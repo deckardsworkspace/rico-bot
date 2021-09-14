@@ -38,7 +38,7 @@ async def on_command_error(ctx, error):
         await ctx.reply('\n'.join([
             'Error encountered while executing command {}.'.format(ctx.author.mention, ctx.invoked_with),
             '`{}`: `{}`'.format(type(error).__name__, str(error)),
-            '\nPlease message NathanPrescott#3405 with this error for assistance.'
+            '\nPlease report bugs to the official support server at https://discord.gg/njtK9G6QRG'
         ]))
 
 
