@@ -139,7 +139,7 @@ class Export(commands.Cog):
                 })
 
             # Get playlist art
-            icon = self.spotify.get_playlist_cover(playlist_id, default=ctx.author.avatar_url)
+            icon = self.spotify.get_playlist_cover(playlist_id, default=ctx.author.avatar.url)
 
             # Link to new playlist
             desc = '\n'.join([

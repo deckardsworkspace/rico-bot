@@ -71,7 +71,7 @@ class Recommendation(commands.Cog):
         embed = Embed(title=title,
                       description="React :thumbsup: within the next 10 sec to confirm. This action is irreversible!",
                       color=0xff6600)
-        embed.set_thumbnail(url=ctx.guild.icon_url if server else ctx.author.avatar_url)
+        embed.set_thumbnail(url=ctx.guild.icon_url if server else ctx.author.avatar.url)
         if not is_clearing:
             embed.add_field(name=field_name, value=field_value)
         dialog = await ctx.send(embed=embed)
@@ -350,10 +350,10 @@ class Recommendation(commands.Cog):
         e.g. rc!list @someone
         """
         if not len(ctx.message.mentions):
-            await self.__get_recommendations(ctx, ctx.author.name, ctx.author.avatar_url, server=False, entity_id=str(ctx.author.id))
+            await self.__get_recommendations(ctx, ctx.author.name, ctx.author.avatar.url, server=False, entity_id=str(ctx.author.id))
         else:
             user = ctx.message.mentions[0]
-            await self.__get_recommendations(ctx, user.name, user.avatar_url, server=False, entity_id=str(user.id))
+            await self.__get_recommendations(ctx, user.name, user.avatar.url, server=False, entity_id=str(user.id))
 
     @commands.guild_only()
     @commands.command(aliases=['ls'])
