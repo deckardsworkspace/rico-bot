@@ -2,15 +2,24 @@ from nextcord import Activity, ActivityType
 from nextcord.ext.commands import Bot, errors, CommandNotFound
 from nextcord.ext.tasks import loop
 from config import get_var
+from lavalink_server import bootstrap
+from time import sleep
+import lavalink
 
 
 client = Bot(command_prefix='rc!')
 client.remove_command('help')
+lavalink_server = None
 
 
 @client.event
 async def on_ready():
+    global lavalink_server
     print('Logged on as {0}!'.format(client.user))
+
+    # Start Lavalink server
+    lavalink_server = bootstrap()
+    print('Spawned Lavalink server')
 
 
 @client.event
@@ -37,17 +46,25 @@ async def on_command_error(ctx, error):
 
 
 @loop(seconds=120)
-async def update_presence():
+async def bot_loop():
+    global lavalink_server
+
+    # Change presence
     status = "{0} {1} | rc!help".format(len(client.guilds), "servers")
     activity = Activity(name=status, type=ActivityType.listening)
     await client.change_presence(activity=activity)
 
+    # Restart Lavalink server if crashed
+    if lavalink_server is not None and lavalink_server.poll() is not None:
+        lavalink_server = bootstrap()
+        print('Respawned Lavalink server')
 
-@update_presence.before_loop
-async def update_presence_before():
+
+@bot_loop.before_loop
+async def bot_loop_before():
     await client.wait_until_ready()
 
 
-update_presence.start()
+bot_loop.start()
 client.load_extension("cogs")
 client.run(get_var('DISCORD_TOKEN'))

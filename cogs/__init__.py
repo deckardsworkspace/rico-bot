@@ -1,6 +1,7 @@
 from .recommendation import Recommendation
 from .export import Export
 from .help import Help
+from .music import Music
 from nextcord.ext.commands import Bot
 from config import get_var, get_pyrebase_config
 from util import Spotify
@@ -19,4 +20,5 @@ def setup(bot: Bot):
     # Add cogs
     bot.add_cog(Export(bot, db, spotify))
     bot.add_cog(Help(bot))
+    bot.add_cog(Music(bot))
     bot.add_cog(Recommendation(bot, db, spotify, get_var('FIREBASE_KEY')))
