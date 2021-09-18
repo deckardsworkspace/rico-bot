@@ -2,7 +2,6 @@ import re
 import requests
 from urllib.parse import urlparse, parse_qs
 from .exception import YouTubeInvalidURLError
-from .string_util import ellipsis_truncate
 
 
 def get_id_from_url(url):

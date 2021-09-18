@@ -1,7 +1,7 @@
 from nextcord import Activity, ActivityType
 from nextcord.ext.commands import Bot, errors, CommandNotFound
 from nextcord.ext.tasks import loop
-from config import get_var
+from util import get_var
 
 
 # Create Discord client

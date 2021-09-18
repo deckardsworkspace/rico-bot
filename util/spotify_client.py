@@ -5,7 +5,7 @@ import spotipy
 import time
 import urllib.parse
 import uuid
-from config import get_var
+from .config import get_var
 from ratelimit import limits
 from spotipy.oauth2 import SpotifyClientCredentials
 

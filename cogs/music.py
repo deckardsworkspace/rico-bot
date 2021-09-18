@@ -12,7 +12,7 @@ import re
 import nextcord
 import lavalink
 from nextcord.ext import commands
-from config import get_var
+from util import get_var
 
 url_rx = re.compile(r'https?://(?:www\.)?.+')
 
