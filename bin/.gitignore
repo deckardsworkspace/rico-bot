@@ -1,0 +1,7 @@
+.virtualenv
+**/*.sublime-project
+**/*.sublime-workspace
+**/__pycache__/
+.idea
+.vscode
+.env
