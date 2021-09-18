@@ -102,7 +102,7 @@ class Music(commands.Cog):
     @commands.command(aliases=['p'])
     async def play(self, ctx, *, query: str):
         """ Searches and plays a song from a given query. """
-        # Get the player for this guild from cache.
+        # Get the player for this guild from cache
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
         # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
         query = query.strip('<>')
@@ -154,7 +154,7 @@ class Music(commands.Cog):
         if not player.is_playing:
             await player.play()
     
-    @commands.command
+    @commands.command()
     async def pause(self, ctx):
         # Get the player for this guild from cache.
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
@@ -165,7 +165,7 @@ class Music(commands.Cog):
         else:
             await ctx.reply('Already paused.')
     
-    @commands.command
+    @commands.command()
     async def unpause(self, ctx):
         # Get the player for this guild from cache.
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
@@ -176,7 +176,7 @@ class Music(commands.Cog):
         else:
             await ctx.reply('Already unpaused.')
     
-    @commands.command
+    @commands.command()
     async def skip(self, ctx):
         # Get the player for this guild from cache.
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
@@ -184,7 +184,7 @@ class Music(commands.Cog):
         # Skip track.
         await player.skip()
     
-    @commands.command
+    @commands.command()
     async def stop(self, ctx):
         # Get the player for this guild from cache.
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
