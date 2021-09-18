@@ -35,7 +35,7 @@ class LavalinkVoiceClient(nextcord.VoiceClient):
             self.client.lavalink = lavalink.Client(client.user.id)
             self.client.lavalink.add_node(
                     get_var('LAVALINK_SERVER'),
-                    get_var('PORT'),
+                    get_var('LAVALINK_PORT'),
                     get_var('LAVALINK_PASSWORD'),
                     'ph',
                     'default-node')
@@ -95,7 +95,7 @@ class Music(commands.Cog):
             bot.lavalink = lavalink.Client(bot.user.id)
             bot.lavalink.add_node(
                 get_var('LAVALINK_SERVER'),
-                get_var('PORT'),
+                get_var('LAVALINK_PORT'),
                 get_var('LAVALINK_PASSWORD'),
                 'ph', 'default-node')
 
