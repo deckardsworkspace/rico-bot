@@ -153,6 +153,44 @@ class Music(commands.Cog):
         # the current track.
         if not player.is_playing:
             await player.play()
+    
+    @commands.command
+    async def pause(self, ctx):
+        # Get the player for this guild from cache.
+        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+
+        # Pause the player.
+        if not player.paused:
+            await player.set_pause(pause=True)
+        else:
+            await ctx.reply('Already paused.')
+    
+    @commands.command
+    async def unpause(self, ctx):
+        # Get the player for this guild from cache.
+        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+
+        # Unause the player.
+        if player.paused:
+            await player.set_pause(pause=False)
+        else:
+            await ctx.reply('Already unpaused.')
+    
+    @commands.command
+    async def skip(self, ctx):
+        # Get the player for this guild from cache.
+        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+        
+        # Skip track.
+        await player.skip()
+    
+    @commands.command
+    async def stop(self, ctx):
+        # Get the player for this guild from cache.
+        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+
+        # Stop player.
+        await player.stop()
 
     @commands.command(aliases=['dc'])
     async def disconnect(self, ctx):
@@ -161,12 +199,12 @@ class Music(commands.Cog):
 
         if not player.is_connected:
             # We can't disconnect, if we're not connected.
-            return await ctx.send('Not connected.')
+            return await ctx.reply('Not connected.')
 
         if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
             # Abuse prevention. Users not in voice channels, or not in the same voice channel as the bot
             # may not disconnect the bot.
-            return await ctx.send('You\'re not in my voicechannel!')
+            return await ctx.reply('You\'re not in my voicechannel!')
 
         # Clear the queue to ensure old tracks don't start playing
         # when someone else queues something.
