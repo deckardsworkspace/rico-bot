@@ -5,6 +5,7 @@ from config import get_var
 
 
 client = Bot(command_prefix='rc!')
+client.remove_command('help')
 
 
 @client.event

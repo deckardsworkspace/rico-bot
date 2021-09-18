@@ -174,7 +174,7 @@ class Recommendation(commands.Cog):
 
         # Search for matches in Spotify
         title = "Top 5 matching Spotify {0}s for '{1}'"
-        description = "To recommend a result, type `rc!recselect {} <index>`."
+        description = "To recommend a result, type `rc!select {} <index>`."
         results = self.spotify.search(query, limit=5, type='artist,album,track')
         context = {
             "mentions": [user.id for user in ctx.message.mentions],
