@@ -26,8 +26,8 @@ async def on_command_error(ctx, error):
     if type(error) in [errors.PrivateMessageOnly, errors.NoPrivateMessage]:
         await ctx.reply(str(error))
         await ctx.message.delete(delay=5.0)
-    elif type(error) is CommandNotFound and ctx.invoked_with == "h":
-        await ctx.reply('Command not found, did you mean `rc!help`?')
+    elif type(error) is CommandNotFound:
+        await ctx.reply('Invalid command.')
     else:
         await ctx.reply('\n'.join([
             'Error encountered while executing command {}.'.format(ctx.author.mention, ctx.invoked_with),
