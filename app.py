@@ -1,17 +1,10 @@
-import pyrebase
-import commands
 from nextcord import Activity, ActivityType
 from nextcord.ext.commands import Bot, errors, CommandNotFound
 from nextcord.ext.tasks import loop
-from config import get_var, get_pyrebase_config
-from util import Spotify
+from config import get_var
 
-firebase = pyrebase.initialize_app(get_pyrebase_config())
-auth = firebase.auth()
-db = firebase.database()
-spotify = Spotify()
+
 client = Bot(command_prefix='rc!')
-status_guilds = False
 
 
 @client.event
@@ -44,20 +37,9 @@ async def on_command_error(ctx, error):
 
 @loop(seconds=120)
 async def update_presence():
-    global status_guilds
-
-    status_template = "{0} {1} | rc!help"
-    if status_guilds:
-        status = status_template.format(len(client.guilds), "servers")
-    else:
-        num_users = 0
-        for guild in client.guilds:
-            num_users += guild.member_count - 1
-        status = status_template.format(num_users, "users")
-
+    status = "{0} {1} | rc!help".format(len(client.guilds), "servers")
     activity = Activity(name=status, type=ActivityType.listening)
     await client.change_presence(activity=activity)
-    status_guilds = not status_guilds
 
 
 @update_presence.before_loop
@@ -66,6 +48,5 @@ async def update_presence_before():
 
 
 update_presence.start()
-client.add_cog(commands.Recommendation(client, db, spotify, get_var('FIREBASE_KEY')))
-client.add_cog(commands.Export(client, db, spotify))
+client.load_extension("cogs")
 client.run(get_var('DISCORD_TOKEN'))
