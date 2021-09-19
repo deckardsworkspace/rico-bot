@@ -335,7 +335,7 @@ class Music(commands.Cog):
         await ctx.send(f'Native Lavalink queue: `{player.queue}`')
         try:
             queue = self.__get_queue(str(ctx.guild.id))
-            await ctx.send(f'Firebase DB queue: `{queue}`')
+            await ctx.send(f'Firebase DB queue: `{ellipsis_truncate(str(queue), 1500)}`')
         except QueueEmptyError:
             await ctx.send(f'Firebase DB queue is empty')
 
