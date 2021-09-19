@@ -13,6 +13,11 @@ def check_spotify_url(url: str) -> bool:
     return re.match(url_regex, url) is not None
 
 
+def check_twitch_url(url: str) -> bool:
+    url_regex = r"^https?://twitch\.tv/(.*)$"
+    return re.match(url_regex, url) is not None
+
+
 def ellipsis_truncate(string) -> str:
     if len(string) < 200:
         return string

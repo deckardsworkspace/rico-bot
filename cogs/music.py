@@ -91,9 +91,10 @@ class Music(commands.Cog):
             guild_id = event.player.guild_id
             channel_id = self.db.child('player').child(guild_id).child('channel').get().val()
             message_id = self.db.child('player').child(guild_id).child('message').get().val()
-            channel = self.bot.get_channel(channel_id)
-            message = await channel.fetch_message(message_id)
-            ctx = await self.bot.get_context(message)
+            if channel_id and message_id:
+                channel = self.bot.get_channel(channel_id)
+                message = await channel.fetch_message(message_id)
+                ctx = await self.bot.get_context(message)
 
         if isinstance(event, QueueEndEvent):
             # There are no tracks left in the player's queue.
@@ -113,7 +114,7 @@ class Music(commands.Cog):
             # Send now playing embed
             embed = nextcord.Embed(color=nextcord.Color.yellow())
             embed.title = 'Now playing'
-            embed.description = f'[{event.track.title}]({event.track.url})'
+            embed.description = event.track.title
             await ctx.send(embed=embed)
 
             # Check if the queue for this guild is empty
@@ -137,7 +138,7 @@ class Music(commands.Cog):
         # Alternatively, results['tracks'] could be an empty array if the query yielded no tracks.
         if not results or not results['tracks']:
             if not quiet:
-                await ctx.send(f'Nothing found for "{query}"!')
+                await ctx.send(f'Nothing found for `{query}`!')
             return False
 
         embed = nextcord.Embed(color=nextcord.Color.blurple())
@@ -194,7 +195,7 @@ class Music(commands.Cog):
         if not check_url(query):
             return await self.enqueue(f'ytsearch:{query}', player, ctx=ctx)
         else:
-            # Query is a URL. Is it a Spotify URL?
+            # Query is a URL
             if check_spotify_url(query):
                 # Query is a Spotify URL.
                 try:
@@ -243,6 +244,8 @@ class Music(commands.Cog):
                         embed.title = f'Spotify {sp_type} enqueued'
                         embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
                         return await ctx.reply(embed=embed)
+            elif check_twitch_url(query):
+                return await self.enqueue(query, player, ctx=ctx)
             else:
                 return await self.enqueue(f'ytsearch:{query}', player, ctx=ctx)
 
