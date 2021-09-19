@@ -302,10 +302,11 @@ class Music(commands.Cog):
     @commands.command(name='nowplaying', aliases=['np'])
     async def now_playing(self, ctx: commands.Context, title: str = None):
         # Delete the previous now playing message
+        old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('npmessage').get().val()
         try:
-            old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('npmessage').get().val()
-            old_message = await ctx.fetch_message(int(old_message_id))
-            await old_message.delete()
+            if old_message_id:
+                old_message = await ctx.fetch_message(int(old_message_id))
+                await old_message.delete()
         except Exception as e:
             print(f'Error while trying to delete old npmsg: {e}')
 
