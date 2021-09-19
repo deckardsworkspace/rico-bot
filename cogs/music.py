@@ -130,10 +130,7 @@ class Music(commands.Cog):
 
         if isinstance(event, TrackStartEvent):
             # Send now playing embed
-            embed = nextcord.Embed(color=nextcord.Color.yellow())
-            embed.title = 'Now playing'
-            embed.description = event.track.title
-            await ctx.send(embed=embed)
+            await self.now_playing(title=event.track.title)
         elif isinstance(event, TrackEndEvent):
             if event.reason == 'FINISHED':
                 # Track has finished playing.
@@ -299,6 +296,22 @@ class Music(commands.Cog):
         except QueueEmptyError:
             await ctx.reply('Queue is empty.')
             return await self.disconnect(ctx)
+
+    @commands.command(name='nowplaying', aliases=['np'])
+    async def now_playing(self, ctx, title: str = None):
+        # Get the player for this guild from cache.
+        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+
+        if player.is_playing or player.paused:
+            embed = nextcord.Embed(color=nextcord.Color.teal())
+            embed.title = 'Now playing' if player.is_playing else 'Paused'
+            embed.description = title if title else player.current.title
+        else:
+            embed = nextcord.Embed(color=nextcord.Color.yellow())
+            embed.title = 'Not playing'
+            embed.description = 'To play, use `{0}play <URL/search term>`. Try `{0}help` for more.'.format('rc!')
+
+        await ctx.send(embed=embed)
 
     @commands.command(aliases=['q'])
     async def queue(self, ctx):
