@@ -118,7 +118,7 @@ class Music(commands.Cog):
                 try:
                     queue = self.__get_queue(guild_id)
                     while len(queue):
-                        if await self.enqueue(queue.popleft(), event.player, ctx=ctx, quiet=True):
+                        if await self.enqueue(queue.popleft(), event.player, ctx=ctx, track_end=True, quiet=True):
                             # Save new queue back to DB
                             self.__set_queue(guild_id, queue)
                             return
@@ -127,7 +127,8 @@ class Music(commands.Cog):
                 except QueueEmptyError:
                     await self.disconnect(ctx, queue_finished=True)
 
-    async def enqueue(self, query: str, player: DefaultPlayer, ctx: commands.Context, quiet: bool = False) -> bool:
+    async def enqueue(self, query: str, player: DefaultPlayer, ctx: commands.Context,
+                      track_end: bool = False, quiet: bool = False) -> bool:
         # Get the results for the query from Lavalink.
         results = await player.node.get_tracks(query)
 
@@ -139,7 +140,7 @@ class Music(commands.Cog):
             return False
         
         # Save to DB if player is not idle.
-        queue_to_db = player.is_playing or player.paused
+        queue_to_db = not track_end and (player.is_playing or player.paused)
         if queue_to_db:
             self.__enqueue(str(ctx.guild.id), query)
 
@@ -176,7 +177,7 @@ class Music(commands.Cog):
 
         # We don't want to call .play() if the player is not idle
         # as that will effectively skip the current track.
-        if not player.is_playing and not player.paused:
+        if not queue_to_db:
             await player.play()
         
         return True
