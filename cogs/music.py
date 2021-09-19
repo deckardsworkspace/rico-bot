@@ -6,6 +6,7 @@ from lavalink.events import *
 from lavalink.models import DefaultPlayer
 from nextcord.ext import commands
 from util import *
+from random import shuffle
 from typing import Deque
 
 
@@ -309,6 +310,17 @@ class Music(commands.Cog):
             await ctx.send(f'Firebase DB queue: `{queue}`')
         except QueueEmptyError:
             await ctx.send(f'Firebase DB queue is empty')
+
+    @commands.command(aliases=['shuf'])
+    async def shuffle(self, ctx):
+        try:
+            async with ctx.typing():
+                queue = self.__get_queue(str(ctx.guild.id))
+                shuffle(queue)
+                self.__set_queue(str(ctx.guild.id), queue)
+            await ctx.reply('Queue shuffled.')
+        except QueueEmptyError:
+            await ctx.reply('The queue is empty. Nothing to shuffle.')
 
     @commands.command(aliases=['stop', 'dc'])
     async def disconnect(self, ctx, queue_finished: bool = False):
