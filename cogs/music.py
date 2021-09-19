@@ -113,7 +113,7 @@ class Music(commands.Cog):
             # Send now playing embed
             embed = nextcord.Embed(color=nextcord.Color.yellow())
             embed.title = 'Now playing'
-            embed.description = event.track.title
+            embed.description = f'[{event.track.title}]({event.track.url})'
             await ctx.send(embed=embed)
 
             # Check if the queue for this guild is empty
