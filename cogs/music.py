@@ -128,6 +128,8 @@ class Music(commands.Cog):
                             # Save new queue back to DB
                             self.__set_queue(guild_id, queue)
                             return
+                    else:
+                        raise QueueEmptyError
                 except QueueEmptyError:
                     await self.disconnect(ctx, queue_finished=True)
 
