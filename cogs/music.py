@@ -131,6 +131,9 @@ class Music(commands.Cog):
         if isinstance(event, TrackStartEvent):
             # Send now playing embed
             await self.now_playing(ctx, title=event.track.title)
+
+            # Store now playing in DB
+            self.db.child('player').child(guild_id).child('np').set(event.track.title)
         elif isinstance(event, TrackEndEvent):
             if event.reason == 'FINISHED':
                 # Track has finished playing.
@@ -193,7 +196,7 @@ class Music(commands.Cog):
         return True
 
     @commands.command(aliases=['p'])
-    async def play(self, ctx: commands.Context, *, query: str):
+    async def play(self, ctx: commands.Context, *, query: str = None):
         """ Searches and plays a song from a given query. """
         async with ctx.typing():
             # Save the context for later
@@ -202,6 +205,17 @@ class Music(commands.Cog):
 
             # Get the player for this guild from cache
             player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+
+            # Pick up where we left off
+            if not query:
+                old_np = self.db.child('player').child(str(ctx.guild.id)).child('np').get().val()
+                if old_np:
+                    embed = nextcord.Embed(color=nextcord.Color.purple())
+                    embed.title = 'Resuming interrupted queue'
+                    embed.description = old_np
+                    await ctx.reply(embed=embed)
+                    return await self.enqueue(f'ytsearch:{old_np}', player, ctx=ctx, quiet=True)
+                return await ctx.reply('Please specify a URL or a search term to play.')
 
             # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
             query = query.strip('<>')
@@ -370,7 +384,7 @@ class Music(commands.Cog):
             # when someone else queues something.
             player.queue.clear()
 
-        # Delete queue from DB.
+        # Delete queue and now playing data from DB.
         self.db.child('player').child(str(ctx.guild.id)).remove()
 
         # Stop the current track so Lavalink consumes less resources.
