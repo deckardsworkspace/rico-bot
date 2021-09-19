@@ -1,7 +1,7 @@
-from nextcord import Activity, ActivityType
+from nextcord import Activity, ActivityType, Embed, Color
 from nextcord.ext.commands import Bot, errors, CommandNotFound
 from nextcord.ext.tasks import loop
-from util import get_var
+from util import get_var, VoiceCommandError
 
 
 # Create Discord client
@@ -20,7 +20,12 @@ async def on_message(message):
     # Ignore messages sent by this bot
     if message.author == client.user:
         return
-    await client.process_commands(message)
+    
+    try:
+        await client.process_commands(message)
+    except VoiceCommandError as e:
+        embed = Embed(color=Color.red(), title=f'**{e.message}**')
+        await message.reply(embed=embed)
 
 
 @client.event
@@ -32,10 +37,7 @@ async def on_command_error(ctx, error):
         await ctx.reply('Invalid command.')
     else:
         print(error)
-        await ctx.reply('\n'.join([
-            'Error encountered while executing command.'.format(ctx.author.mention, ctx.invoked_with),
-            '`{}: {}`'.format(type(error).__name__, str(error)),
-        ]))
+        await ctx.reply(f'`{type(error).__name__}` encountered while executing `{ctx.invoked_with}`.\n{error.message}')
 
 
 @loop(seconds=120)

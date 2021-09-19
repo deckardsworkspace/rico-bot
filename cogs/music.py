@@ -11,15 +11,7 @@ from typing import Deque
 
 
 class Music(commands.Cog):
-    """
-    https://github.com/Devoxin/Lavalink.py/blob/master/examples/music.py
-
-    This example cog demonstrates basic usage of Lavalink.py, using the DefaultPlayer.
-    As this example primarily showcases usage in conjunction with discord.py, you will need to make
-    modifications as necessary for use with another Discord library.
-    Usage of this cog requires Python 3.6 or higher due to the use of f-strings.
-    Compatibility with Python 3.5 should be possible if f-strings are removed.
-    """
+    """ Based on https://github.com/Devoxin/Lavalink.py/blob/master/examples/music.py """
     def __init__(self, bot: commands.Bot, db, spotify: Spotify):
         self.bot = bot
         self.db = db
@@ -71,49 +63,40 @@ class Music(commands.Cog):
 
     async def cog_before_invoke(self, ctx):
         """ Command before-invoke handler. """
+        # Only allow music commands in guilds
         guild_check = ctx.guild is not None
-        #  This is essentially the same as `@commands.guild_only()`
-        #  except it saves us repeating ourselves (and also a few lines).
-
         if guild_check:
+            # Ensure that the bot and command author share a mutual voice channel
             await self.ensure_voice(ctx)
-            #  Ensure that the bot and command author share a mutual voicechannel.
 
         return guild_check
 
     async def ensure_voice(self, ctx):
-        """ This check ensures that the bot and command author are in the same voicechannel. """
+        """ This check ensures that the bot and command author are in the same voice channel. """
+        # Ensure a player exists for this guild
         player = self.bot.lavalink.player_manager.create(ctx.guild.id, endpoint=str(ctx.guild.region))
-        # Create returns a player if one exists, otherwise creates.
-        # This line is important because it ensures that a player always exists for a guild.
-
-        # Most people might consider this a waste of resources for guilds that aren't playing, but this is
-        # the easiest and simplest way of ensuring players are created.
-
-        # These are commands that require the bot to join a voicechannel (i.e. initiating playback).
-        # Commands such as volume/skip etc don't require the bot to be in a voicechannel so don't need listing here.
-        should_connect = ctx.command.name in ('play', 'p')
 
         if not ctx.author.voice or not ctx.author.voice.channel:
-            # Our cog_command_error handler catches this and sends it to the voicechannel.
-            # Exceptions allow us to "short-circuit" command invocation via checks so the
-            # execution state of the command goes no further.
-            raise commands.CommandInvokeError('Join a voicechannel first.')
+            raise VoiceCommandError(':raised_hand: | Join a voice channel first.')
 
+        vc = ctx.author.voice.channel
         if not player.is_connected:
-            if not should_connect:
-                raise commands.CommandInvokeError('Not connected.')
+            # Bot needs to already be in voice channel to pause, unpause, skip etc.
+            if not ctx.command.name in ('play', 'p'):
+                raise VoiceCommandError(':electric_plug: | I\'m not connected to voice.')
 
-            permissions = ctx.author.voice.channel.permissions_for(ctx.me)
-
-            if not permissions.connect or not permissions.speak:  # Check user limit too?
-                raise commands.CommandInvokeError('I need the `CONNECT` and `SPEAK` permissions.')
+            permissions = vc.permissions_for(ctx.me)
+            if not permissions.connect or not permissions.speak:
+                raise VoiceCommandError(':mute: | I need the `CONNECT` and `SPEAK` permissions.')
+            
+            if vc.user_limit >= len(vc.members):
+                raise VoiceCommandError(':mute: | Your voice channel is full.')
 
             player.store('channel', ctx.channel.id)
-            await ctx.author.voice.channel.connect(cls=LavalinkVoiceClient)
+            await vc.connect(cls=LavalinkVoiceClient)
         else:
-            if int(player.channel_id) != ctx.author.voice.channel.id:
-                raise commands.CommandInvokeError('You need to be in my voice channel.')
+            if int(player.channel_id) != vc.id:
+                raise VoiceCommandError(':speaking_head: | You need to be in my voice channel.')
 
     async def track_hook(self, event):
         # Recover context from DB
