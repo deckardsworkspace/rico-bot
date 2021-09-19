@@ -36,6 +36,14 @@ class Music(commands.Cog):
         queue.append(query)
         self.__set_queue(guild_id, queue)
 
+    def __enqueue_multiple(self, guild_id: str, queries: list[str]):
+        try:
+            queue = self.__get_queue(guild_id)
+        except QueueEmptyError:
+            queue = deque()
+        queue.extend(queries)
+        self.__set_queue(guild_id, queue)
+
     def __dequeue(self, guild_id: str) -> str:
         queue = self.__get_queue(guild_id)
         query = queue.popleft()
@@ -118,7 +126,7 @@ class Music(commands.Cog):
                 try:
                     queue = self.__get_queue(guild_id)
                     while len(queue):
-                        if await self.enqueue(queue.popleft(), event.player, ctx=ctx, track_end=True, quiet=True):
+                        if await self.enqueue(queue.popleft(), event.player, ctx=ctx, queue_to_db=False, quiet=True):
                             # Save new queue back to DB
                             self.__set_queue(guild_id, queue)
                             return
@@ -128,7 +136,7 @@ class Music(commands.Cog):
                     await self.disconnect(ctx, queue_finished=True)
 
     async def enqueue(self, query: str, player: DefaultPlayer, ctx: commands.Context,
-                      track_end: bool = False, quiet: bool = False) -> bool:
+                      queue_to_db: bool = False, quiet: bool = False) -> bool:
         # Get the results for the query from Lavalink.
         results = await player.node.get_tracks(query)
 
@@ -140,7 +148,6 @@ class Music(commands.Cog):
             return False
         
         # Save to DB if player is not idle.
-        queue_to_db = not track_end and (player.is_playing or player.paused)
         if queue_to_db:
             self.__enqueue(str(ctx.guild.id), query)
 
@@ -177,7 +184,7 @@ class Music(commands.Cog):
 
         # We don't want to call .play() if the player is not idle
         # as that will effectively skip the current track.
-        if not queue_to_db:
+        if not player.is_playing and not player.paused:
             await player.play()
         
         return True
@@ -241,14 +248,25 @@ class Music(commands.Cog):
                         # Hence, to allow the user to start listening immediately,
                         # we play the first one and store the rest of the queue in DB for later.
                         await ctx.reply(f':arrow_forward: | Enqueueing {sp_type}, this might take a while...')
-                        quiet = False
+
+                        queries = []
+                        success = False
                         while len(track_queue):
                             track = track_queue.popleft()
                             track_query = f'ytsearch:{track[0]} {track[1]}'
-                            if not await self.enqueue(track_query, player, ctx=ctx, quiet=quiet):
-                                await ctx.send(f'Error enqueueing "{track[0]}".')
-                            if not quiet:
-                                quiet = True
+
+                            if not success:
+                                # Enqueue the first valid track
+                                success = await self.enqueue(track_query, player, ctx=ctx)
+                                if not success:
+                                    await ctx.send(f'Error enqueueing "{track[0]}".')
+                            else:
+                                # Append the rest to the queue
+                                queries.append(track_query)
+                        else:
+                            if len(queries):
+                                # Append everything in one go to save DB accesses
+                                self.__enqueue_multiple(str(ctx.guild.id), queries)
 
                         # Send enqueued embed
                         color = nextcord.Color.blurple()
