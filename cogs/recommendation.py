@@ -46,7 +46,7 @@ class Recommendation(commands.Cog):
         embed = Embed(title=title,
                       description="React :thumbsup: within the next 10 sec to confirm. This action is irreversible!",
                       color=0xff6600)
-        embed.set_thumbnail(url=ctx.guild.icon_url if server else ctx.author.avatar.url)
+        embed.set_thumbnail(url=ctx.guild.icon.url if server else ctx.author.avatar.url)
         if not is_clearing:
             embed.add_field(name=field_name, value=field_value)
         dialog = await ctx.send(embed=embed)
@@ -334,7 +334,7 @@ class Recommendation(commands.Cog):
     @commands.command(aliases=['ls'])
     async def listsvr(self, ctx):
         """List stuff recommended to everyone on the server."""
-        await self.__get_recommendations(ctx, ctx.guild.name, ctx.guild.icon_url, server=True)
+        await self.__get_recommendations(ctx, ctx.guild.name, ctx.guild.icon.url, server=True)
 
     @commands.command(aliases=['clr', 'c'])
     async def clear(self, ctx):
