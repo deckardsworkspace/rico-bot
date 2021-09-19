@@ -195,66 +195,67 @@ class Music(commands.Cog):
     @commands.command(aliases=['p'])
     async def play(self, ctx: commands.Context, *, query: str):
         """ Searches and plays a song from a given query. """
-        # Save the context for later
-        self.db.child('player').child(str(ctx.guild.id)).child('channel').set(ctx.channel.id)
-        self.db.child('player').child(str(ctx.guild.id)).child('message').set(ctx.message.id)
+        async with ctx.typing():
+            # Save the context for later
+            self.db.child('player').child(str(ctx.guild.id)).child('channel').set(ctx.channel.id)
+            self.db.child('player').child(str(ctx.guild.id)).child('message').set(ctx.message.id)
 
-        # Get the player for this guild from cache
-        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+            # Get the player for this guild from cache
+            player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
-        # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
-        query = query.strip('<>')
+            # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
+            query = query.strip('<>')
 
-        # Query is not a URL. Have Lavalink do a YouTube search for it.
-        if not check_url(query):
-            return await self.__enqueue(f'ytsearch:{query}', player, ctx=ctx)
+            # Query is not a URL. Have Lavalink do a YouTube search for it.
+            if not check_url(query):
+                return await self.__enqueue(f'ytsearch:{query}', player, ctx=ctx)
 
-        # Query is a URL.
-        if check_spotify_url(query):
-            # Query is a Spotify URL.
-            try:
-                sp_type, sp_id = parse_spotify_url(query, valid_types=['track', 'album', 'playlist'])
-            except SpotifyInvalidURLError:
-                return await ctx.reply('Only Spotify track, album, and playlist URLs are supported.')
+            # Query is a URL.
+            if check_spotify_url(query):
+                # Query is a Spotify URL.
+                try:
+                    sp_type, sp_id = parse_spotify_url(query, valid_types=['track', 'album', 'playlist'])
+                except SpotifyInvalidURLError:
+                    return await ctx.reply('Only Spotify track, album, and playlist URLs are supported.')
 
-            if sp_type == 'track':
-                # Get track details from Spotify
-                track_name, track_artist = self.spotify.get_track(sp_id)
-                return await self.__enqueue(f'ytsearch:{track_name} {track_artist}', player, ctx=ctx)
-            else:
-                # Get playlist or album tracks from Spotify
-                list_name, list_author, tracks = self.spotify.get_tracks(sp_type, sp_id)
-                track_queue = deque(tracks)
-
-                if len(tracks) < 1:
-                    # No tracks
-                    return await ctx.reply(f'Spotify {sp_type} is empty.')
-                elif len(tracks) == 1:
-                    # Single track
-                    return await self.__enqueue(f'ytsearch:{tracks[0][0]} {tracks[0][1]}', player, ctx=ctx)
+                if sp_type == 'track':
+                    # Get track details from Spotify
+                    track_name, track_artist = self.spotify.get_track(sp_id)
+                    return await self.__enqueue(f'ytsearch:{track_name} {track_artist}', player, ctx=ctx)
                 else:
-                    # Multiple tracks
-                    # There is no way to queue multiple items in one batch through Lavalink.py,
-                    # and performing a search takes time which adds up as playlists grow larger.
-                    # Hence, to allow the user to start listening immediately,
-                    # we play the first one and store the rest of the queue in DB for later.
-                    async with ctx.typing():
+                    # Get playlist or album tracks from Spotify
+                    list_name, list_author, tracks = self.spotify.get_tracks(sp_type, sp_id)
+                    track_queue = deque(tracks)
+
+                    if len(tracks) < 1:
+                        # No tracks
+                        return await ctx.reply(f'Spotify {sp_type} is empty.')
+                    elif len(tracks) == 1:
+                        # Single track
+                        return await self.__enqueue(f'ytsearch:{tracks[0][0]} {tracks[0][1]}', player, ctx=ctx)
+                    else:
+                        # Multiple tracks
+                        # There is no way to queue multiple items in one batch through Lavalink.py,
+                        # and performing a search takes time which adds up as playlists grow larger.
+                        # Hence, to allow the user to start listening immediately,
+                        # we play the first one and store the rest of the queue in DB for later.
+                        await ctx.reply(f':arrow_forward: | Enqueueing {sp_type}, this might take a while...')
                         while len(track_queue):
                             track = track_queue.popleft()
                             track_query = f'ytsearch:{track[0]} {track[1]}'
                             if not await self.__enqueue(track_query, player, ctx=ctx):
                                 await ctx.send(f'Error enqueueing "{track[0]}".')
 
-                    # Send enqueued embed
-                    color = nextcord.Color.blurple()
-                    embed = nextcord.Embed(color=color)
-                    embed.title = f'Spotify {sp_type} enqueued'
-                    embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
-                    return await ctx.reply(embed=embed)
-        elif check_twitch_url(query):
-            return await self.__enqueue(query, player, ctx=ctx)
-        else:
-            return await self.__enqueue(f'ytsearch:{query}', player, ctx=ctx)
+                        # Send enqueued embed
+                        color = nextcord.Color.blurple()
+                        embed = nextcord.Embed(color=color)
+                        embed.title = f'Spotify {sp_type} enqueued'
+                        embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
+                        return await ctx.reply(embed=embed)
+            elif check_twitch_url(query):
+                return await self.__enqueue(query, player, ctx=ctx)
+            else:
+                return await self.__enqueue(f'ytsearch:{query}', player, ctx=ctx)
 
     @commands.command()
     async def pause(self, ctx: commands.Context):
