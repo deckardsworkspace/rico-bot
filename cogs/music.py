@@ -241,11 +241,14 @@ class Music(commands.Cog):
                         # Hence, to allow the user to start listening immediately,
                         # we play the first one and store the rest of the queue in DB for later.
                         await ctx.reply(f':arrow_forward: | Enqueueing {sp_type}, this might take a while...')
+                        quiet = False
                         while len(track_queue):
                             track = track_queue.popleft()
                             track_query = f'ytsearch:{track[0]} {track[1]}'
-                            if not await self.enqueue(track_query, player, ctx=ctx):
+                            if not await self.enqueue(track_query, player, ctx=ctx, quiet=quiet):
                                 await ctx.send(f'Error enqueueing "{track[0]}".')
+                            if not quiet:
+                                quiet = True
 
                         # Send enqueued embed
                         color = nextcord.Color.blurple()
