@@ -130,7 +130,7 @@ class Music(commands.Cog):
 
         if isinstance(event, TrackStartEvent):
             # Send now playing embed
-            await self.now_playing(title=event.track.title)
+            await self.now_playing(ctx, title=event.track.title)
         elif isinstance(event, TrackEndEvent):
             if event.reason == 'FINISHED':
                 # Track has finished playing.
@@ -257,7 +257,7 @@ class Music(commands.Cog):
             return await self.__enqueue(f'ytsearch:{query}', player, ctx=ctx)
 
     @commands.command()
-    async def pause(self, ctx):
+    async def pause(self, ctx: commands.Context):
         # Get the player for this guild from cache.
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
@@ -268,7 +268,7 @@ class Music(commands.Cog):
             await ctx.reply('Already paused.')
     
     @commands.command()
-    async def unpause(self, ctx):
+    async def unpause(self, ctx: commands.Context):
         # Get the player for this guild from cache.
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
@@ -280,7 +280,7 @@ class Music(commands.Cog):
             await ctx.reply('Already unpaused.')
     
     @commands.command()
-    async def skip(self, ctx):
+    async def skip(self, ctx: commands.Context):
         # Get the player for this guild from cache.
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
@@ -298,8 +298,16 @@ class Music(commands.Cog):
             return await self.disconnect(ctx)
 
     @commands.command(name='nowplaying', aliases=['np'])
-    async def now_playing(self, ctx, title: str = None):
-        # Get the player for this guild from cache.
+    async def now_playing(self, ctx: commands.Context, title: str = None):
+        # Delete the previous now playing message
+        try:
+            old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('npmessage').get().val()
+            old_message = await ctx.fetch_message(int(old_message_id))
+            await old_message.delete()
+        except Exception as e:
+            print(f'Error while trying to delete old npmsg: {e}')
+
+        # Get the player for this guild from cache
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
         if player.is_playing or player.paused:
@@ -311,10 +319,15 @@ class Music(commands.Cog):
             embed.title = 'Not playing'
             embed.description = 'To play, use `{0}play <URL/search term>`. Try `{0}help` for more.'.format('rc!')
 
-        await ctx.send(embed=embed)
+        # Save this message
+        if title:
+            message = await ctx.send(embed=embed)
+        else:
+            message = await ctx.reply(embed=embed)
+        self.db.child('player').child(str(ctx.guild.id)).child('npmessage').set(str(message.id))
 
     @commands.command(aliases=['q'])
-    async def queue(self, ctx):
+    async def queue(self, ctx: commands.Context):
         # Get the player for this guild from cache.
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
         await ctx.send(f'Native Lavalink queue: `{player.queue}`')
@@ -325,7 +338,7 @@ class Music(commands.Cog):
             await ctx.send(f'Firebase DB queue is empty')
 
     @commands.command(aliases=['shuf'])
-    async def shuffle(self, ctx):
+    async def shuffle(self, ctx: commands.Context):
         try:
             async with ctx.typing():
                 queue = self.__get_queue(str(ctx.guild.id))
@@ -336,7 +349,7 @@ class Music(commands.Cog):
             await ctx.reply('The queue is empty. Nothing to shuffle.')
 
     @commands.command(aliases=['stop', 'dc'])
-    async def disconnect(self, ctx, queue_finished: bool = False):
+    async def disconnect(self, ctx: commands.Context, queue_finished: bool = False):
         """ Disconnects the player from the voice channel and clears its queue. """
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
