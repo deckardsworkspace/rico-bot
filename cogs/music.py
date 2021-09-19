@@ -89,7 +89,7 @@ class Music(commands.Cog):
             if not permissions.connect or not permissions.speak:
                 raise VoiceCommandError(':mute: | I need the `CONNECT` and `SPEAK` permissions.')
             
-            if vc.user_limit >= len(vc.members):
+            if vc.user_limit <= len(vc.members):
                 raise VoiceCommandError(':mute: | Your voice channel is full.')
 
             player.store('channel', ctx.channel.id)
