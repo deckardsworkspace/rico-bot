@@ -31,10 +31,10 @@ async def on_command_error(ctx, error):
     elif type(error) is CommandNotFound:
         await ctx.reply('Invalid command.')
     else:
+        print(error)
         await ctx.reply('\n'.join([
-            'Error encountered while executing command {}.'.format(ctx.author.mention, ctx.invoked_with),
-            '`{}`: `{}`'.format(type(error).__name__, str(error)),
-            '\nPlease report bugs to the official support server at https://discord.gg/njtK9G6QRG'
+            'Error encountered while executing command.'.format(ctx.author.mention, ctx.invoked_with),
+            '`{}: {}`'.format(type(error).__name__, str(error)),
         ]))
 
 

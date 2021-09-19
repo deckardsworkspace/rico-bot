@@ -6,6 +6,7 @@ import time
 import urllib.parse
 import uuid
 from .config import get_var
+from .exception import SpotifyInvalidURLError
 from ratelimit import limits
 from spotipy.oauth2 import SpotifyClientCredentials
 
@@ -18,6 +19,12 @@ def get_chunks(lst):
         yield lst[i:i + 100]
 
 
+def extract_track_info(track_obj) -> tuple[str, str]:
+    if 'track' in track_obj: # Nested track (playlist track object)
+        return track_obj['track']['name'], track_obj['track']['artists'][0]['name']
+    return track_obj['name'], track_obj['artists'][0]['name']
+
+
 class Spotify:
     def __init__(self):
         self.redirect_uri = "https://rico.dantis.me/spotify_auth"
@@ -25,9 +32,6 @@ class Spotify:
         client_secret = get_var("SPOTIFY_SECRET")
         auth_manager = SpotifyClientCredentials(client_id=self.client_id, client_secret=client_secret)
         self.client = spotipy.Spotify(auth_manager=auth_manager)
-
-    def get_client(self):
-        return self.client
 
     def create_auth_url(self):
         # Create code challenge and verifier
@@ -55,36 +59,6 @@ class Spotify:
         url = "{}?{}".format(base_url, urllib.parse.urlencode(url_params))
 
         return url, verifier, state
-
-    def request_token(self, code=None, verifier=None, refresh_token=None):
-        # Perform POST request
-        if refresh_token is not None:
-            req_params = {
-                "client_id": self.client_id,
-                "grant_type": "refresh_token",
-                "refresh_token": refresh_token
-            }
-        else:
-            req_params = {
-                "client_id": self.client_id,
-                "grant_type": "authorization_code",
-                "code": code,
-                "redirect_uri": self.redirect_uri,
-                "code_verifier": verifier
-            }
-        req_url = "https://accounts.spotify.com/api/token"
-        req = requests.post(req_url, data=req_params)
-
-        # Check if request is OK
-        if req.status_code != 200:
-            req.raise_for_status()
-
-        # Return data
-        current_time = int(time.time())
-        access_token = req.json()['access_token']
-        expires_in = current_time + req.json()['expires_in']
-        new_refresh_token = req.json()['refresh_token']
-        return access_token, expires_in, new_refresh_token
 
     @limits(calls=10, period=5)
     def create_playlist(self, token_data, username, tracks):
@@ -130,13 +104,82 @@ class Spotify:
             add_req = requests.post(add_url, json=add_params, headers=playlist_headers)
             if add_req.status_code != 200:
                 add_req.raise_for_status()
-            time.sleep(0.25)              # Rate limit
+            time.sleep(0.25)  # Rate limit
 
         # Return new tokens and playlist ID
         return access_token, expires_in, refresh_token, playlist_name, playlist_id
+
+    def get_client(self):
+        return self.client
 
     def get_playlist_cover(self, playlist_id, default=None):
         cover_img = self.client.playlist_cover_image(playlist_id)
         if not len(cover_img):
             return default
         return cover_img[0]['url']
+
+    def get_track(self, track_id: str) -> tuple[str, str]:
+        return extract_track_info(self.client.track(track_id))
+
+    def get_tracks(self, list_type: str, list_id: str) -> tuple[str, str, list[tuple[str, str]]]:
+        offset = 0
+        tracks = []
+
+        # Get list name and author
+        if list_type == 'album':
+            album_info = self.client.album(list_id)
+            list_name = album_info['name']
+            list_author = album_info['artists'][0]['name']
+        elif list_type == 'playlist':
+            playlist_info = self.client.playlist(list_id, fields='name,owner.id')
+            list_name = playlist_info['name']
+            list_author = playlist_info['owner']['id']
+        else:
+            raise SpotifyInvalidURLError(f'spotify:{list_type}:{list_id}')
+
+        # Get tracks
+        while True:
+            if list_type == 'album':
+                response = self.client.album_tracks(list_id, offset=offset)
+            else:
+                response = self.client.playlist_items(list_id, offset=offset,
+                                                      fields='items.track.name,items.track.artists',
+                                                      additional_types=['track'])
+
+            if len(response['items']) == 0:
+                break
+
+            tracks.extend(response['items'])
+            offset = offset + len(response['items'])
+
+        return list_name, list_author, list(map(extract_track_info, tracks))
+
+    def request_token(self, code=None, verifier=None, refresh_token=None):
+        # Perform POST request
+        if refresh_token is not None:
+            req_params = {
+                "client_id": self.client_id,
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token
+            }
+        else:
+            req_params = {
+                "client_id": self.client_id,
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": self.redirect_uri,
+                "code_verifier": verifier
+            }
+        req_url = "https://accounts.spotify.com/api/token"
+        req = requests.post(req_url, data=req_params)
+
+        # Check if request is OK
+        if req.status_code != 200:
+            req.raise_for_status()
+
+        # Return data
+        current_time = int(time.time())
+        access_token = req.json()['access_token']
+        expires_in = current_time + req.json()['expires_in']
+        new_refresh_token = req.json()['refresh_token']
+        return access_token, expires_in, new_refresh_token

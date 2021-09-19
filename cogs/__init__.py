@@ -18,6 +18,6 @@ def setup(bot: Bot):
     # Add cogs
     bot.add_cog(Export(bot, db, spotify))
     bot.add_cog(Help(bot))
-    bot.add_cog(Music(bot))
+    bot.add_cog(Music(bot, db, spotify))
     bot.add_cog(Recommendation(bot, db, spotify, get_var('FIREBASE_KEY')))
     print('Loaded cogs')
