@@ -167,7 +167,7 @@ class Music(commands.Cog):
             embed.description = f'[{track["info"]["title"]}]({track["info"]["uri"]})'
 
             # Add track to the queue, if the queue is empty.
-            if queue_to_db:
+            if not queue_to_db:
                 track = lavalink.models.AudioTrack(track, ctx.author.id)
                 player.add(requester=ctx.author.id, track=track)
 
