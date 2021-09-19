@@ -264,6 +264,7 @@ class Music(commands.Cog):
         # Pause the player.
         if not player.paused:
             await player.set_pause(pause=True)
+            await ctx.reply('Paused the player.')
         else:
             await ctx.reply('Already paused.')
     
