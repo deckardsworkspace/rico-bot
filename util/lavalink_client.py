@@ -22,29 +22,29 @@ class LavalinkVoiceClient(nextcord.VoiceClient):
         else:
             self.client.lavalink = lavalink.Client(client.user.id)
             self.client.lavalink.add_node(
-                    get_var('LAVALINK_SERVER'),
-                    get_var('LAVALINK_PORT'),
-                    get_var('LAVALINK_PASSWORD'),
-                    'ph',
-                    'default-node')
+                get_var('LAVALINK_SERVER'),
+                get_var('LAVALINK_PORT'),
+                get_var('LAVALINK_PASSWORD'),
+                'ph', 'default-node'
+            )
             self.lavalink = self.client.lavalink
 
     async def on_voice_server_update(self, data):
         # the data needs to be transformed before being handed down to
         # voice_update_handler
         lavalink_data = {
-                't': 'VOICE_SERVER_UPDATE',
-                'd': data
-                }
+            't': 'VOICE_SERVER_UPDATE',
+            'd': data
+        }
         await self.lavalink.voice_update_handler(lavalink_data)
 
     async def on_voice_state_update(self, data):
         # the data needs to be transformed before being handed down to
         # voice_update_handler
         lavalink_data = {
-                't': 'VOICE_STATE_UPDATE',
-                'd': data
-                }
+            't': 'VOICE_STATE_UPDATE',
+            'd': data
+        }
         await self.lavalink.voice_update_handler(lavalink_data)
 
     async def connect(self, *, timeout: float, reconnect: bool) -> None:
