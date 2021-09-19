@@ -14,3 +14,8 @@ class YouTubeInvalidURLError(Exception):
     def __init__(self, url):
         self.message = "Invalid YouTube video link: {}".format(url)
         super().__init__(self.message)
+
+class QueueEmptyError(Exception):
+    def __init__(self):
+        self.message = "Queue is empty."
+        super().__init__(self.message)

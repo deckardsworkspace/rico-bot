@@ -18,10 +18,10 @@ def check_twitch_url(url: str) -> bool:
     return re.match(url_regex, url) is not None
 
 
-def ellipsis_truncate(string) -> str:
-    if len(string) < 200:
+def ellipsis_truncate(string: str, length: int = 200) -> str:
+    if len(string) < length:
         return string
-    return string[:196] + "..."
+    return string[:length - 4] + "..."
 
 
 def get_ytid_from_url(url):

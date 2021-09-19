@@ -3,8 +3,10 @@ import json
 import lavalink
 from collections import deque
 from lavalink.events import *
+from lavalink.models import DefaultPlayer
 from nextcord.ext import commands
 from util import *
+from typing import Deque
 
 
 class Music(commands.Cog):
@@ -32,6 +34,35 @@ class Music(commands.Cog):
             )
 
         lavalink.add_event_hook(self.track_hook)
+
+    async def __enqueue(self, query: str, player: DefaultPlayer, ctx: commands.Context) -> bool:
+        # Player is not idle (i.e. playing or paused). Add to DB.
+        if player.is_playing or player.paused:
+            try:
+                queue = self.__get_queue(player.guild_id)
+            except QueueEmptyError:
+                queue = deque()
+            queue.append(query)
+            self.__set_queue(player.guild_id, queue)
+            return True
+
+        # Queue is empty, enqueue immediately.
+        return await self.enqueue(query, player, ctx=ctx)
+
+    def __dequeue(self, guild_id: str) -> str:
+        queue = self.__get_queue(guild_id)
+        query = queue.popleft()
+        self.__set_queue(guild_id, queue)
+        return query
+
+    def __get_queue(self, guild_id: str) -> Deque[str]:
+        queue_items = self.db.child('player').child(guild_id).child('queue').get().val()
+        if queue_items:
+            return deque(json.loads(queue_items))
+        raise QueueEmptyError
+
+    def __set_queue(self, guild_id: str, queue: Deque[str]):
+        self.db.child('player').child(guild_id).child('queue').set(json.dumps(queue, cls=DequeEncoder))
 
     def cog_unload(self):
         """ Cog unload handler. This removes any event hooks that were registered. """
@@ -81,7 +112,7 @@ class Music(commands.Cog):
             await ctx.author.voice.channel.connect(cls=LavalinkVoiceClient)
         else:
             if int(player.channel_id) != ctx.author.voice.channel.id:
-                raise commands.CommandInvokeError('You need to be in my voicechannel.')
+                raise commands.CommandInvokeError('You need to be in my voice channel.')
 
     async def track_hook(self, event):
         # Recover context from DB
@@ -96,41 +127,27 @@ class Music(commands.Cog):
                 message = await channel.fetch_message(message_id)
                 ctx = await self.bot.get_context(message)
 
-        if isinstance(event, QueueEndEvent):
-            # There are no tracks left in the player's queue.
-            # To save on resources, we can tell the bot to disconnect from the voice channel.
-            guild = self.bot.get_guild(int(guild_id))
-            await guild.voice_client.disconnect(force=True)
-
-            # Delete queue from DB
-            self.db.child('player').child(guild_id).remove()
-
-            # Send queue finished embed
-            embed = nextcord.Embed(color=nextcord.Color.blurple())
-            embed.title = 'Queue finished'
-            embed.description = 'Stopped the player and disconnected from the channel'
-            await ctx.send(embed=embed)
-        elif isinstance(event, TrackStartEvent):
+        if isinstance(event, TrackStartEvent):
             # Send now playing embed
             embed = nextcord.Embed(color=nextcord.Color.yellow())
             embed.title = 'Now playing'
             embed.description = event.track.title
             await ctx.send(embed=embed)
+        elif isinstance(event, TrackEndEvent):
+            if event.reason == 'FINISHED':
+                # Track has finished playing.
+                # Queue up the next (valid) track from DB.
+                try:
+                    queue = self.__get_queue(guild_id)
+                    while len(queue):
+                        if await self.enqueue(queue.popleft(), event.player, ctx=ctx, quiet=True):
+                            # Save new queue back to DB
+                            self.__set_queue(guild_id, queue)
+                            return
+                except QueueEmptyError:
+                    await self.disconnect(ctx, queue_finished=True)
 
-            # Check if the queue for this guild is empty
-            queue_items = self.db.child('player').child(guild_id).child('queue').get().val()
-            queue = deque(json.loads(queue_items))
-            if len(queue):
-                # Queue up the next (valid) track
-                while len(queue):
-                    next_track = queue.popleft()
-                    query = f'ytsearch:{next_track[0]} {next_track[1]}'
-                    if await self.enqueue(query, event.player, ctx=ctx, quiet=True):
-                        # Store the new queue back into DB
-                        self.db.child('player').child(guild_id).child('queue').set(json.dumps(queue, cls=DequeEncoder))
-                        break
-
-    async def enqueue(self, query: str, player, ctx: commands.Context, quiet: bool = False) -> bool:
+    async def enqueue(self, query: str, player: DefaultPlayer, ctx: commands.Context, quiet: bool = False) -> bool:
         # Get the results for the query from Lavalink.
         results = await player.node.get_tracks(query)
 
@@ -152,8 +169,8 @@ class Music(commands.Cog):
         if results['loadType'] == 'PLAYLIST_LOADED':
             tracks = results['tracks']
 
+            # Add all of the tracks from the playlist to the queue
             for track in tracks:
-                # Add all of the tracks from the playlist to the queue.
                 player.add(requester=ctx.author.id, track=track)
 
             embed.title = 'Playlist enqueued'
@@ -163,18 +180,17 @@ class Music(commands.Cog):
             embed.title = 'Track enqueued'
             embed.description = f'[{track["info"]["title"]}]({track["info"]["uri"]})'
 
-            # You can attach additional information to audiotracks through kwargs, however this involves
-            # constructing the AudioTrack class yourself.
-            track = lavalink.models.AudioTrack(track, ctx.author.id, recommended=True)
+            # Add track to the queue, if the queue is empty.
+            track = lavalink.models.AudioTrack(track, ctx.author.id)
             player.add(requester=ctx.author.id, track=track)
 
         if not quiet:
             await ctx.send(embed=embed)
 
-            # We don't want to call .play() if the player is playing as that will effectively skip
-            # the current track.
-            if not player.is_playing:
-                await player.play()
+        # We don't want to call .play() if the player is not idle
+        # as that will effectively skip the current track.
+        if not player.is_playing and not player.paused:
+            await player.play()
         
         return True
 
@@ -191,63 +207,56 @@ class Music(commands.Cog):
         # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
         query = query.strip('<>')
 
-        # Check if the user input might be a URL. If it isn't, we can Lavalink do a YouTube search for it instead.
+        # Query is not a URL. Have Lavalink do a YouTube search for it.
         if not check_url(query):
-            return await self.enqueue(f'ytsearch:{query}', player, ctx=ctx)
-        else:
-            # Query is a URL
-            if check_spotify_url(query):
-                # Query is a Spotify URL.
-                try:
-                    sp_type, sp_id = parse_spotify_url(query, valid_types=['track', 'album', 'playlist'])
-                except SpotifyInvalidURLError:
-                    return await ctx.reply('Only Spotify track, album, and playlist URLs are supported.')
+            return await self.__enqueue(f'ytsearch:{query}', player, ctx=ctx)
 
-                if sp_type == 'track':
-                    # Get track details from Spotify
-                    track_name, track_artist = self.spotify.get_track(sp_id)
-                    return await self.enqueue(f'ytsearch:{track_name} {track_artist}', player, ctx=ctx)
+        # Query is a URL.
+        if check_spotify_url(query):
+            # Query is a Spotify URL.
+            try:
+                sp_type, sp_id = parse_spotify_url(query, valid_types=['track', 'album', 'playlist'])
+            except SpotifyInvalidURLError:
+                return await ctx.reply('Only Spotify track, album, and playlist URLs are supported.')
+
+            if sp_type == 'track':
+                # Get track details from Spotify
+                track_name, track_artist = self.spotify.get_track(sp_id)
+                return await self.__enqueue(f'ytsearch:{track_name} {track_artist}', player, ctx=ctx)
+            else:
+                # Get playlist or album tracks from Spotify
+                list_name, list_author, tracks = self.spotify.get_tracks(sp_type, sp_id)
+                track_queue = deque(tracks)
+
+                if len(tracks) < 1:
+                    # No tracks
+                    return await ctx.reply(f'Spotify {sp_type} is empty.')
+                elif len(tracks) == 1:
+                    # Single track
+                    return await self.__enqueue(f'ytsearch:{tracks[0][0]} {tracks[0][1]}', player, ctx=ctx)
                 else:
-                    # Get playlist or album tracks from Spotify
-                    list_name, list_author, tracks = self.spotify.get_tracks(sp_type, sp_id)
-                    track_queue = deque(tracks)
-
-                    if len(tracks) < 1:
-                        # Empty list
-                        return await ctx.reply(f'Spotify {sp_type} is empty.')
-                    elif len(tracks) == 1:
-                        # Single track
-                        return await self.enqueue(f'ytsearch:{tracks[0][0]} {tracks[0][1]}', player, ctx=ctx)
-                    else:
-                        # Multiple tracks
-                        # There is no way to queue multiple items in one batch through Lavalink.py,
-                        # hence we play the first one and store the rest of the queue in DB for later.
-
-                        # Play the first valid track
+                    # Multiple tracks
+                    # There is no way to queue multiple items in one batch through Lavalink.py,
+                    # and performing a search takes time which adds up as playlists grow larger.
+                    # Hence, to allow the user to start listening immediately,
+                    # we play the first one and store the rest of the queue in DB for later.
+                    async with ctx.typing():
                         while len(track_queue):
                             track = track_queue.popleft()
-                            result = await self.enqueue(f'ytsearch:{track[0]} {track[1]}', player, ctx=ctx, quiet=True)
-                            if result:
-                                break
-                            await ctx.send(f'Error enqueueing "{track[0]}".')
+                            track_query = f'ytsearch:{track[0]} {track[1]}'
+                            if not await self.__enqueue(track_query, player, ctx=ctx):
+                                await ctx.send(f'Error enqueueing "{track[0]}".')
 
-                        # Save the rest to DB then play
-                        if len(track_queue):
-                            encoded_queue = json.dumps(track_queue, cls=DequeEncoder)
-                            self.db.child('player').child(str(ctx.guild.id)).child('queue').set(encoded_queue)
-                        if not player.is_playing:
-                            await player.play()
-
-                        # Send enqueued embed
-                        color = nextcord.Color.blurple()
-                        embed = nextcord.Embed(color=color)
-                        embed.title = f'Spotify {sp_type} enqueued'
-                        embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
-                        return await ctx.reply(embed=embed)
-            elif check_twitch_url(query):
-                return await self.enqueue(query, player, ctx=ctx)
-            else:
-                return await self.enqueue(f'ytsearch:{query}', player, ctx=ctx)
+                    # Send enqueued embed
+                    color = nextcord.Color.blurple()
+                    embed = nextcord.Embed(color=color)
+                    embed.title = f'Spotify {sp_type} enqueued'
+                    embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
+                    return await ctx.reply(embed=embed)
+        elif check_twitch_url(query):
+            return await self.__enqueue(query, player, ctx=ctx)
+        else:
+            return await self.__enqueue(f'ytsearch:{query}', player, ctx=ctx)
 
     @commands.command()
     async def pause(self, ctx):
@@ -276,28 +285,51 @@ class Music(commands.Cog):
     async def skip(self, ctx):
         # Get the player for this guild from cache.
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
-        
-        # Skip track.
-        await player.skip()
-        await ctx.reply('Skipped the track.')
+
+        # Get next in queue.
+        try:
+            async with ctx.typing():
+                while True:
+                    query = self.__dequeue(player.guild_id)
+                    if await self.enqueue(query, player, ctx=ctx, quiet=True):
+                        # Skip track.
+                        await player.skip()
+                        return await ctx.reply('Skipped the track.')
+        except QueueEmptyError:
+            await ctx.reply('Queue is empty.')
+            return await self.disconnect(ctx)
+
+    @commands.command(aliases=['q'])
+    async def queue(self, ctx):
+        # Get the player for this guild from cache.
+        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+        await ctx.send(f'Native Lavalink queue: `{player.queue}`')
+        try:
+            queue = self.__get_queue(str(ctx.guild.id))
+            await ctx.send(f'Firebase DB queue: `{queue}`')
+        except QueueEmptyError:
+            await ctx.send(f'Firebase DB queue is empty')
 
     @commands.command(aliases=['stop', 'dc'])
-    async def disconnect(self, ctx):
+    async def disconnect(self, ctx, queue_finished: bool = False):
         """ Disconnects the player from the voice channel and clears its queue. """
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
-        if not player.is_connected:
-            # We can't disconnect, if we're not connected.
-            return await ctx.reply('Not connected.')
+        if not queue_finished:
+            if not player.is_connected:
+                # We can't disconnect, if we're not connected.
+                return await ctx.reply('Not connected.')
 
-        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
-            # Abuse prevention. Users not in voice channels, or not in the same voice channel as the bot
-            # may not disconnect the bot.
-            return await ctx.reply('You\'re not in my voicechannel!')
+            if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
+                # Abuse prevention. Users not in voice channels, or not in the same voice channel as the bot
+                # may not disconnect the bot.
+                return await ctx.reply('You\'re not in my voice channel!')
 
-        # Clear the queue to ensure old tracks don't start playing
-        # when someone else queues something.
-        player.queue.clear()
+            # Clear the queue to ensure old tracks don't start playing
+            # when someone else queues something.
+            player.queue.clear()
+
+        # Delete queue from DB.
         self.db.child('player').child(str(ctx.guild.id)).remove()
 
         # Stop the current track so Lavalink consumes less resources.
@@ -305,4 +337,7 @@ class Music(commands.Cog):
 
         # Disconnect from the voice channel.
         await ctx.voice_client.disconnect(force=True)
-        await ctx.send('*⃣ | Stopped the player and disconnected from the channel.')
+        embed = nextcord.Embed(color=nextcord.Color.blurple())
+        embed.title = 'Disconnected from voice'
+        embed.description = 'Queue finished' if queue_finished else 'Stopped the player'
+        await ctx.send(embed=embed)
