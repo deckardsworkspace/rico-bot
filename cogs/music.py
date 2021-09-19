@@ -28,19 +28,13 @@ class Music(commands.Cog):
 
         lavalink.add_event_hook(self.track_hook)
 
-    async def __enqueue(self, query: str, player: DefaultPlayer, ctx: commands.Context) -> bool:
-        # Player is not idle (i.e. playing or paused). Add to DB.
-        if player.is_playing or player.paused:
-            try:
-                queue = self.__get_queue(player.guild_id)
-            except QueueEmptyError:
-                queue = deque()
-            queue.append(query)
-            self.__set_queue(player.guild_id, queue)
-            return True
-
-        # Queue is empty, enqueue immediately.
-        return await self.enqueue(query, player, ctx=ctx)
+    def __enqueue(self, guild_id: str, query: str):
+        try:
+            queue = self.__get_queue(guild_id)
+        except QueueEmptyError:
+            queue = deque()
+        queue.append(query)
+        self.__set_queue(guild_id, queue)
 
     def __dequeue(self, guild_id: str) -> str:
         queue = self.__get_queue(guild_id)
@@ -143,6 +137,11 @@ class Music(commands.Cog):
             if not quiet:
                 await ctx.send(f'Nothing found for `{query}`!')
             return False
+        
+        # Save to DB if player is not idle.
+        queue_to_db = player.is_playing or player.paused
+        if queue_to_db:
+            self.__enqueue(str(ctx.guild.id), query)
 
         embed = nextcord.Embed(color=nextcord.Color.blurple())
 
@@ -156,8 +155,9 @@ class Music(commands.Cog):
             tracks = results['tracks']
 
             # Add all of the tracks from the playlist to the queue
-            for track in tracks:
-                player.add(requester=ctx.author.id, track=track)
+            if not queue_to_db:
+                for track in tracks:
+                    player.add(requester=ctx.author.id, track=track)
 
             embed.title = 'Playlist enqueued'
             embed.description = f'{results["playlistInfo"]["name"]} - {len(tracks)} tracks'
@@ -167,8 +167,9 @@ class Music(commands.Cog):
             embed.description = f'[{track["info"]["title"]}]({track["info"]["uri"]})'
 
             # Add track to the queue, if the queue is empty.
-            track = lavalink.models.AudioTrack(track, ctx.author.id)
-            player.add(requester=ctx.author.id, track=track)
+            if queue_to_db:
+                track = lavalink.models.AudioTrack(track, ctx.author.id)
+                player.add(requester=ctx.author.id, track=track)
 
         if not quiet:
             await ctx.send(embed=embed)
@@ -207,7 +208,7 @@ class Music(commands.Cog):
 
             # Query is not a URL. Have Lavalink do a YouTube search for it.
             if not check_url(query):
-                return await self.__enqueue(f'ytsearch:{query}', player, ctx=ctx)
+                return await self.enqueue(f'ytsearch:{query}', player, ctx=ctx)
 
             # Query is a URL.
             if check_spotify_url(query):
@@ -220,7 +221,7 @@ class Music(commands.Cog):
                 if sp_type == 'track':
                     # Get track details from Spotify
                     track_name, track_artist = self.spotify.get_track(sp_id)
-                    return await self.__enqueue(f'ytsearch:{track_name} {track_artist}', player, ctx=ctx)
+                    return await self.enqueue(f'ytsearch:{track_name} {track_artist}', player, ctx=ctx)
                 else:
                     # Get playlist or album tracks from Spotify
                     list_name, list_author, tracks = self.spotify.get_tracks(sp_type, sp_id)
@@ -231,7 +232,7 @@ class Music(commands.Cog):
                         return await ctx.reply(f'Spotify {sp_type} is empty.')
                     elif len(tracks) == 1:
                         # Single track
-                        return await self.__enqueue(f'ytsearch:{tracks[0][0]} {tracks[0][1]}', player, ctx=ctx)
+                        return await self.enqueue(f'ytsearch:{tracks[0][0]} {tracks[0][1]}', player, ctx=ctx)
                     else:
                         # Multiple tracks
                         # There is no way to queue multiple items in one batch through Lavalink.py,
@@ -242,7 +243,7 @@ class Music(commands.Cog):
                         while len(track_queue):
                             track = track_queue.popleft()
                             track_query = f'ytsearch:{track[0]} {track[1]}'
-                            if not await self.__enqueue(track_query, player, ctx=ctx):
+                            if not await self.enqueue(track_query, player, ctx=ctx):
                                 await ctx.send(f'Error enqueueing "{track[0]}".')
 
                         # Send enqueued embed
@@ -252,9 +253,9 @@ class Music(commands.Cog):
                         embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
                         return await ctx.reply(embed=embed)
             elif check_twitch_url(query):
-                return await self.__enqueue(query, player, ctx=ctx)
+                return await self.enqueue(query, player, ctx=ctx)
             else:
-                return await self.__enqueue(f'ytsearch:{query}', player, ctx=ctx)
+                return await self.enqueue(f'ytsearch:{query}', player, ctx=ctx)
 
     @commands.command()
     async def pause(self, ctx: commands.Context):
