@@ -1,9 +1,11 @@
 import nextcord
 import json
 import lavalink
+from asyncio import sleep
 from collections import deque
 from lavalink.events import *
 from lavalink.models import DefaultPlayer
+from nextcord import Member, VoiceState
 from nextcord.ext import commands
 from util import *
 from random import shuffle
@@ -71,6 +73,10 @@ class Music(commands.Cog):
             # Ensure that the bot and command author share a mutual voice channel
             await self.ensure_voice(ctx)
 
+            # Save the context for later
+            self.db.child('player').child(str(ctx.guild.id)).child('channel').set(ctx.channel.id)
+            self.db.child('player').child(str(ctx.guild.id)).child('message').set(ctx.message.id)
+
         return guild_check
 
     async def ensure_voice(self, ctx):
@@ -99,6 +105,35 @@ class Music(commands.Cog):
         else:
             if int(player.channel_id) != vc.id:
                 raise VoiceCommandError(':speaking_head: | You need to be in my voice channel.')
+    
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
+        # Ignore events not triggered by this bot
+        if not member.id == self.bot.user.id:
+            return
+
+        # Only handle join events
+        if before.channel is None:
+            # Get the player for this guild from cache
+            guild_id = after.channel.guild.id
+            player = self.bot.lavalink.player_manager.get(guild_id)
+
+            while True:
+                # Wait a minute before checking inactivity
+                await sleep(60)
+                if player.is_playing and not player.paused:
+                    # Still talking, carry on
+                    continue
+
+                # No longer talking, leave voice
+                channel_id = self.db.child('player').child(guild_id).child('channel').get().val()
+                message_id = self.db.child('player').child(guild_id).child('message').get().val()
+                if channel_id and message_id:
+                    channel = self.bot.get_channel(channel_id)
+                    message = await channel.fetch_message(message_id)
+                    ctx = await self.bot.get_context(message)
+                    await self.disconnect(ctx, reason='Inactive for 1 minute')
+                return
 
     async def track_hook(self, event):
         # Recover context from DB
@@ -133,7 +168,7 @@ class Music(commands.Cog):
                     else:
                         raise QueueEmptyError
                 except QueueEmptyError:
-                    await self.disconnect(ctx, queue_finished=True)
+                    await self.disconnect(ctx, reason='Queue finished')
 
     async def enqueue(self, query: str, player: DefaultPlayer, ctx: commands.Context,
                       queue_to_db: bool = False, quiet: bool = False) -> bool:
@@ -193,10 +228,6 @@ class Music(commands.Cog):
     async def play(self, ctx: commands.Context, *, query: str = None):
         """ Searches and plays a song from a given query. """
         async with ctx.typing():
-            # Save the context for later
-            self.db.child('player').child(str(ctx.guild.id)).child('channel').set(ctx.channel.id)
-            self.db.child('player').child(str(ctx.guild.id)).child('message').set(ctx.message.id)
-
             # Get the player for this guild from cache
             player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
@@ -318,8 +349,7 @@ class Music(commands.Cog):
                         await player.skip()
                         return await ctx.reply('Skipped the track.')
         except QueueEmptyError:
-            await ctx.reply('Queue is empty.')
-            return await self.disconnect(ctx)
+            return await self.disconnect(ctx, reason='Skipped to the end of the queue')
 
     @commands.command(name='nowplaying', aliases=['np'])
     async def now_playing(self, ctx: commands.Context, title: str = None):
@@ -374,11 +404,11 @@ class Music(commands.Cog):
             await ctx.reply('The queue is empty. Nothing to shuffle.')
 
     @commands.command(aliases=['stop', 'dc'])
-    async def disconnect(self, ctx: commands.Context, queue_finished: bool = False):
+    async def disconnect(self, ctx: commands.Context, reason: str = None):
         """ Disconnects the player from the voice channel and clears its queue. """
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
-        if not queue_finished:
+        if reason is None:
             if not player.is_connected:
                 # We can't disconnect, if we're not connected.
                 return await ctx.reply('Not connected.')
@@ -402,5 +432,5 @@ class Music(commands.Cog):
         await ctx.voice_client.disconnect(force=True)
         embed = nextcord.Embed(color=nextcord.Color.blurple())
         embed.title = 'Disconnected from voice'
-        embed.description = 'Queue finished' if queue_finished else 'Stopped the player'
+        embed.description = reason if reason is not None else 'Stopped the player'
         await ctx.send(embed=embed)
