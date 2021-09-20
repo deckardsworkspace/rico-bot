@@ -84,7 +84,7 @@ class Music(commands.Cog):
         vc = ctx.author.voice.channel
         if not player.is_connected:
             # Bot needs to already be in voice channel to pause, unpause, skip etc.
-            if not ctx.command.name in ('play', 'p'):
+            if not ctx.command.name in ('play', 'p', 'resetplayer', 'rp'):
                 raise VoiceCommandError(':electric_plug: | I\'m not connected to voice.')
 
             permissions = vc.permissions_for(ctx.me)
@@ -126,7 +126,7 @@ class Music(commands.Cog):
                 if await self.enqueue(queue.popleft(), event.player, ctx=ctx, queue_to_db=False, quiet=True):
                     break
             else:
-                await self.disconnect(ctx, queue_finished=True)
+                await self.disconnect(ctx, reason='Queue finished')
 
             # Save new queue back to DB
             self.__set_queue(guild_id, queue)
@@ -357,6 +357,18 @@ class Music(commands.Cog):
             await ctx.send(f'Firebase DB queue: `{ellipsis_truncate(str(queue), 1500)}`')
         except QueueEmptyError:
             await ctx.send(f'Firebase DB queue is empty')
+    
+    @commands.command(name='clearqueue', aliases=['cq'])
+    async def clear_queue(self, ctx: commands.Context):
+        # Empty queue in DB
+        self.__set_queue(str(ctx.guild.id), deque([]))
+        return await ctx.reply(f'**:wastebasket: | Cleared the queue for {ctx.guild.name}**')
+    
+    @commands.command(name='resetplayer', aliases=['rp'])
+    async def reset_player(self, ctx: commands.Context):
+        # Delete all traces of the player for this guild from DB
+        self.db.child('player').child(str(ctx.guild.id)).remove()
+        return await self.disconnect(ctx, reason=f'Reset player state for {ctx.guild.name}')
 
     @commands.command(aliases=['shuf'])
     async def shuffle(self, ctx: commands.Context):
@@ -370,11 +382,11 @@ class Music(commands.Cog):
             await ctx.reply('The queue is empty. Nothing to shuffle.')
 
     @commands.command(aliases=['stop', 'dc'])
-    async def disconnect(self, ctx: commands.Context, queue_finished: bool = False):
+    async def disconnect(self, ctx: commands.Context, reason: str = None):
         """ Disconnects the player from the voice channel and clears its queue. """
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
-        if not queue_finished:
+        if reason is None:
             if not player.is_connected:
                 # We can't disconnect, if we're not connected.
                 return await ctx.reply('Not connected.')
@@ -388,9 +400,6 @@ class Music(commands.Cog):
             # when someone else queues something.
             player.queue.clear()
 
-        # Delete queue and now playing data from DB.
-        self.db.child('player').child(str(ctx.guild.id)).remove()
-
         # Stop the current track so Lavalink consumes less resources.
         await player.stop()
 
@@ -398,5 +407,5 @@ class Music(commands.Cog):
         await ctx.voice_client.disconnect(force=True)
         embed = nextcord.Embed(color=nextcord.Color.blurple())
         embed.title = 'Disconnected from voice'
-        embed.description = 'Queue finished' if queue_finished else 'Stopped the player'
+        embed.description = reason if reason is not None else 'Stopped the player'
         await ctx.send(embed=embed)
