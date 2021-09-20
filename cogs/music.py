@@ -144,6 +144,7 @@ class Music(commands.Cog):
             return False
         
         # Save to DB if player is not idle.
+        queue_to_db = queue_to_db or player.current is not None
         if queue_to_db:
             self.__enqueue(str(ctx.guild.id), query)
 
