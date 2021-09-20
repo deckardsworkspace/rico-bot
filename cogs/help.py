@@ -20,8 +20,11 @@ rec_help_list = {
 
 music_help_list = {
     '{0}disconnect, {0}dc': 'Stop playback, clear the queue, and disconnect from voice.',
+    '{0}nowplaying, {0}np': 'Show the curerntly playing track.',
     '{0}play <URL/search term>, {0}p': 'Play a song, album, or playlist. Supports YouTube, Spotify, and Twitch.',
     '{0}pause': 'Pause playback.',
+    '{0}queue, {0}q': 'Show the current playback queue.',
+    '{0}shuffle, {0}shuf': 'Shuffle the current playback queue.',
     '{0}skip': 'Skip currently playing track.',
     '{0}unpause': 'Resume playback.'
 }
@@ -40,7 +43,7 @@ class Help(Cog):
             rec_help.append('`{0}` - {1}'.format(cmd_name, cmd_desc))
         rec_help = '\n'.join(rec_help)
 
-        music_help = ['**Music commands**']
+        music_help = ['**Music commands (alpha - will break!)**']
         for key, value in music_help_list.items():
             cmd_name = key.format('rc!')
             cmd_desc = value.format('rc!')
