@@ -27,7 +27,7 @@ music_help_list = {
     '{0}queue, {0}q': 'Show the current playback queue.',
     '{0}resetplayer, {0}rp': 'Reset the player state for the server.',
     '{0}shuffle, {0}shuf': 'Shuffle the current playback queue.',
-    '{0}skip': 'Skip currently playing track.',
+    '{0}skip, {0}next': 'Skip currently playing track.',
     '{0}unpause': 'Resume playback.'
 }
 

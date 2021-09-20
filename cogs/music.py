@@ -300,7 +300,7 @@ class Music(commands.Cog):
         else:
             await ctx.reply('Already unpaused.')
     
-    @commands.command()
+    @commands.command(aliases=['next'])
     async def skip(self, ctx: commands.Context):
         # Get the player for this guild from cache.
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
