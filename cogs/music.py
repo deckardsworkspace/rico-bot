@@ -274,7 +274,7 @@ class Music(commands.Cog):
                         embed.title = f'Spotify {sp_type} enqueued'
                         embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
                         return await ctx.reply(embed=embed)
-            elif check_twitch_url(query):
+            elif check_twitch_url(query) or check_youtube_url(query):
                 return await self.enqueue(query, player, ctx=ctx)
             else:
                 return await self.enqueue(f'ytsearch:{query}', player, ctx=ctx)

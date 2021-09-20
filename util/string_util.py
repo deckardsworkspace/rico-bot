@@ -18,6 +18,11 @@ def check_twitch_url(url: str) -> bool:
     return re.match(url_regex, url) is not None
 
 
+def check_youtube_url(url: str) -> bool:
+    url_regex = r"(?:https?://)?(?:www\.)?youtu\.?be(?:\.com)?/?.*(?:watch|embed)?(?:.*v=|v/|/)([\w\-_]+)\&?"
+    return re.match(url_regex, url) is not None
+
+
 def ellipsis_truncate(string: str, length: int = 200) -> str:
     if len(string) < length:
         return string
