@@ -119,21 +119,17 @@ class Music(commands.Cog):
 
             # Store now playing in DB
             self.db.child('player').child(guild_id).child('np').set(event.track.title)
-        elif isinstance(event, TrackEndEvent):
-            if event.reason == 'FINISHED':
-                # Track has finished playing.
-                # Queue up the next (valid) track from DB.
-                try:
-                    queue = self.__get_queue(guild_id)
-                    while len(queue):
-                        if await self.enqueue(queue.popleft(), event.player, ctx=ctx, queue_to_db=False, quiet=True):
-                            # Save new queue back to DB
-                            self.__set_queue(guild_id, queue)
-                            return
-                    else:
-                        raise QueueEmptyError
-                except QueueEmptyError:
-                    await self.disconnect(ctx, queue_finished=True)
+        elif isinstance(event, QueueEndEvent):
+            # Queue up the next (valid) track from DB, if any
+            queue = self.__get_queue(guild_id)
+            while len(queue):
+                if await self.enqueue(queue.popleft(), event.player, ctx=ctx, queue_to_db=False, quiet=True):
+                    break
+            else:
+                await self.disconnect(ctx, queue_finished=True)
+
+            # Save new queue back to DB
+            self.__set_queue(guild_id, queue)
 
     async def enqueue(self, query: str, player: DefaultPlayer, ctx: commands.Context,
                       queue_to_db: bool = False, quiet: bool = False) -> bool:
@@ -257,7 +253,7 @@ class Music(commands.Cog):
 
                             if not success:
                                 # Enqueue the first valid track
-                                success = await self.enqueue(track_query, player, ctx=ctx)
+                                success = await self.enqueue(track_query, player, ctx=ctx, quiet=True)
                                 if not success:
                                     await ctx.send(f'Error enqueueing "{track[0]}".')
                             else:
@@ -324,8 +320,8 @@ class Music(commands.Cog):
     @commands.command(name='nowplaying', aliases=['np'])
     async def now_playing(self, ctx: commands.Context, title: str = None):
         # Delete the previous now playing message
-        old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('npmessage').get().val()
         try:
+            old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('npmessage').get().val()
             if old_message_id:
                 old_message = await ctx.fetch_message(int(old_message_id))
                 await old_message.delete()
