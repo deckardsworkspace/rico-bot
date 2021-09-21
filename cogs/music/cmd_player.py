@@ -40,32 +40,37 @@ async def now_playing(self, ctx: Context, track_info: Union[str, Dict] = None):
             if stored_info and 'title' in stored_info:
                 track_info = stored_info
 
-                # Create progress text
-                total_ms = track_info['length']
-                total_m, total_s = divmod(floor(total_ms / 1000), 60)
-                total_text = f'{total_m:02d}:{total_s:02d}'
-                elapsed_ms = player.position
-                elapsed_m, elapsed_s = divmod(floor(elapsed_ms / 1000), 60)
-                elapsed_text = f'{elapsed_m:02d}:{elapsed_s:02d}'
+                # Don't create progress info for Twitch streams
+                if not check_twitch_url(track_info['uri']):
+                    # Create progress text
+                    total_ms = track_info['length']
+                    total_m, total_s = divmod(floor(total_ms / 1000), 60)
+                    total_text = f'{total_m:02d}:{total_s:02d}'
+                    elapsed_ms = player.position
+                    elapsed_m, elapsed_s = divmod(floor(elapsed_ms / 1000), 60)
+                    elapsed_text = f'{elapsed_m:02d}:{elapsed_s:02d}'
 
-                # Create progress bar
-                total = 20
-                elapsed_perc = elapsed_ms / total_ms
-                elapsed = '-' * (ceil(elapsed_perc * total) - 1)
-                remain = ' ' * floor((1 - elapsed_perc) * total)
-                progress_bar = f'`[{elapsed}O{remain}]`'
+                    # Create progress bar
+                    total = 20
+                    elapsed_perc = elapsed_ms / total_ms
+                    elapsed = '-' * (ceil(elapsed_perc * total) - 1)
+                    remain = ' ' * floor((1 - elapsed_perc) * total)
+                    progress_bar = f'`[{elapsed}O{remain}]`'
 
-                # Build progress info
-                progress = f'\n**{elapsed_text} {progress_bar} {total_text}**'
+                    # Build progress info
+                    progress = f'\n**{elapsed_text} {progress_bar} {total_text}**'
+        else:
+            # Invoked by listener
+            # Don't create progress info for Twitch streams
+            if not check_twitch_url(track_info['uri']):
+                m, s = divmod(floor(track_info['length'] / 1000), 60)
+                progress = f'{m:02d} min, {s:02d} sec'
 
         # Show rich track info
-        if not progress:
-            m, s = divmod(floor(track_info['length'] / 1000), 60)
-            progress = f'{m:02d} min, {s:02d} sec'
         embed.description = '\n'.join([
             f'**[{track_info["title"]}]({track_info["uri"]})**',
             f'by {track_info["author"]}',
-            progress
+            progress if progress is not None else ''
         ])
 
     else:
