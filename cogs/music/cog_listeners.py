@@ -9,7 +9,7 @@ def cog_unload(self):
     self.bot.lavalink._event_hooks.clear()
 
 
-async def cog_before_invoke(self, ctx):
+async def cog_before_invoke(self, ctx: Context):
     """ Command before-invoke handler. """
     # Only allow music commands in guilds
     guild_check = ctx.guild is not None
@@ -19,7 +19,7 @@ async def cog_before_invoke(self, ctx):
     return guild_check
 
 
-async def ensure_voice(self, ctx):
+async def ensure_voice(self, ctx: Context):
     """ This check ensures that the bot and command author are in the same voice channel. """
     # Ensure a player exists for this guild
     player = self.bot.lavalink.player_manager.create(ctx.guild.id, endpoint=str(ctx.guild.region))

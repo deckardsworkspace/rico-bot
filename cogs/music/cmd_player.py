@@ -3,6 +3,7 @@ from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
 from util import check_url, check_spotify_url, check_twitch_url, check_youtube_url, parse_spotify_url
 from util import QueueEmptyError, SpotifyInvalidURLError
+import random
 
 
 @command(name='nowplaying', aliases=['np'])
@@ -140,7 +141,7 @@ async def shuffle(self, ctx: Context):
     try:
         async with ctx.typing():
             queue = self.get_queue_db(str(ctx.guild.id))
-            shuffle(queue)
+            random.shuffle(queue)
             self.set_queue_db(str(ctx.guild.id), queue)
         await ctx.reply('Queue shuffled.')
     except QueueEmptyError:

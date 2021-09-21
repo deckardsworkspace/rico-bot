@@ -2,7 +2,7 @@ from lavalink.events import *
 from nextcord.ext.commands import Context
 
 
-async def track_hook(self, event):
+async def track_hook(self, event: Event):
     # Recover context
     guild_id = None
     ctx = None

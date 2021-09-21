@@ -1,9 +1,10 @@
 import lavalink
-import nextcord
+from nextcord import Client, StageChannel, VoiceChannel, VoiceClient
+from typing import Union
 from util import get_var
 
 
-class LavalinkVoiceClient(nextcord.VoiceClient):
+class LavalinkVoiceClient(VoiceClient):
     """
     This is the preferred way to handle external voice sending
     This client will be created via a cls in the connect method of the channel
@@ -13,10 +14,11 @@ class LavalinkVoiceClient(nextcord.VoiceClient):
     Originally from https://github.com/tailoric/Lavalink.py/commit/11124bd3ac17423520594adaf66b3950775b58f5
     """
 
-    def __init__(self, client: nextcord.Client, channel: nextcord.abc.Connectable):
+    def __init__(self, client: Client, channel: Union[StageChannel, VoiceChannel]):
         self.client = client
         self.channel = channel
-        # ensure there exists a client already
+
+        # Ensure there exists a client already
         if hasattr(self.client, 'lavalink'):
             self.lavalink = self.client.lavalink
         else:
@@ -30,8 +32,7 @@ class LavalinkVoiceClient(nextcord.VoiceClient):
             self.lavalink = self.client.lavalink
 
     async def on_voice_server_update(self, data):
-        # the data needs to be transformed before being handed down to
-        # voice_update_handler
+        # The data needs to be transformed before being handed down to voice_update_handler
         lavalink_data = {
             't': 'VOICE_SERVER_UPDATE',
             'd': data
@@ -39,8 +40,7 @@ class LavalinkVoiceClient(nextcord.VoiceClient):
         await self.lavalink.voice_update_handler(lavalink_data)
 
     async def on_voice_state_update(self, data):
-        # the data needs to be transformed before being handed down to
-        # voice_update_handler
+        # The data needs to be transformed before being handed down to voice_update_handler
         lavalink_data = {
             't': 'VOICE_STATE_UPDATE',
             'd': data
@@ -56,7 +56,7 @@ class LavalinkVoiceClient(nextcord.VoiceClient):
         self.lavalink.player_manager.create(guild_id=self.channel.guild.id)
         await self.channel.guild.change_voice_state(channel=self.channel)
 
-    async def disconnect(self, *, force: bool) -> None:
+    async def disconnect(self, *, force: bool = False) -> None:
         """
         Handles the disconnect.
         Cleans up running player and leaves the voice client.
