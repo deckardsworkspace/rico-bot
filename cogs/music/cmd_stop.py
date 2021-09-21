@@ -25,7 +25,8 @@ async def disconnect(self, ctx: Context, reason: str = None):
     await player.stop()
 
     # Disconnect from the voice channel.
-    await ctx.voice_client.disconnect(force=True)
+    if hasattr(ctx.voice_client, 'disconnect'):
+        await ctx.voice_client.disconnect(force=True)
     embed = Embed(color=Color.blurple())
     embed.title = 'Disconnected from voice'
     embed.description = reason if reason is not None else 'Stopped the player'
