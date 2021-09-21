@@ -72,11 +72,6 @@ class Music(commands.Cog):
         if guild_check:
             # Ensure that the bot and command author share a mutual voice channel
             await self.ensure_voice(ctx)
-
-            # Save the context for later
-            self.db.child('player').child(str(ctx.guild.id)).child('channel').set(ctx.channel.id)
-            self.db.child('player').child(str(ctx.guild.id)).child('message').set(ctx.message.id)
-
         return guild_check
 
     async def ensure_voice(self, ctx):
@@ -100,7 +95,8 @@ class Music(commands.Cog):
             if vc.user_limit and vc.user_limit <= len(vc.members):
                 raise VoiceCommandError(':mute: | Your voice channel is full.')
 
-            player.store('channel', ctx.channel.id)
+            # Save context for later
+            player.store('context', ctx)
         else:
             if int(player.channel_id) != vc.id:
                 raise VoiceCommandError(':speaking_head: | You need to be in my voice channel.')
@@ -125,27 +121,19 @@ class Music(commands.Cog):
                     continue
 
                 # No longer talking, leave voice
-                channel_id = self.db.child('player').child(guild_id).child('channel').get().val()
-                message_id = self.db.child('player').child(guild_id).child('message').get().val()
-                if channel_id and message_id:
-                    channel = self.bot.get_channel(channel_id)
-                    message = await channel.fetch_message(message_id)
-                    ctx = await self.bot.get_context(message)
+                ctx = player.fetch('context')
+                if isinstance(ctx, commands.Context) and player.is_connected:
                     await self.disconnect(ctx, reason='Inactive for 1 minute')
                 return
 
     async def track_hook(self, event):
-        # Recover context from DB
+        # Recover context
         guild_id = None
         ctx = None
         if hasattr(event, 'player'):
-            guild_id = event.player.guild_id
-            channel_id = self.db.child('player').child(guild_id).child('channel').get().val()
-            message_id = self.db.child('player').child(guild_id).child('message').get().val()
-            if channel_id and message_id:
-                channel = self.bot.get_channel(channel_id)
-                message = await channel.fetch_message(message_id)
-                ctx = await self.bot.get_context(message)
+            ctx = event.player.fetch('context')
+            if isinstance(ctx, commands.Context):
+                guild_id = str(ctx.guild.id)
 
         if isinstance(event, TrackStartEvent):
             # Send now playing embed
@@ -178,7 +166,8 @@ class Music(commands.Cog):
             return False
         else:
             # If a result is found, connect to voice.
-            await ctx.author.voice.channel.connect(cls=LavalinkVoiceClient)
+            if not player.is_connected:
+                await ctx.author.voice.channel.connect(cls=LavalinkVoiceClient)
 
         # Save to DB if player is not idle.
         queue_to_db = queue_to_db or player.current is not None
