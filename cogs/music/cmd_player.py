@@ -1,13 +1,15 @@
 from collections import deque
+from math import ceil, floor
 from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
+from typing import Dict, Union
 from util import check_url, check_spotify_url, check_twitch_url, check_youtube_url, parse_spotify_url
 from util import QueueEmptyError, SpotifyInvalidURLError
 import random
 
 
 @command(name='nowplaying', aliases=['np'])
-async def now_playing(self, ctx: Context, title: str = None):
+async def now_playing(self, ctx: Context, track_info: Union[str, Dict] = None):
     # Delete the previous now playing message
     try:
         old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('npmessage').get().val()
@@ -22,15 +24,57 @@ async def now_playing(self, ctx: Context, title: str = None):
 
     if player.is_playing or player.paused:
         embed = Embed(color=Color.teal())
-        embed.title = 'Now playing' if player.is_playing else 'Paused'
-        embed.description = title if title else player.current.title
+        embed.title = 'Paused' if player.paused else 'Now playing'
+        embed.description = player.current.title
+
+        # Get requester info
+        requester = await self.bot.fetch_user(player.current.requester)
+        embed.set_footer(text=f'Requested by {requester.name}#{requester.discriminator}')
+
+        # Try to recover track info
+        progress = None
+        if track_info is None:
+            # Invoked by command
+            current_id = player.current['identifier']
+            stored_info = player.fetch(current_id)
+            if stored_info and 'title' in stored_info:
+                track_info = stored_info
+
+                # Create progress text
+                total_ms = track_info['length']
+                total_m, total_s = divmod(floor(total_ms / 1000), 60)
+                total_text = f'{total_m:02d}:{total_s:02d}'
+                elapsed_ms = player.position
+                elapsed_m, elapsed_s = divmod(floor(elapsed_ms / 1000), 60)
+                elapsed_text = f'{elapsed_m:02d}:{elapsed_s:02d}'
+
+                # Create progress bar
+                total = 20
+                elapsed_perc = elapsed_ms / total_ms
+                elapsed = '-' * (ceil(elapsed_perc * total) - 1)
+                remain = ' ' * floor((1 - elapsed_perc) * total)
+                progress_bar = f'`[{elapsed}O{remain}]`'
+
+                # Build progress info
+                progress = f'\n**{elapsed_text} {progress_bar} {total_text}**'
+
+        # Show rich track info
+        if not progress:
+            m, s = divmod(floor(track_info['length'] / 1000), 60)
+            progress = f'{m:02d} min, {s:02d} sec'
+        embed.description = '\n'.join([
+            f'**[{track_info["title"]}]({track_info["uri"]})**',
+            f'by {track_info["author"]}',
+            progress
+        ])
+
     else:
         embed = Embed(color=Color.yellow())
         embed.title = 'Not playing'
         embed.description = 'To play, use `{0}play <URL/search term>`. Try `{0}help` for more.'.format('rc!')
 
     # Save this message
-    if title:
+    if track_info is not None:
         message = await ctx.send(embed=embed)
     else:
         message = await ctx.reply(embed=embed)
@@ -61,9 +105,10 @@ async def play(self, ctx: Context, *, query: str = None):
         if not query:
             old_np = self.db.child('player').child(str(ctx.guild.id)).child('np').get().val()
             if old_np:
+                queue_len = len(self.get_queue_db(str(ctx.guild.id))) + 1
                 embed = Embed(color=Color.purple())
                 embed.title = 'Resuming interrupted queue'
-                embed.description = old_np
+                embed.description = f'{queue_len} items'
                 await ctx.reply(embed=embed)
                 return await self.enqueue(f'ytsearch:{old_np}', player, ctx=ctx, quiet=True)
             return await ctx.reply('Please specify a URL or a search term to play.')

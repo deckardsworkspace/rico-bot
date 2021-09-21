@@ -13,7 +13,13 @@ async def track_hook(self, event: Event):
 
     if isinstance(event, TrackStartEvent):
         # Send now playing embed
-        await self.now_playing(ctx, title=event.track.title)
+        track_info = event.track.title
+        if hasattr(event.player.current, 'identifier'):
+            # Get info currently playing track
+            stored_info = event.player.fetch(event.player.current['identifier'])
+            if stored_info and 'title' in stored_info:
+                track_info = stored_info
+        await self.now_playing(ctx, track_info=track_info)
 
         # Store now playing in DB
         self.db.child('player').child(guild_id).child('np').set(event.track.title)

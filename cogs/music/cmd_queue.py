@@ -48,6 +48,10 @@ async def enqueue(self, query: str, player: DefaultPlayer, ctx: Context,
         # Add all of the tracks from the playlist to the queue
         if not queue_to_db:
             for track in tracks:
+                # Save track metadata to player storage
+                if 'identifier' in track['info']:
+                    player.store(track['info']['identifier'], track['info'])
+
                 player.add(requester=ctx.author.id, track=track)
 
         embed.title = 'Playlist enqueued'
@@ -59,6 +63,10 @@ async def enqueue(self, query: str, player: DefaultPlayer, ctx: Context,
 
         # Add track to the queue, if the queue is empty.
         if not queue_to_db:
+            # Save track metadata to player storage
+            if 'identifier' in track['info']:
+                player.store(track['info']['identifier'], track['info'])
+
             track = AudioTrack(track, ctx.author.id)
             player.add(requester=ctx.author.id, track=track)
 
