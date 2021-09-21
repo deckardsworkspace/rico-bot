@@ -123,7 +123,7 @@ async def play(self, ctx: Context, *, query: str = None):
                     else:
                         if len(queries):
                             # Append everything in one go to save DB accesses
-                            self.enqueue_db_multiple(str(ctx.guild.id), queries)
+                            self.enqueue_db(str(ctx.guild.id), queries)
 
                     # Send enqueued embed
                     embed = Embed(color=Color.blurple())

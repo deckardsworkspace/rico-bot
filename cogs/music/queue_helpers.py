@@ -1,16 +1,21 @@
 from collections import deque
-from typing import Deque
+from typing import Deque, List, Union
 from util import QueueEmptyError
 from .deque_encoder import DequeEncoder
 import json
 
 
-def enqueue_db(self, guild_id: str, query: str):
+def enqueue_db(self, guild_id: str, query: Union[str, List[str]]):
     try:
         queue = self.get_queue_db(guild_id)
     except QueueEmptyError:
         queue = deque()
-    queue.append(query)
+
+    if isinstance(query, list):
+        queue.extend(query)
+    else:
+        queue.append(query)
+
     self.set_queue_db(guild_id, queue)
 
 
