@@ -79,7 +79,7 @@ async def queue(self, ctx: Context):
     player = self.bot.lavalink.player_manager.get(ctx.guild.id)
     await ctx.send(f'Native Lavalink queue: `{player.queue}`')
     try:
-        queue = self.get_queue_db(str(ctx.guild.id))
-        await ctx.send(f'Firebase DB queue: `{ellipsis_truncate(str(queue), 1500)}`')
+        db_queue = self.get_queue_db(str(ctx.guild.id))
+        await ctx.send(f'Firebase DB queue: `{ellipsis_truncate(str(db_queue), 1500)}`')
     except QueueEmptyError:
         await ctx.send(f'Firebase DB queue is empty')
