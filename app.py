@@ -5,7 +5,7 @@ from util import get_var, VoiceCommandError
 
 
 # Create Discord client
-client = Bot(command_prefix='rc!')
+client = Bot(command_prefix=get_var('BOT_PREFIX'))
 client.remove_command('help')
 
 
