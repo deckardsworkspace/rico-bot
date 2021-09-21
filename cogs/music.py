@@ -101,7 +101,6 @@ class Music(commands.Cog):
                 raise VoiceCommandError(':mute: | Your voice channel is full.')
 
             player.store('channel', ctx.channel.id)
-            await vc.connect(cls=LavalinkVoiceClient)
         else:
             if int(player.channel_id) != vc.id:
                 raise VoiceCommandError(':speaking_head: | You need to be in my voice channel.')
@@ -177,7 +176,10 @@ class Music(commands.Cog):
             if not quiet:
                 await ctx.send(f'Nothing found for `{query}`!')
             return False
-        
+        else:
+            # If a result is found, connect to voice.
+            await ctx.author.voice.channel.connect(cls=LavalinkVoiceClient)
+
         # Save to DB if player is not idle.
         queue_to_db = queue_to_db or player.current is not None
         if queue_to_db:
