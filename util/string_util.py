@@ -14,7 +14,7 @@ def check_spotify_url(url: str) -> bool:
 
 
 def check_twitch_url(url: str) -> bool:
-    url_regex = r"^(https?://(www\.))twitch\.tv/(.*)$"
+    url_regex = r"(^http(s)?://)?((www|en-es|en-gb|secure|beta|ro|www-origin|en-ca|fr-ca|lt|zh-tw|he|id|ca|mk|lv|ma|tl|hi|ar|bg|vi|th)\.)?twitch.tv/(?!directory|p|user/legal|admin|login|signup|jobs)(?P<channel>\w+)"
     return re.match(url_regex, url) is not None
 
 
