@@ -1,0 +1,32 @@
+from collections import deque
+from typing import Deque
+from util import QueueEmptyError
+from .deque_encoder import DequeEncoder
+import json
+
+
+def enqueue_db(self, guild_id: str, query: str):
+    try:
+        queue = self.get_queue_db(guild_id)
+    except QueueEmptyError:
+        queue = deque()
+    queue.append(query)
+    self.set_queue_db(guild_id, queue)
+
+
+def dequeue_db(self, guild_id: str) -> str:
+    queue = self.get_queue_db(guild_id)
+    query = queue.popleft()
+    self.set_queue_db(guild_id, queue)
+    return query
+
+
+def get_queue_db(self, guild_id: str) -> Deque[str]:
+    queue_items = self.db.child('player').child(guild_id).child('queue').get().val()
+    if queue_items:
+        return deque(json.loads(queue_items))
+    raise QueueEmptyError
+
+
+def set_queue_db(self, guild_id: str, queue: Deque[str]):
+    self.db.child('player').child(guild_id).child('queue').set(json.dumps(queue, cls=DequeEncoder))

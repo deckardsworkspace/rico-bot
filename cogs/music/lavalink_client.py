@@ -1,6 +1,6 @@
-from .config import get_var
 import lavalink
 import nextcord
+from util import get_var
 
 
 class LavalinkVoiceClient(nextcord.VoiceClient):

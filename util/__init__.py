@@ -4,5 +4,3 @@ from .exception import *
 from .youtube_recommendation import YouTubeRecommendation
 from .string_util import *
 from .config import *
-from .lavalink_client import LavalinkVoiceClient
-from .deque_encoder import DequeEncoder
