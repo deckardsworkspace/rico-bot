@@ -1,4 +1,3 @@
-from asyncio import sleep
 from nextcord import Color, Embed, Member, VoiceState
 from nextcord.ext.commands import Cog, Context
 from util import VoiceCommandError
@@ -73,18 +72,5 @@ async def on_voice_state_update(self, member: Member, before: VoiceState, after:
 
         # Join events
         if before.channel is None:
-            # Deafen this bot
+            # Deafen this bot upon joining
             await member.edit(deafen=True)
-
-            while True:
-                # Wait a minute before checking inactivity
-                await sleep(60)
-                if player.is_playing and not player.paused:
-                    # Still talking, carry on
-                    continue
-
-                # No longer talking, leave voice
-                ctx = player.fetch('context')
-                if isinstance(ctx, Context) and player.is_connected:
-                    await self.disconnect(ctx, reason='Inactive for 1 minute')
-                return
