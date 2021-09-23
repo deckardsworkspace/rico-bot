@@ -188,14 +188,13 @@ async def play(self, ctx: Context, *, query: str = None):
 
 @command(aliases=['shuf'])
 async def shuffle(self, ctx: Context):
-    try:
-        async with ctx.typing():
-            queue = self.get_queue_db(str(ctx.guild.id))
-            random.shuffle(queue)
-            self.set_queue_db(str(ctx.guild.id), queue)
-        await ctx.reply('Queue shuffled.')
-    except QueueEmptyError:
-        await ctx.reply('The queue is empty. Nothing to shuffle.')
+    async with ctx.typing():
+        queue = self.get_queue_db(str(ctx.guild.id))
+        if not len(queue):
+            return await ctx.reply('The queue is empty. Nothing to shuffle.')
+
+        random.shuffle(queue)
+        self.set_queue_db(str(ctx.guild.id), queue)
 
 
 @command(aliases=['next'])

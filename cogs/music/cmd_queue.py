@@ -2,7 +2,7 @@ from collections import deque
 from lavalink.models import AudioTrack, DefaultPlayer
 from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
-from util import ellipsis_truncate, QueueEmptyError
+from util import ellipsis_truncate
 from .lavalink_client import LavalinkVoiceClient
 
 
@@ -83,11 +83,8 @@ async def enqueue(self, query: str, player: DefaultPlayer, ctx: Context,
 
 @command(aliases=['q'])
 async def queue(self, ctx: Context):
-    # Get the player for this guild from cache.
-    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
-    await ctx.send(f'Native Lavalink queue: `{player.queue}`')
-    try:
-        db_queue = self.get_queue_db(str(ctx.guild.id))
-        await ctx.send(f'Firebase DB queue: `{ellipsis_truncate(str(db_queue), 1500)}`')
-    except QueueEmptyError:
-        await ctx.send(f'Firebase DB queue is empty')
+    db_queue = self.get_queue_db(str(ctx.guild.id))
+    if not len(db_queue):
+        return await ctx.send(f'Firebase DB queue is empty')
+
+    await ctx.send(f'Firebase DB queue: `{ellipsis_truncate(str(db_queue), 1500)}`')
