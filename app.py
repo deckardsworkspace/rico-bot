@@ -5,7 +5,8 @@ from util import get_var, VoiceCommandError
 
 
 # Create Discord client
-client = Bot(command_prefix=get_var('BOT_PREFIX'))
+bot_prefix = get_var('BOT_PREFIX')
+client = Bot(command_prefix=bot_prefix)
 client.remove_command('help')
 
 
@@ -43,7 +44,7 @@ async def on_command_error(ctx, error):
 @loop(seconds=120)
 async def bot_loop():
     # Change presence
-    status = "{0} {1} | rc!help".format(len(client.guilds), "servers")
+    status = "{0} {1} | {2}help".format(len(client.guilds), "servers", bot_prefix)
     activity = Activity(name=status, type=ActivityType.listening)
     await client.change_presence(activity=activity)
 
