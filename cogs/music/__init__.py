@@ -41,10 +41,10 @@ class Music(Cog):
     ################
 
     # Player commands
-    from .cmd_player import now_playing, pause, play, shuffle, skip, unpause
+    from .cmd_player import now_playing, pause, play, skip, unpause
 
     # Queue commands
-    from .cmd_queue import clear_queue, enqueue, queue
+    from .cmd_queue import clear_queue, enqueue, queue, shuffle
 
     # Player reset commands
     from .cmd_stop import disconnect, reset_player

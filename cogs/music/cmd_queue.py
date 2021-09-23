@@ -4,6 +4,7 @@ from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
 from util import ellipsis_truncate
 from .lavalink_client import LavalinkVoiceClient
+import random
 
 
 @command(name='clearqueue', aliases=['cq'])
@@ -88,3 +89,18 @@ async def queue(self, ctx: Context):
         return await ctx.send(f'Firebase DB queue is empty')
 
     await ctx.send(f'Firebase DB queue: `{ellipsis_truncate(str(db_queue), 1500)}`')
+
+
+@command(aliases=['shuf'])
+async def shuffle(self, ctx: Context):
+    async with ctx.typing():
+        queue = self.get_queue_db(str(ctx.guild.id))
+        if not len(queue):
+            return await ctx.reply('The queue is empty. Nothing to shuffle.')
+
+        random.shuffle(queue)
+        self.set_queue_db(str(ctx.guild.id), queue)
+        embed = Embed(color=Color.gold())
+        embed.title = 'Shuffled the queue'
+        embed.description = f'{len(queue)} tracks shuffled'
+        return await ctx.reply(embed=embed)

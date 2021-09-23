@@ -5,7 +5,6 @@ from nextcord.ext.commands import command, Context
 from typing import Dict, Union
 from util import check_url, check_spotify_url, check_twitch_url, check_youtube_url, parse_spotify_url
 from util import QueueEmptyError, SpotifyInvalidURLError
-import random
 
 
 @command(name='nowplaying', aliases=['np'])
@@ -184,17 +183,6 @@ async def play(self, ctx: Context, *, query: str = None):
             return await self.enqueue(query, player, ctx=ctx)
         else:
             return await self.enqueue(f'ytsearch:{query}', player, ctx=ctx)
-
-
-@command(aliases=['shuf'])
-async def shuffle(self, ctx: Context):
-    async with ctx.typing():
-        queue = self.get_queue_db(str(ctx.guild.id))
-        if not len(queue):
-            return await ctx.reply('The queue is empty. Nothing to shuffle.')
-
-        random.shuffle(queue)
-        self.set_queue_db(str(ctx.guild.id), queue)
 
 
 @command(aliases=['next'])
