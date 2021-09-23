@@ -16,8 +16,11 @@ def setup(bot: Bot):
     db = firebase.database()
 
     # Add cogs
-    bot.add_cog(Export(bot, db, spotify))
     bot.add_cog(Help(bot))
+    print('Loaded cog: Help')
+    bot.add_cog(Export(bot, db, spotify))
+    print('Loaded cog: Export')
     bot.add_cog(Music(bot, db, spotify))
+    print('Loaded cog: Music')
     bot.add_cog(Recommendation(bot, db, spotify, get_var('FIREBASE_KEY')))
-    print('Loaded cogs')
+    print('Loaded cog: Recommendation')
