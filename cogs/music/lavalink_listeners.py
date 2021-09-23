@@ -8,9 +8,10 @@ async def track_hook(self, event: Event):
     guild_id = None
     ctx = None
     if hasattr(event, 'player'):
+        guild_id = str(event.player.guild_id)
         ctx = event.player.fetch('context')
-        if isinstance(ctx, Context):
-            guild_id = str(ctx.guild.id)
+        if not isinstance(ctx, Context):
+            raise RuntimeError(f'Could not recover Context object from player for guild {guild_id}')
 
     if isinstance(event, TrackStartEvent):
         # Send now playing embed
@@ -33,8 +34,7 @@ async def track_hook(self, event: Event):
                 return
 
             # No longer talking, leave voice
-            ctx = event.player.fetch('context')
-            if isinstance(ctx, Context) and event.player.is_connected:
+            if event.player.is_connected:
                 await self.disconnect(ctx, reason='Inactive for 1 minute')
     elif isinstance(event, QueueEndEvent):
         # Queue up the next (valid) track from DB, if any
