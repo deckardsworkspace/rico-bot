@@ -1,4 +1,3 @@
-from asyncio import sleep
 from lavalink.events import *
 from nextcord.ext.commands import Context
 
@@ -14,6 +13,10 @@ async def track_hook(self, event: Event):
             raise RuntimeError(f'Could not recover Context object from player for guild {guild_id}')
 
     if isinstance(event, TrackStartEvent):
+        # Mute self
+        bot_member = await ctx.guild.fetch_member(self.bot.user.id)
+        await bot_member.edit(deafen=True)
+
         # Send now playing embed
         track_info = event.track.title
         if hasattr(event.player.current, 'identifier'):
@@ -25,25 +28,12 @@ async def track_hook(self, event: Event):
 
         # Store now playing in DB
         self.db.child('player').child(guild_id).child('np').set(event.track.title)
-    elif isinstance(event, TrackEndEvent):
-        if event.reason == 'FINISHED':
-            # Wait a minute before checking inactivity
-            await sleep(60)
-            if event.player.is_playing:
-                # Still talking, carry on
-                return
-
-            # No longer talking, leave voice
-            if event.player.is_connected:
-                await self.disconnect(ctx, reason='Inactive for 1 minute')
     elif isinstance(event, QueueEndEvent):
         # Queue up the next (valid) track from DB, if any
         queue = self.get_queue_db(guild_id)
         while len(queue):
             if await self.enqueue(queue.popleft(), event.player, ctx=ctx, queue_to_db=False, quiet=True):
                 break
-        else:
-            await self.disconnect(ctx, reason='Queue finished')
 
         # Save new queue back to DB
         self.set_queue_db(guild_id, queue)
