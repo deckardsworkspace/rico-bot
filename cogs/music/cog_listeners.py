@@ -1,5 +1,5 @@
 from asyncio import sleep
-from nextcord import Member, VoiceState
+from nextcord import Color, Embed, Member, VoiceState
 from nextcord.ext.commands import Cog, Context
 from util import VoiceCommandError
 
@@ -52,22 +52,39 @@ async def on_voice_state_update(self, member: Member, before: VoiceState, after:
     # Ignore events not triggered by this bot
     if not member.id == self.bot.user.id:
         return
-
-    # Only handle join events
-    if before.channel is None:
+    
+    # Ignore leave events
+    if after.channel is not None:
         # Get the player for this guild from cache
         guild_id = after.channel.guild.id
         player = self.bot.lavalink.player_manager.get(guild_id)
 
-        while True:
-            # Wait a minute before checking inactivity
-            await sleep(60)
-            if player.is_playing and not player.paused:
-                # Still talking, carry on
-                continue
+        # Deafen this bot
+        if not after.deaf:
+            await member.edit(deafen=True)
+            if before.deaf:
+                # Someone undeafened me!
+                ctx = player.fetch('context')
+                if isinstance(ctx, Context):
+                    embed = Embed(color=Color.red())
+                    embed.title = 'Deafened the bot'
+                    embed.description = 'Please don\'t undeafen me! This helps me save resources.'
+                    await ctx.send(embed=embed)
 
-            # No longer talking, leave voice
-            ctx = player.fetch('context')
-            if isinstance(ctx, Context) and player.is_connected:
-                await self.disconnect(ctx, reason='Inactive for 1 minute')
-            return
+        # Join events
+        if before.channel is None:
+            # Deafen this bot
+            await member.edit(deafen=True)
+
+            while True:
+                # Wait a minute before checking inactivity
+                await sleep(60)
+                if player.is_playing and not player.paused:
+                    # Still talking, carry on
+                    continue
+
+                # No longer talking, leave voice
+                ctx = player.fetch('context')
+                if isinstance(ctx, Context) and player.is_connected:
+                    await self.disconnect(ctx, reason='Inactive for 1 minute')
+                return
