@@ -135,7 +135,7 @@ async def play(self, ctx: Context, *, query: str = None):
             if sp_type == 'track':
                 # Get track details from Spotify
                 track_name, track_artist = self.spotify.get_track(sp_id)
-                return await self.enqueue(f'ytsearch:{track_name} {track_artist}', player, ctx=ctx)
+                return await self.enqueue(f'ytsearch:{track_name} {track_artist} audio', player, ctx=ctx)
             else:
                 # Get playlist or album tracks from Spotify
                 list_name, list_author, tracks = self.spotify.get_tracks(sp_type, sp_id)
