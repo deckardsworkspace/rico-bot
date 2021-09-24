@@ -146,7 +146,7 @@ async def play(self, ctx: Context, *, query: str = None):
                     return await ctx.reply(f'Spotify {sp_type} is empty.')
                 elif len(tracks) == 1:
                     # Single track
-                    return await self.enqueue(f'ytsearch:{tracks[0][0]} {tracks[0][1]}', player, ctx=ctx)
+                    return await self.enqueue(f'ytsearch:{tracks[0][0]} {tracks[0][1]} audio', player, ctx=ctx)
                 else:
                     # Multiple tracks
                     # There is no way to queue multiple items in one batch through Lavalink.py,
@@ -159,7 +159,7 @@ async def play(self, ctx: Context, *, query: str = None):
                     success = False
                     while len(track_queue):
                         track = track_queue.popleft()
-                        track_query = f'ytsearch:{track[0]} {track[1]}'
+                        track_query = f'ytsearch:{track[0]} {track[1]} audio'
 
                         if not success:
                             # Enqueue the first valid track
