@@ -20,9 +20,10 @@ def get_chunks(lst):
 
 
 def extract_track_info(track_obj) -> tuple[str, str]:
-    if 'track' in track_obj: # Nested track (playlist track object)
-        return track_obj['track']['name'], track_obj['track']['artists'][0]['name']
-    return track_obj['name'], track_obj['artists'][0]['name']
+    if 'track' in track_obj:
+        # Nested track (playlist track object)
+        track_obj = track_obj['track']
+    return track_obj['name'], track_obj['artists'][0]['name'], track_obj['id']
 
 
 class Spotify:
@@ -142,8 +143,9 @@ class Spotify:
             if list_type == 'album':
                 response = self.client.album_tracks(list_id, offset=offset)
             else:
+                fields = 'items.track.name,items.track.artists,items.track.id'
                 response = self.client.playlist_items(list_id, offset=offset,
-                                                      fields='items.track.name,items.track.artists',
+                                                      fields=fields,
                                                       additional_types=['track'])
 
             if len(response['items']) == 0:

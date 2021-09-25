@@ -34,7 +34,7 @@ async def now_playing(self, ctx: Context, track_info: Union[str, Dict] = None):
         progress = None
         if track_info is None:
             # Invoked by command
-            current_id = player.current['identifier']
+            current_id = player.current.identifier
             stored_info = player.fetch(current_id)
             if stored_info and 'title' in stored_info:
                 track_info = stored_info
@@ -135,8 +135,10 @@ async def play(self, ctx: Context, *, query: str = None):
 
             if sp_type == 'track':
                 # Get track details from Spotify
-                track_name, track_artist = self.spotify.get_track(sp_id)
-                return await self.enqueue(f'ytsearch:{track_name} {track_artist}', ctx=ctx)
+                track_name, track_artist, track_id = self.spotify.get_track(sp_id)
+                return await self.enqueue(f'ytsearch:{track_name} {track_artist} audio', ctx=ctx, sp_data={
+                    'name': track_name, 'artist': track_artist, 'id': track_id
+                })
             else:
                 # Get playlist or album tracks from Spotify
                 list_name, list_author, tracks = self.spotify.get_tracks(sp_type, sp_id)
@@ -147,7 +149,10 @@ async def play(self, ctx: Context, *, query: str = None):
                     return await ctx.reply(f'Spotify {sp_type} is empty.')
                 elif len(tracks) == 1:
                     # Single track
-                    return await self.enqueue(f'ytsearch:{tracks[0][0]} {tracks[0][1]}', ctx=ctx)
+                    track_name, track_artist, track_id = tracks[0]
+                    return await self.enqueue(f'ytsearch{track_name} {track_artist} audio', ctx=ctx, sp_data={
+                        'name': track_name, 'artist': track_artist, 'id': track_id
+                    })
                 else:
                     # Multiple tracks
                     # There is no way to queue multiple items in one batch through Lavalink.py,
@@ -160,16 +165,27 @@ async def play(self, ctx: Context, *, query: str = None):
                     success = False
                     while len(track_queue):
                         track = track_queue.popleft()
-                        track_query = f'ytsearch:{track[0]} {track[1]} audio'
+                        track_name, track_artist, track_id = track
+                        track_query = f'ytsearch:{track_name} {track_artist} audio'
 
                         if not success:
                             # Enqueue the first valid track
-                            success = await self.enqueue(track_query, ctx=ctx, quiet=True)
+                            success = await self.enqueue(track_query, ctx=ctx, quiet=True, sp_data={
+                                'name': track_name, 'artist': track_artist, 'id': track_id
+                            })
                             if not success:
                                 await ctx.send(f'Error enqueueing "{track[0]}".')
                         else:
-                            # Append the rest to the queue
-                            queries.append(track_query)
+                            # Append to db queue
+                            track_obj = {
+                                'requester': ctx.author.id,
+                                'spotify': {
+                                    'name': track_name,
+                                    'artist': track_artist,
+                                    'id': track_id
+                                }
+                            }
+                            queries.append(track_obj)
                     else:
                         if len(queries):
                             # Append everything in one go to save DB accesses
@@ -197,14 +213,24 @@ async def skip(self, ctx: Context):
         while len(queue):
             track = queue.popleft()
             try:
-                # Save track metadata to player storage
-                if 'identifier' in track['info']:
-                    player.store(track['info']['identifier'], track['info'])
+                if 'spotify' in track:
+                    # Perform query
+                    track_name = track["spotify"]["name"]
+                    track_artist = track["spotify"]["artist"]
+                    query = f'ytsearch:{track_name} {track_artist} audio'
+                    await self.enqueue(query, ctx=ctx, quiet=True, sp_data=track['spotify'])
+                    break
+                elif 'info' in track:
+                    # Save track metadata to player storage
+                    if 'identifier' in track['info']:
+                        player.store(track['info']['identifier'], track['info'])
 
-                # Play track
-                player.add(requester=track['requester'], track=track)
-                await player.play()
-                break
+                    # Play track
+                    player.add(requester=track['requester'], track=track)
+                    await player.play()
+                    break
+                else:
+                    raise Exception('Track object is incomplete')
             except Exception as e:
                 await ctx.send(f'Unable to play {track}. Reason: {e}')
                 continue
