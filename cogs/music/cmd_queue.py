@@ -7,6 +7,12 @@ from .lavalink_client import LavalinkVoiceClient
 import random
 
 
+async def search(player: DefaultPlayer, query: str = None):
+    # Get the results for the query from Lavalink
+    result = await player.node.get_tracks(query)
+    return result
+
+
 @command(name='clearqueue', aliases=['cq'])
 async def clear_queue(self, ctx: Context):
     # Empty queue in DB
@@ -14,10 +20,13 @@ async def clear_queue(self, ctx: Context):
     return await ctx.reply(f'**:wastebasket: | Cleared the queue for {ctx.guild.name}**')
 
 
-async def enqueue(self, query: str, player: DefaultPlayer, ctx: Context,
+async def enqueue(self, query: str, ctx: Context,
                   queue_to_db: bool = False, quiet: bool = False) -> bool:
-    # Get the results for the query from Lavalink.
-    results = await player.node.get_tracks(query)
+    # Get the player for this guild from cache
+    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+
+    # Get the results for the query from Lavalink
+    results = await search(player, query)
 
     # Results could be None if Lavalink returns an invalid response (non-JSON/non-200 (OK)).
     # Alternatively, results['tracks'] could be an empty array if the query yielded no tracks.
@@ -32,8 +41,6 @@ async def enqueue(self, query: str, player: DefaultPlayer, ctx: Context,
 
     # Save to DB if player is not idle.
     queue_to_db = queue_to_db or player.current is not None
-    if queue_to_db:
-        self.enqueue_db(str(ctx.guild.id), query)
 
     embed = Embed(color=Color.blurple())
 
@@ -46,8 +53,13 @@ async def enqueue(self, query: str, player: DefaultPlayer, ctx: Context,
     if results['loadType'] == 'PLAYLIST_LOADED':
         tracks = results['tracks']
 
-        # Add all of the tracks from the playlist to the queue
-        if not queue_to_db:
+        if queue_to_db:
+            # Add all results to database queue
+            for i in range(len(tracks)):
+                tracks[i]['requester'] = ctx.author.id
+            self.enqueue_db(str(ctx.guild.id), tracks)
+        else:
+            # Add all of the tracks from the playlist to the queue
             for track in tracks:
                 # Save track metadata to player storage
                 if 'identifier' in track['info']:
@@ -62,22 +74,25 @@ async def enqueue(self, query: str, player: DefaultPlayer, ctx: Context,
         embed.title = 'Track enqueued'
         embed.description = f'[{track["info"]["title"]}]({track["info"]["uri"]})'
 
-        # Add track to the queue, if the queue is empty.
-        if not queue_to_db:
+        if queue_to_db:
+            # Add track to database queue
+            track['requester'] = ctx.author.id
+            self.enqueue_db(str(ctx.guild.id), track)
+        else:
             # Save track metadata to player storage
             if 'identifier' in track['info']:
                 player.store(track['info']['identifier'], track['info'])
 
+            # Add track directly to Lavalink queue
             track = AudioTrack(track, ctx.author.id)
             player.add(requester=ctx.author.id, track=track)
-
-    if not quiet:
-        await ctx.send(embed=embed)
 
     # We don't want to call .play() if the player is not idle
     # as that will effectively skip the current track.
     if not player.is_playing and not player.paused:
         await player.play()
+    if not quiet:
+        await ctx.send(embed=embed)
     
     return True
 

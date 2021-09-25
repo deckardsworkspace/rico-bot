@@ -102,19 +102,20 @@ async def pause(self, ctx: Context):
 async def play(self, ctx: Context, *, query: str = None):
     """ Searches and plays a song from a given query. """
     async with ctx.typing():
-        # Get the player for this guild from cache
-        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
-
         # Pick up where we left off
         if not query:
             old_np = self.db.child('player').child(str(ctx.guild.id)).child('np').get().val()
             if old_np:
+                # Send resuming queue embed
                 queue_len = len(self.get_queue_db(str(ctx.guild.id))) + 1
                 embed = Embed(color=Color.purple())
                 embed.title = 'Resuming interrupted queue'
                 embed.description = f'{queue_len} items'
                 await ctx.reply(embed=embed)
-                return await self.enqueue(f'ytsearch:{old_np}', player, ctx=ctx, quiet=True)
+
+                # Reconstruct track object
+                decoded = await self.bot.lavalink.decode_track(old_np)
+                return await self.enqueue(f'{decoded["uri"]}', ctx=ctx, quiet=True)
             return await ctx.reply('Please specify a URL or a search term to play.')
 
         # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
@@ -122,7 +123,7 @@ async def play(self, ctx: Context, *, query: str = None):
 
         # Query is not a URL. Have Lavalink do a YouTube search for it.
         if not check_url(query):
-            return await self.enqueue(f'ytsearch:{query}', player, ctx=ctx)
+            return await self.enqueue(f'ytsearch:{query}', ctx=ctx)
 
         # Query is a URL.
         if check_spotify_url(query):
@@ -135,7 +136,7 @@ async def play(self, ctx: Context, *, query: str = None):
             if sp_type == 'track':
                 # Get track details from Spotify
                 track_name, track_artist = self.spotify.get_track(sp_id)
-                return await self.enqueue(f'ytsearch:{track_name} {track_artist} audio', player, ctx=ctx)
+                return await self.enqueue(f'ytsearch:{track_name} {track_artist}', ctx=ctx)
             else:
                 # Get playlist or album tracks from Spotify
                 list_name, list_author, tracks = self.spotify.get_tracks(sp_type, sp_id)
@@ -146,7 +147,7 @@ async def play(self, ctx: Context, *, query: str = None):
                     return await ctx.reply(f'Spotify {sp_type} is empty.')
                 elif len(tracks) == 1:
                     # Single track
-                    return await self.enqueue(f'ytsearch:{tracks[0][0]} {tracks[0][1]} audio', player, ctx=ctx)
+                    return await self.enqueue(f'ytsearch:{tracks[0][0]} {tracks[0][1]}', ctx=ctx)
                 else:
                     # Multiple tracks
                     # There is no way to queue multiple items in one batch through Lavalink.py,
@@ -163,7 +164,7 @@ async def play(self, ctx: Context, *, query: str = None):
 
                         if not success:
                             # Enqueue the first valid track
-                            success = await self.enqueue(track_query, player, ctx=ctx, quiet=True)
+                            success = await self.enqueue(track_query, ctx=ctx, quiet=True)
                             if not success:
                                 await ctx.send(f'Error enqueueing "{track[0]}".')
                         else:
@@ -180,27 +181,38 @@ async def play(self, ctx: Context, *, query: str = None):
                     embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
                     return await ctx.reply(embed=embed)
         elif check_twitch_url(query) or check_youtube_url(query):
-            return await self.enqueue(query, player, ctx=ctx)
+            return await self.enqueue(query, ctx=ctx)
         else:
-            return await self.enqueue(f'ytsearch:{query}', player, ctx=ctx)
+            return await self.enqueue(f'ytsearch:{query}', ctx=ctx)
 
 
 @command(aliases=['next'])
 async def skip(self, ctx: Context):
-    # Get the player for this guild from cache.
-    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+    async with ctx.typing():
+        # Get the player for this guild from cache.
+        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
-    # Get next in queue.
-    try:
-        async with ctx.typing():
-            while True:
-                query = self.dequeue_db(player.guild_id)
-                if await self.enqueue(query, player, ctx=ctx, quiet=True):
-                    # Skip track.
-                    await player.skip()
-                    return await ctx.reply('Skipped the track.')
-    except QueueEmptyError:
-        return await self.disconnect(ctx, reason='Skipped to the end of the queue')
+        # Queue up the next (valid) track from DB, if any
+        queue = self.get_queue_db(str(ctx.guild.id))
+        while len(queue):
+            track = queue.popleft()
+            try:
+                # Save track metadata to player storage
+                if 'identifier' in track['info']:
+                    player.store(track['info']['identifier'], track['info'])
+
+                # Play track
+                player.add(requester=track['requester'], track=track)
+                await player.play()
+                break
+            except Exception as e:
+                await ctx.send(f'Unable to play {track}. Reason: {e}')
+                continue
+        else:
+            await self.disconnect(ctx, reason='Reached the end of the queue')
+
+        # Save new queue back to DB
+        self.set_queue_db(str(ctx.guild.id), queue)
 
 
 @command()

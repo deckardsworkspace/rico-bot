@@ -1,4 +1,5 @@
 from lavalink.events import *
+from lavalink.models import AudioTrack
 from nextcord.ext.commands import Context
 
 
@@ -27,13 +28,11 @@ async def track_hook(self, event: Event):
         await self.now_playing(ctx, track_info=track_info)
 
         # Store now playing in DB
-        self.db.child('player').child(guild_id).child('np').set(event.track.title)
+        self.db.child('player').child(guild_id).child('np').set(event.track.track)
+    elif isinstance(event, TrackEndEvent):
+        # Delete track metadata from player storage
+        if hasattr(event.track, 'identifier'):
+            event.player.delete(event.track.identifier)
     elif isinstance(event, QueueEndEvent):
         # Queue up the next (valid) track from DB, if any
-        queue = self.get_queue_db(guild_id)
-        while len(queue):
-            if await self.enqueue(queue.popleft(), event.player, ctx=ctx, queue_to_db=False, quiet=True):
-                break
-
-        # Save new queue back to DB
-        self.set_queue_db(guild_id, queue)
+        await self.skip(ctx)
