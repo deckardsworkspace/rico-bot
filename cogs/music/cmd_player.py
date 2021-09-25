@@ -66,9 +66,16 @@ async def now_playing(self, ctx: Context, track_info: Union[str, Dict] = None):
                 progress = f'{m:02d} min, {s:02d} sec'
 
         # Show rich track info
+        track_name = track_info['title']
+        track_artist = track_info['author']
+        track_uri = track_info['uri']
+        if 'spotify' in track_info:
+            track_name = track_info['spotify']['name']
+            track_artist = track_info['spotify']['artist']
+            track_uri = f'https://open.spotify.com/track/{track_info["spotify"]["id"]}'
         embed.description = '\n'.join([
-            f'**[{track_info["title"]}]({track_info["uri"]})**',
-            f'by {track_info["author"]}',
+            f'**[{track_name}]({track_uri})**',
+            f'by {track_artist}',
             progress if progress is not None else ''
         ])
 
