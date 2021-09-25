@@ -1,18 +1,11 @@
 from nextcord.ext import commands
 from nextcord import Embed
 from math import floor, ceil
-from itertools import islice
 from DiscordUtils.Pagination import AutoEmbedPaginator
 from spotipy.exceptions import SpotifyException
 import asyncio
 import re
 from util import *
-
-
-def dict_chunks(data):
-    it = iter(data)
-    for i in range(0, len(data), 5):
-        yield {k: data[k] for k in islice(it, 5)}
 
 
 async def remove_multiple_messages(ctx, ids):
