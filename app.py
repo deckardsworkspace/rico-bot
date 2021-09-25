@@ -59,7 +59,7 @@ async def on_command_error(ctx, error):
         await ctx.reply('Invalid command.')
     else:
         print(error)
-        await ctx.reply(f'`{type(error).__name__}` encountered while executing `{ctx.invoked_with}`.\n{error.message}')
+        await ctx.reply(f'`{type(error).__name__}` encountered while executing `{ctx.invoked_with}`.\n{error}')
 
 
 @loop(seconds=120)
