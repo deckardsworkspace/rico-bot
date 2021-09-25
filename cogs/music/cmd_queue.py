@@ -23,7 +23,7 @@ async def clear_queue(self, ctx: Context):
 
 
 async def enqueue(self, query: str, ctx: Context, sp_data: dict = None,
-                  queue_to_db: bool = False, quiet: bool = False) -> bool:
+                  queue_to_db: bool = None, quiet: bool = False) -> bool:
     # Get the player for this guild from cache
     player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
@@ -42,7 +42,7 @@ async def enqueue(self, query: str, ctx: Context, sp_data: dict = None,
             await ctx.author.voice.channel.connect(cls=LavalinkVoiceClient)
 
     # Save to DB if player is not idle.
-    queue_to_db = queue_to_db or player.current is not None
+    queue_to_db = queue_to_db if queue_to_db is not None else player.current is not None
 
     embed = Embed(color=Color.blurple())
 

@@ -5,6 +5,7 @@ from nextcord.ext.commands import command, Context
 from typing import Dict, Union
 from util import check_url, check_spotify_url, check_twitch_url, check_youtube_url, parse_spotify_url
 from util import QueueEmptyError, SpotifyInvalidURLError
+from .cmd_queue import search
 
 
 @command(name='nowplaying', aliases=['np'])
@@ -225,8 +226,9 @@ async def skip(self, ctx: Context):
                     track_name = track["spotify"]["name"]
                     track_artist = track["spotify"]["artist"]
                     query = f'ytsearch:{track_name} {track_artist} audio'
-                    await self.enqueue(query, ctx=ctx, quiet=True, sp_data=track['spotify'])
-                    break
+                    if await self.enqueue(query, ctx=ctx, quiet=True, sp_data=track['spotify'], queue_to_db=False):
+                        await player.skip()
+                        break
                 elif 'info' in track:
                     # Save track metadata to player storage
                     if 'identifier' in track['info']:
