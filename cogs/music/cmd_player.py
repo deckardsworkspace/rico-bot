@@ -211,7 +211,7 @@ async def play(self, ctx: Context, *, query: str = None):
 
 
 @command(aliases=['next'])
-async def skip(self, ctx: Context):
+async def skip(self, ctx: Context, queue_end: bool = False):
     async with ctx.typing():
         # Get the player for this guild from cache.
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
@@ -227,7 +227,8 @@ async def skip(self, ctx: Context):
                     track_artist = track["spotify"]["artist"]
                     query = f'ytsearch:{track_name} {track_artist} audio'
                     if await self.enqueue(query, ctx=ctx, quiet=True, sp_data=track['spotify'], queue_to_db=False):
-                        await player.skip()
+                        if not queue_end:
+                            await player.skip()
                         break
                 elif 'info' in track:
                     # Save track metadata to player storage

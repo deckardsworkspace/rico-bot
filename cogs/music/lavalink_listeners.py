@@ -35,4 +35,4 @@ async def track_hook(self, event: Event):
             event.player.delete(event.track.identifier)
     elif isinstance(event, QueueEndEvent):
         # Queue up the next (valid) track from DB, if any
-        await self.skip(ctx)
+        await self.skip(ctx, queue_end=True)
