@@ -101,5 +101,5 @@ def reconstruct_url(rec_type: str, rec_id: str) -> str:
 
 
 def sanitize_youtube_name(video_name: str) -> str:
-    clip_regex = r"(\(|\[)?(official|music|lyrics?|clip|video|video\s?clip|visuali[sz]er)\s?(\)|\])?"
+    clip_regex = r"(\(|\[)?(official|music|lyrics?|clip|video|video\s?clip|visuali[sz]er|stream)\s?(\)|\])?"
     return re.sub(clip_regex, ' ', video_name, flags=re.MULTILINE | re.IGNORECASE).strip()
