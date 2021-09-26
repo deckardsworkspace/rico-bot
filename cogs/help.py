@@ -4,8 +4,6 @@ from util import get_var
 
 
 rec_help_list = {
-    '{0}auth': 'Authenticate Rico with your Spotify account. Required to use `{0}dump`.',
-    '{0}dump': 'Export all your recommended Spotify tracks to a new Spotify playlist in your library. Does not include artists, albums, or playlists.',
     '{0}clear, {0}c': 'Clear your recommendations.',
     '{0}clearsvr, {0}cs': 'Clear the server recommendations. *Admin only.*',
     '{0}help, {0}h': 'Show this help message.',
@@ -18,6 +16,12 @@ rec_help_list = {
     '{0}rectext @mention': 'Add a text entry to your or someone\'s recommendations.',
     '{0}remove, {0}rm': 'Remove a recommendation from your list.',
     '{0}removesvr, {0}rms': 'Remove a recommendation from the server\'s list. *Admin only.*'
+}
+
+sp_help_list = {
+    '{0}auth, {0}login': 'Authenticate Rico with your Spotify account. Required to use `{0}dump`.',
+    '{0}deauth, {0}logout': 'Deauthenticate Rico from your Spotify account. You will still have to remove Rico yourself from your Spotify account settings.',
+    '{0}dump': 'Export all your recommended Spotify tracks to a new Spotify playlist in your library. Does not include artists, albums, or playlists.',
 }
 
 music_help_list = {
@@ -42,13 +46,20 @@ class Help(Cog):
     
     @command(name='help', aliases=['h'])
     async def help(self, ctx: Context):
-        rec_help = ['**Recommendation commands**']
         cmd_prefix = get_var('BOT_PREFIX')
+        rec_help = ['**Recommendation commands**']
         for key, value in rec_help_list.items():
             cmd_name = key.format(cmd_prefix)
             cmd_desc = value.format(cmd_prefix)
             rec_help.append('`{0}` - {1}'.format(cmd_name, cmd_desc))
         rec_help = '\n'.join(rec_help)
+
+        sp_help = ['**Spotify export commands**']
+        for key, value in sp_help_list.items():
+            cmd_name = key.format(cmd_prefix)
+            cmd_desc = value.format(cmd_prefix)
+            sp_help.append('`{0}` - {1}'.format(cmd_name, cmd_desc))
+        sp_help = '\n'.join(sp_help)
 
         music_help = ['**Music commands (alpha - will break!)**']
         for key, value in music_help_list.items():

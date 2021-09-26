@@ -16,7 +16,7 @@ class Export(commands.Cog):
         await ctx.reply(message)
         self.db.child("spotify_auth").child(str(ctx.author.id)).remove()
 
-    @commands.command(name="auth", aliases=["startauth", "sa"])
+    @commands.command(name="auth", aliases=["login"])
     async def authenticate(self, ctx):
         """
         Authenticate Rico with your Spotify account, so you can export your recommended songs.
@@ -46,7 +46,7 @@ class Export(commands.Cog):
         await ctx.reply('Sent you a DM!')
 
     @commands.dm_only()
-    @commands.command(name="deauth", aliases=["da"])
+    @commands.command(name="deauth", aliases=["logout"])
     async def deauthenticate(self, ctx):
         """
         Permanently remove your Spotify account authentication data from Rico's database.
