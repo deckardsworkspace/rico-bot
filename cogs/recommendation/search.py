@@ -20,10 +20,8 @@ async def create_match_reacts(ctx: Context, db: Database, spotify_rec: SpotifyRe
         message = await ctx.fetch_message(messages[match_type_i])
         match_num = len(search_ctx[match_type])
 
-        for j in range(1, match_num + 1):
-            react = num_to_emoji(j, unicode=True)
-            num_reacts.append(react)
-            await message.add_reaction(react)
+        for j in range(match_num):
+            await message.add_reaction(num_reacts[j])
 
     # Wait for user reaction
     try:
@@ -35,9 +33,10 @@ async def create_match_reacts(ctx: Context, db: Database, spotify_rec: SpotifyRe
         match_index = num_reacts.index(reaction.emoji)
         match_id = search_ctx[match_type][match_index]
         await handle_match(ctx, db, spotify_rec, match_type, match_id)
-        await remove_multiple_messages(ctx, messages)
     except TimeoutError:
         await ctx.reply('Took too long selecting a match, aborting.')
+    finally:
+        # Delete messages
         await remove_multiple_messages(ctx, messages)
 
 
