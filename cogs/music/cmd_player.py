@@ -181,8 +181,6 @@ async def play(self, ctx: Context, *, query: str = None):
                             success = await enqueue(self.bot, self.db, track_query, ctx=ctx, quiet=True, sp_data={
                                 'name': track_name, 'artist': track_artist, 'id': track_id
                             })
-                            if not success:
-                                await ctx.send(f'Error enqueueing "{track[0]}".')
                         else:
                             # Append to db queue
                             track_obj = {
