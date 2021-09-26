@@ -1,10 +1,9 @@
-from nextcord.ext.commands import command, guild_only
+from nextcord.ext.commands import command, Context, guild_only
 from spotipy.exceptions import SpotifyException
-from util import check_spotify_url, check_url, remove_multiple_messages
+from util import check_spotify_url, check_url
 from util import SpotifyInvalidURLError, SpotifyNotFoundError
 from .recommend_db import add
 from .search import search
-from .search_context import get_search_context, set_search_context
 import re
 
 
@@ -12,8 +11,7 @@ import re
 @command(aliases=['r', 'add', 'rec'])
 async def recommend(self, ctx, *args):
     """
-    Recommend something to someone or the server.
-    Supports Spotify links, or if a link isn't found, will search for matches on Spotify.
+    Recommend something on Spotify to someone or the server.
 
     To recommend something to a specific person, @mention them after the command,
     e.g. rc!rec @person sugar brockhampton.
@@ -59,17 +57,20 @@ async def recommend(self, ctx, *args):
                     non_links.append(arg)
 
         # Process everything that isn't a link
-        search_ctx = await search(self.db, self.spotify, self.spotify_rec, ctx, " ".join(non_links))
-        set_search_context(self.db, ctx.author, search_ctx)
+        await search(self.db, self.spotify, self.spotify_rec, ctx, " ".join(non_links))
     else:
-        # Check for previous context
-        prev_ctx = get_search_context(self.db, ctx.author).val()
-        if prev_ctx and "query" in prev_ctx and len(prev_ctx['query']):
-            await add(ctx, self.db, prev_ctx['mentions'] if "mentions" in prev_ctx else [], {
-                "name": prev_ctx['query'],
-                "recommender": ctx.author.name,
-                "type": "text",
-            })
-            await remove_multiple_messages(ctx, prev_ctx["embeds"])
-        else:
-            await ctx.reply("Please specify something to recommend.")
+        await ctx.reply("Please specify something to recommend.")
+
+
+@command(name='rectext', aliases=['rt'])
+async def recommend_text(self, ctx: Context, *args):
+    # Check for previous context
+    if len(args):
+        mentions = [user.id for user in ctx.message.mentions]
+        await add(ctx, self.db, mentions, {
+            "name": ' '.join(args),
+            "recommender": ctx.author.name,
+            "type": "text"
+        })
+    else:
+        await ctx.reply("Please specify something to recommend.")

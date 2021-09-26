@@ -50,16 +50,16 @@ async def on_message(message):
         await message.reply(embed=embed)
 
 
-@client.event
-async def on_command_error(ctx, error):
-    if type(error) in [errors.PrivateMessageOnly, errors.NoPrivateMessage]:
-        await ctx.reply(str(error))
-        await ctx.message.delete(delay=5.0)
-    elif type(error) is CommandNotFound:
-        await ctx.reply('Invalid command.')
-    else:
-        print(error)
-        await ctx.reply(f'`{type(error).__name__}` encountered while executing `{ctx.invoked_with}`.\n{error}')
+# @client.event
+# async def on_command_error(ctx, error):
+#     if type(error) in [errors.PrivateMessageOnly, errors.NoPrivateMessage]:
+#         await ctx.reply(str(error))
+#         await ctx.message.delete(delay=5.0)
+#     elif type(error) is CommandNotFound:
+#         await ctx.reply('Invalid command.')
+#     else:
+#         print(error)
+#         await ctx.reply(f'`{type(error).__name__}` encountered while executing `{ctx.invoked_with}`.\n{error}')
 
 
 @loop(seconds=120)

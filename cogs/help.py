@@ -14,6 +14,8 @@ rec_help_list = {
     '{0}listsvr, {0}ls': 'List all recommendations for the server.',
     '{0}recommend, {0}r': 'Recommend something to the server.',
     '{0}recommend @mention': 'Recommend something to someone or yourself.',
+    '{0}rectext, {0}rt': 'Add a text entry to the server\'s recommendations.',
+    '{0}rectext @mention': 'Add a text entry to your or someone\'s recommendations.',
     '{0}remove, {0}rm': 'Remove a recommendation from your list.',
     '{0}removesvr, {0}rms': 'Remove a recommendation from the server\'s list. *Admin only.*'
 }
