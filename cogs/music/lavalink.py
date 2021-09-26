@@ -1,7 +1,8 @@
-import lavalink
+from asyncio import sleep
 from nextcord import Client, StageChannel, VoiceChannel, VoiceClient
 from typing import Union
 from util import get_var
+import lavalink
 
 
 class LavalinkVoiceClient(VoiceClient):
@@ -55,6 +56,7 @@ class LavalinkVoiceClient(VoiceClient):
         # Ensure there is a player_manager when creating a new voice_client
         self.lavalink.player_manager.create(guild_id=self.channel.guild.id)
         await self.channel.guild.change_voice_state(channel=self.channel, self_deaf=True)
+        return await sleep(1)
 
     async def disconnect(self, *, force: bool = False) -> None:
         """
