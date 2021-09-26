@@ -1,6 +1,7 @@
 from collections import deque
 from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
+from .queue_helpers import set_queue_db
 
 
 @command(aliases=['stop', 'dc'])
@@ -20,7 +21,7 @@ async def disconnect(self, ctx: Context, reason: str = None):
 
         # Clear the queue to ensure old tracks don't start playing
         # when someone else queues something.
-        self.set_queue_db(str(ctx.guild.id), deque([]))
+        set_queue_db(self.db, str(ctx.guild.id), deque([]))
 
     # Stop the current track so Lavalink consumes less resources.
     await player.stop()

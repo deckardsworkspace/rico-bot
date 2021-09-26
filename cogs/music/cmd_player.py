@@ -4,8 +4,8 @@ from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
 from typing import Dict, Union
 from util import check_url, check_spotify_url, check_twitch_url, check_youtube_url, parse_spotify_url
-from util import QueueEmptyError, SpotifyInvalidURLError
-from .cmd_queue import search
+from util import SpotifyInvalidURLError
+from .queue_helpers import enqueue, enqueue_db, get_queue_db, set_queue_db
 
 
 @command(name='nowplaying', aliases=['np'])
@@ -115,7 +115,7 @@ async def play(self, ctx: Context, *, query: str = None):
             old_np = self.db.child('player').child(str(ctx.guild.id)).child('np').get().val()
             if old_np:
                 # Send resuming queue embed
-                queue_len = len(self.get_queue_db(str(ctx.guild.id))) + 1
+                queue_len = len(get_queue_db(self.db, str(ctx.guild.id))) + 1
                 embed = Embed(color=Color.purple())
                 embed.title = 'Resuming interrupted queue'
                 embed.description = f'{queue_len} items'
@@ -123,7 +123,7 @@ async def play(self, ctx: Context, *, query: str = None):
 
                 # Reconstruct track object
                 decoded = await self.bot.lavalink.decode_track(old_np)
-                return await self.enqueue(f'{decoded["uri"]}', ctx=ctx, quiet=True)
+                return await enqueue(self.bot, self.db, f'{decoded["uri"]}', ctx=ctx, quiet=True)
             return await ctx.reply('Please specify a URL or a search term to play.')
 
         # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
@@ -131,7 +131,7 @@ async def play(self, ctx: Context, *, query: str = None):
 
         # Query is not a URL. Have Lavalink do a YouTube search for it.
         if not check_url(query):
-            return await self.enqueue(f'ytsearch:{query}', ctx=ctx)
+            return await enqueue(self.bot, self.db, f'ytsearch:{query}', ctx=ctx)
 
         # Query is a URL.
         if check_spotify_url(query):
@@ -144,7 +144,7 @@ async def play(self, ctx: Context, *, query: str = None):
             if sp_type == 'track':
                 # Get track details from Spotify
                 track_name, track_artist, track_id = self.spotify.get_track(sp_id)
-                return await self.enqueue(f'ytsearch:{track_name} {track_artist} audio', ctx=ctx, sp_data={
+                return await enqueue(self.bot, self.db, f'ytsearch:{track_name} {track_artist} audio', ctx=ctx, sp_data={
                     'name': track_name, 'artist': track_artist, 'id': track_id
                 })
             else:
@@ -158,7 +158,7 @@ async def play(self, ctx: Context, *, query: str = None):
                 elif len(tracks) == 1:
                     # Single track
                     track_name, track_artist, track_id = tracks[0]
-                    return await self.enqueue(f'ytsearch{track_name} {track_artist} audio', ctx=ctx, sp_data={
+                    return await enqueue(self.bot, self.db, f'ytsearch{track_name} {track_artist} audio', ctx=ctx, sp_data={
                         'name': track_name, 'artist': track_artist, 'id': track_id
                     })
                 else:
@@ -178,7 +178,7 @@ async def play(self, ctx: Context, *, query: str = None):
 
                         if not success:
                             # Enqueue the first valid track
-                            success = await self.enqueue(track_query, ctx=ctx, quiet=True, sp_data={
+                            success = await enqueue(self.bot, self.db, track_query, ctx=ctx, quiet=True, sp_data={
                                 'name': track_name, 'artist': track_artist, 'id': track_id
                             })
                             if not success:
@@ -197,7 +197,7 @@ async def play(self, ctx: Context, *, query: str = None):
                     else:
                         if len(queries):
                             # Append everything in one go to save DB accesses
-                            self.enqueue_db(str(ctx.guild.id), queries)
+                            enqueue_db(self.db, str(ctx.guild.id), queries)
 
                     # Send enqueued embed
                     embed = Embed(color=Color.blurple())
@@ -205,9 +205,9 @@ async def play(self, ctx: Context, *, query: str = None):
                     embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
                     return await ctx.reply(embed=embed)
         elif check_twitch_url(query) or check_youtube_url(query):
-            return await self.enqueue(query, ctx=ctx)
+            return await enqueue(self.bot, self.db, query, ctx=ctx)
         else:
-            return await self.enqueue(f'ytsearch:{query}', ctx=ctx)
+            return await enqueue(self.bot, self.db, f'ytsearch:{query}', ctx=ctx)
 
 
 @command(aliases=['next'])
@@ -217,7 +217,7 @@ async def skip(self, ctx: Context, queue_end: bool = False):
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
         # Queue up the next (valid) track from DB, if any
-        queue = self.get_queue_db(str(ctx.guild.id))
+        queue = get_queue_db(self.db, str(ctx.guild.id))
         while len(queue):
             track = queue.popleft()
             try:
@@ -226,7 +226,8 @@ async def skip(self, ctx: Context, queue_end: bool = False):
                     track_name = track["spotify"]["name"]
                     track_artist = track["spotify"]["artist"]
                     query = f'ytsearch:{track_name} {track_artist} audio'
-                    if await self.enqueue(query, ctx=ctx, quiet=True, sp_data=track['spotify'], queue_to_db=False):
+                    if await enqueue(self.bot, self.db, query, ctx=ctx, quiet=True,
+                                     sp_data=track['spotify'], queue_to_db=False):
                         if not queue_end:
                             await player.skip()
                         break
@@ -248,7 +249,7 @@ async def skip(self, ctx: Context, queue_end: bool = False):
             await self.disconnect(ctx, reason='Reached the end of the queue')
 
         # Save new queue back to DB
-        self.set_queue_db(str(ctx.guild.id), queue)
+        set_queue_db(self.db, str(ctx.guild.id), queue)
 
 
 @command()
