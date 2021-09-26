@@ -105,7 +105,10 @@ async def get_recommendations(ctx: Context, db: Database, name: str, image: str,
                 index += 1
             embeds.append(embed)
 
-        await paginator.run(embeds)
+        if len(embeds) > 1:
+            await paginator.run(embeds)
+        else:
+            await ctx.send(embed=embeds[0])
     else:
         await ctx.reply("Recommendation list for {} is currently empty.".format(name))
 
