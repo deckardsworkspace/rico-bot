@@ -47,7 +47,6 @@ async def queue(self, ctx: Context):
             embed = Embed(title=embed_title, description=embed_desc, color=Color.lighter_gray())
             embed.set_thumbnail(url=ctx.guild.icon.url)
 
-            tracks = []
             for track in chunk:
                 if 'spotify' in track:
                     track_name = track['spotify']['name']
@@ -65,8 +64,7 @@ async def queue(self, ctx: Context):
                         field_name = f'{count} - {track_name}'
                 embed.add_field(name=field_name, value=track_artist, inline=False)
                 count = count + 1
-            
-            embed.description = '\n\n'.join(tracks)
+
             embeds.append(embed)
 
         if len(embeds) > 1:
