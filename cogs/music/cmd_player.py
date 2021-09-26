@@ -3,7 +3,7 @@ from math import ceil, floor
 from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
 from typing import Dict, Union
-from util import check_url, check_spotify_url, check_twitch_url, check_youtube_url, parse_spotify_url
+from util import check_url, check_spotify_url, check_twitch_url, check_youtube_url, get_var, parse_spotify_url
 from util import SpotifyInvalidURLError
 from .queue_helpers import enqueue, enqueue_db, get_queue_db, set_queue_db
 
@@ -83,7 +83,7 @@ async def now_playing(self, ctx: Context, track_info: Union[str, Dict] = None):
     else:
         embed = Embed(color=Color.yellow())
         embed.title = 'Not playing'
-        embed.description = 'To play, use `{0}play <URL/search term>`. Try `{0}help` for more.'.format('rc!')
+        embed.description = 'To play, use `{0}play <URL/search term>`. Try `{0}help` for more.'.format(get_var('BOT_PREFIX'))
 
     # Save this message
     if track_info is not None:
