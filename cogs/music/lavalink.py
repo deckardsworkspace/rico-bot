@@ -52,9 +52,9 @@ class LavalinkVoiceClient(VoiceClient):
         Connect the bot to the voice channel and create a player_manager
         if it doesn't exist yet.
         """
-        # ensure there is a player_manager when creating a new voice_client
+        # Ensure there is a player_manager when creating a new voice_client
         self.lavalink.player_manager.create(guild_id=self.channel.guild.id)
-        await self.channel.guild.change_voice_state(channel=self.channel)
+        await self.channel.guild.change_voice_state(channel=self.channel, self_deaf=True)
 
     async def disconnect(self, *, force: bool = False) -> None:
         """

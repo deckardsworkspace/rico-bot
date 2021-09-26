@@ -53,10 +53,6 @@ class Music(Cog):
                 raise RuntimeError(f'Could not recover Context object from player for guild {guild_id}')
 
         if isinstance(event, TrackStartEvent):
-            # Mute self
-            bot_member = await ctx.guild.fetch_member(self.bot.user.id)
-            await bot_member.edit(deafen=True)
-
             # Send now playing embed
             track_info = event.track.title
             if hasattr(event.player.current, 'identifier'):
