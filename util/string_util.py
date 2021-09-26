@@ -57,17 +57,18 @@ def is_int(string: str) -> bool:
         return False
 
 
-def num_to_emoji(num: int):
+def num_to_emoji(num: int, unicode: bool = False):
+    suffix = '\U0000fe0f\U000020e3'
     if num == 1:
-        return ":one:"
+        return f'\U00000031{suffix}' if unicode else ':one:'
     elif num == 2:
-        return ":two:"
+        return f'\U00000032{suffix}' if unicode else ':two:'
     elif num == 3:
-        return ":three:"
+        return f'\U00000033{suffix}' if unicode else ':three:'
     elif num == 4:
-        return ":four:"
+        return f'\U00000034{suffix}' if unicode else ':four:'
     elif num == 5:
-        return ":five:"
+        return f'\U00000035{suffix}' if unicode else ':five:'
     return ""
 
 
