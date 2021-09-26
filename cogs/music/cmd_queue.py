@@ -69,7 +69,7 @@ async def queue(self, ctx: Context):
 
         if len(embeds) > 1:
             return await paginator.run(embeds)
-        return ctx.send(embed=embeds[0])
+        return await ctx.send(embed=embeds[0])
 
 
 @command(aliases=['shuf'])
