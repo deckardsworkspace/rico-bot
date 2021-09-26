@@ -21,8 +21,8 @@ async def enqueue(bot: Bot, db: Database, query: str, ctx: Context, sp_data: dic
     # Results could be None if Lavalink returns an invalid response (non-JSON/non-200 (OK)).
     # Alternatively, results['tracks'] could be an empty array if the query yielded no tracks.
     if not results or not results['tracks']:
-        if not quiet:
-            await ctx.send(f'Nothing found for `{query}`!')
+        embed = Embed(color=Color.red(), title='Nothing found for query', description=query)
+        await ctx.send(embed=embed)
         return False
     else:
         # If a result is found, connect to voice.
