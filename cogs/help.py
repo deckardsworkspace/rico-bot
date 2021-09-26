@@ -15,8 +15,7 @@ rec_help_list = {
     '{0}recommend, {0}r': 'Recommend something to the server.',
     '{0}recommend @mention': 'Recommend something to someone or yourself.',
     '{0}remove, {0}rm': 'Remove a recommendation from your list.',
-    '{0}removesvr, {0}rms': 'Remove a recommendation from the server\'s list. *Admin only.*',
-    '{0}select, {0}recselect, {0}rs': 'Select a recommendation from the results of `{0}recommend`.'
+    '{0}removesvr, {0}rms': 'Remove a recommendation from the server\'s list. *Admin only.*'
 }
 
 music_help_list = {

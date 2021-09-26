@@ -1,7 +1,5 @@
-import re
 from .string_util import ellipsis_truncate, parse_spotify_url
 from .exception import *
-from urllib.parse import urlparse
 
 
 class SpotifyRecommendation:
