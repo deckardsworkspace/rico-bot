@@ -3,8 +3,7 @@ from DiscordUtils.Pagination import AutoEmbedPaginator
 from lavalink.models import AudioTrack, DefaultPlayer
 from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
-from typing import Dict
-from util import ellipsis_truncate, list_chunks
+from util import list_chunks
 from .lavalink_client import LavalinkVoiceClient
 import random
 
