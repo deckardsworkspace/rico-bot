@@ -25,6 +25,10 @@ async def queue(self, ctx: Context):
         current_id = player.current.identifier
         stored_info = player.fetch(current_id)
         if stored_info and 'title' in stored_info:
+            stored_info['info'] = {
+                'title': stored_info['title'],
+                'author': stored_info['author']
+            }
             db_queue.appendleft(stored_info)
 
     if not len(db_queue):
@@ -65,7 +69,9 @@ async def queue(self, ctx: Context):
             embed.description = '\n\n'.join(tracks)
             embeds.append(embed)
 
-        return await paginator.run(embeds)
+        if len(embeds) > 1:
+            return await paginator.run(embeds)
+        return ctx.send(embed=embeds[0])
 
 
 @command(aliases=['shuf'])
