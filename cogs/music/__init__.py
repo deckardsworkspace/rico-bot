@@ -26,21 +26,7 @@ class Music(Cog):
         add_event_hook(self.on_lavalink_event)
 
     # Event listeners
-    from .cog_listeners import on_voice_state_update
-
-    async def cog_before_invoke(self, ctx: Context):
-        """ Command before-invoke handler. """
-        # Only allow music commands in guilds
-        guild_check = ctx.guild is not None
-        if guild_check:
-            # Ensure that the bot and command author share a mutual voice channel
-            await ensure_voice(self.bot, ctx)
-        return guild_check
-
-    def cog_unload(self):
-        """ Cog unload handler. This removes any event hooks that were registered. """
-        if hasattr(self.bot, 'lavalink'):
-            self.bot.lavalink._event_hooks.clear()
+    from .cog_listeners import cog_before_invoke, cog_unload, on_voice_state_update
 
     async def on_lavalink_event(self, event: Event):
         # Recover context

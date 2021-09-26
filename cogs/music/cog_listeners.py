@@ -4,6 +4,24 @@ from nextcord.ext.commands import Bot, Cog, Context
 from util import VoiceCommandError
 
 
+async def cog_before_invoke(self, ctx: Context):
+    """ Command before-invoke handler. """
+    guild_check = ctx.guild is not None
+    if guild_check:
+        # Ensure that the bot and command author share a mutual voice channel
+        await ensure_voice(self.bot, ctx)
+    else:
+        # Not allowed!
+        await ctx.reply('You can only use this command in a server.')
+    return guild_check
+
+
+def cog_unload(self):
+    """ Cog unload handler. This removes any event hooks that were registered. """
+    if hasattr(self.bot, 'lavalink'):
+        self.bot.lavalink._event_hooks.clear()
+
+
 async def ensure_voice(bot: Bot, ctx: Context):
     """ This check ensures that the bot and command author are in the same voice channel. """
     # Ensure a player exists for this guild
