@@ -1,3 +1,4 @@
+from asyncio.exceptions import TimeoutError
 from math import floor, ceil
 from nextcord import Embed
 from nextcord.ext.commands import Context
