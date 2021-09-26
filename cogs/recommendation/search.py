@@ -11,7 +11,7 @@ from .recommend_db import add
 
 async def create_match_reacts(ctx: Context, db: Database, spotify_rec: SpotifyRecommendation, search_ctx: Dict):
     num_reacts = [num_to_emoji(i, unicode=True) for i in range(1, 6)]
-    match_types = ['track', 'artist', 'album']
+    match_types = ['track', 'album', 'artist']
     messages = search_ctx['embeds']
 
     # Add reactions
