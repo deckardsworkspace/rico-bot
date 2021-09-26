@@ -68,7 +68,7 @@ class Help(Cog):
             music_help.append('`{0}` - {1}'.format(cmd_name, cmd_desc))
         music_help = '\n'.join(music_help)
 
-        help_text = '\n\n'.join([rec_help, music_help])
+        help_text = '\n\n'.join([rec_help, sp_help, music_help])
         embed = Embed(title=f'Commands for {self.client.user.name}', description=help_text, color=0x20ce09)
         embed.set_footer(text='Join the official support server at discord.gg/njtK9G6QRG')
         embed.set_thumbnail(url=self.client.user.avatar.url)
