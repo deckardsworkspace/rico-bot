@@ -1,5 +1,6 @@
 from nextcord.ext.commands import Bot, Cog, command, Context
 from nextcord import Embed
+from util import get_var
 
 
 rec_help_list = {
@@ -39,16 +40,17 @@ class Help(Cog):
     @command(name='help', aliases=['h'])
     async def help(self, ctx: Context):
         rec_help = ['**Recommendation commands**']
+        cmd_prefix = get_var('BOT_PREFIX')
         for key, value in rec_help_list.items():
-            cmd_name = key.format('rc!')
-            cmd_desc = value.format('rc!')
+            cmd_name = key.format(cmd_prefix)
+            cmd_desc = value.format(cmd_prefix)
             rec_help.append('`{0}` - {1}'.format(cmd_name, cmd_desc))
         rec_help = '\n'.join(rec_help)
 
         music_help = ['**Music commands (alpha - will break!)**']
         for key, value in music_help_list.items():
-            cmd_name = key.format('rc!')
-            cmd_desc = value.format('rc!')
+            cmd_name = key.format(cmd_prefix)
+            cmd_desc = value.format(cmd_prefix)
             music_help.append('`{0}` - {1}'.format(cmd_name, cmd_desc))
         music_help = '\n'.join(music_help)
 
