@@ -244,7 +244,8 @@ async def skip(self, ctx: Context, queue_end: bool = False):
                 await ctx.send(f'Unable to play {track}. Reason: {e}')
                 continue
         else:
-            await self.disconnect(ctx, reason='Reached the end of the queue')
+            if not queue_end:
+                await self.disconnect(ctx, reason='Reached the end of the queue')
 
         # Save new queue back to DB
         set_queue_db(self.db, str(ctx.guild.id), queue)
