@@ -196,8 +196,8 @@ async def play(self, ctx: Context, *, query: str = None):
                     embed.title = f'Spotify {sp_type} enqueued'
                     embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
                     return await ctx.reply(embed=embed)
-        elif check_url(query):
-            # Query is a non-Spotify URL. Probably YouTube, SoundCloud, or Twitch?
+        elif check_url(query) or query.startswith('ytsearch:') or query.startswith('scsearch:'):
+            # Query is a non-Spotify URL, or begins with the search modifiers 'ytsearch' or 'scsearch'
             return await enqueue(self.bot, self.db, query, ctx=ctx)
         else:
             # Query is not a URL. Have Lavalink do a YouTube search for it.
