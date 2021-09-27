@@ -8,6 +8,11 @@ def check_url(url: str) -> bool:
     return re.match(url_regex, url) is not None
 
 
+def check_sc_url(url: str) -> bool:
+    url_regex = r"(^http(s)?://)?(soundcloud\.com|snd\.sc)/(.*)$"
+    return re.match(url_regex, url) is not None
+
+
 def check_spotify_url(url: str) -> bool:
     url_regex = r"(https?://open\.)*spotify(\.com)*[/:]+(track|artist|album|playlist)[/:]+[A-Za-z0-9]+"
     return re.match(url_regex, url) is not None

@@ -3,7 +3,7 @@ from math import ceil, floor
 from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
 from typing import Dict, Union
-from util import check_url, check_spotify_url, check_twitch_url, check_youtube_url, get_var, parse_spotify_url
+from util import check_url, check_spotify_url, check_twitch_url, get_var, parse_spotify_url
 from util import SpotifyInvalidURLError
 from .queue_helpers import enqueue, enqueue_db, get_queue_db, set_queue_db
 
@@ -128,12 +128,6 @@ async def play(self, ctx: Context, *, query: str = None):
 
         # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
         query = query.strip('<>')
-
-        # Query is not a URL. Have Lavalink do a YouTube search for it.
-        if not check_url(query):
-            return await enqueue(self.bot, self.db, f'ytsearch:{query}', ctx=ctx)
-
-        # Query is a URL.
         if check_spotify_url(query):
             # Query is a Spotify URL.
             try:
@@ -202,9 +196,11 @@ async def play(self, ctx: Context, *, query: str = None):
                     embed.title = f'Spotify {sp_type} enqueued'
                     embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
                     return await ctx.reply(embed=embed)
-        elif check_twitch_url(query) or check_youtube_url(query):
+        elif check_url(query):
+            # Query is a non-Spotify URL. Probably YouTube, SoundCloud, or Twitch?
             return await enqueue(self.bot, self.db, query, ctx=ctx)
         else:
+            # Query is not a URL. Have Lavalink do a YouTube search for it.
             return await enqueue(self.bot, self.db, f'ytsearch:{query}', ctx=ctx)
 
 
