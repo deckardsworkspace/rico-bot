@@ -42,20 +42,20 @@ async def enqueue(bot: Bot, db: Database, query: str, ctx: Context, sp_data: dic
     #   LOAD_FAILED     - most likely, the video encountered an exception during loading.
     if results['loadType'] == 'PLAYLIST_LOADED':
         tracks = results['tracks']
+        for i in range(len(tracks)):
+            tracks[i]['requester'] = ctx.author.id
 
         if queue_to_db:
             # Add all results to database queue
-            for i in range(len(tracks)):
-                tracks[i]['requester'] = ctx.author.id
             enqueue_db(db, str(ctx.guild.id), tracks)
         else:
-            # Add all of the tracks from the playlist to the queue
-            for track in tracks:
-                # Save track metadata to player storage
-                if 'identifier' in track['info']:
-                    player.store(track['info']['identifier'], track['info'])
+            # Add first track to Lavalink queue...
+            if 'identifier' in tracks[0]['info']:
+                player.store(tracks[0]['info']['identifier'], tracks[0]['info'])
+            player.add(requester=ctx.author.id, track=tracks[0])
 
-                player.add(requester=ctx.author.id, track=track)
+            # ...and add the rest to DB queue
+            enqueue_db(db, str(ctx.guild.id), tracks[1:])
 
         embed.title = 'Playlist enqueued'
         embed.description = f'{results["playlistInfo"]["name"]} - {len(tracks)} tracks'
