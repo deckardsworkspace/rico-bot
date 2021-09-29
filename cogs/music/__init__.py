@@ -40,10 +40,10 @@ class Music(Cog):
 
         if isinstance(event, TrackStartEvent):
             # Send now playing embed
-            track_info = event.track.title
-            if hasattr(event.player.current, 'identifier'):
+            track_info = event.player.current
+            if hasattr(track_info, 'identifier'):
                 # Get info currently playing track
-                stored_info = event.player.fetch(event.player.current['identifier'])
+                stored_info = event.player.fetch(track_info['identifier'])
                 if stored_info and 'title' in stored_info:
                     track_info = stored_info
             await self.now_playing(ctx, track_info=track_info)

@@ -9,7 +9,7 @@ from .queue_helpers import enqueue, enqueue_db, get_queue_db, set_queue_db
 
 
 @command(name='nowplaying', aliases=['np'])
-async def now_playing(self, ctx: Context, track_info: Union[str, Dict] = None):
+async def now_playing(self, ctx: Context, track_info: Dict = None):
     # Delete the previous now playing message
     try:
         old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('npmessage').get().val()
@@ -62,7 +62,7 @@ async def now_playing(self, ctx: Context, track_info: Union[str, Dict] = None):
         else:
             # Invoked by listener
             # Don't create progress info for Twitch streams
-            if isinstance(track_info, dict) and not check_twitch_url(track_info['uri']):
+            if check_twitch_url(track_info['uri']):
                 m, s = divmod(floor(track_info['length'] / 1000), 60)
                 progress = f'{m:02d} min, {s:02d} sec'
 
@@ -70,7 +70,7 @@ async def now_playing(self, ctx: Context, track_info: Union[str, Dict] = None):
         track_name = track_info['title']
         track_artist = track_info['author']
         track_uri = track_info['uri']
-        if 'spotify' in track_info:
+        if hasattr(track_info, 'spotify'):
             track_name = track_info['spotify']['name']
             track_artist = track_info['spotify']['artist']
             track_uri = f'https://open.spotify.com/track/{track_info["spotify"]["id"]}'

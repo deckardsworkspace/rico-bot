@@ -24,12 +24,16 @@ async def queue(self, ctx: Context):
         # Get now playing info
         current_id = player.current.identifier
         stored_info = player.fetch(current_id)
-        if stored_info and 'title' in stored_info:
+        if stored_info is not None and 'title' in stored_info:
+            # Spotify info available for current track
             stored_info['info'] = {
                 'title': stored_info['title'],
                 'author': stored_info['author']
             }
             db_queue.appendleft(stored_info)
+        else:
+            # No Spotify info available for current track, fallback to Lavalink info
+            db_queue.appendleft({'info': player.current})
 
     if not len(db_queue):
         embed = Embed(color=Color.lighter_grey())
