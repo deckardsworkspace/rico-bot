@@ -114,11 +114,13 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
                 dequeued = dequeued + 1
             del db_queue[i]
 
-        embed.description = embed_desc
-        if dequeued:
-            embed.set_footer(text=f'and {dequeued} more')
-        set_queue_db(self.db, str(ctx.guild.id), db_queue)
-        return await ctx.reply(embed=embed)
+        if embed_desc is not None:
+            # At least one song was removed from the queue
+            embed.description = embed_desc
+            if dequeued:
+                embed.set_footer(text=f'and {dequeued} more')
+            set_queue_db(self.db, str(ctx.guild.id), db_queue)
+            return await ctx.reply(embed=embed)
 
 
 @command(aliases=['shuf'])
