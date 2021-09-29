@@ -62,7 +62,7 @@ async def now_playing(self, ctx: Context, track_info: Union[str, Dict] = None):
         else:
             # Invoked by listener
             # Don't create progress info for Twitch streams
-            if not check_twitch_url(track_info['uri']):
+            if isinstance(track_info, dict) and not check_twitch_url(track_info['uri']):
                 m, s = divmod(floor(track_info['length'] / 1000), 60)
                 progress = f'{m:02d} min, {s:02d} sec'
 
