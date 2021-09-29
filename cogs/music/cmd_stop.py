@@ -21,7 +21,7 @@ async def disconnect(self, ctx: Context, reason: str = None):
 
         # Clear the queue to ensure old tracks don't start playing
         # when someone else queues something.
-        set_queue_db(self.db, str(ctx.guild.id), deque([]))
+        self.db.child('player').child(str(ctx.guild.id)).remove()
         player.queue.clear()
 
     # Stop the current track so Lavalink consumes less resources.
