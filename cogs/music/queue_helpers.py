@@ -3,17 +3,25 @@ from lavalink.models import AudioTrack, DefaultPlayer
 from nextcord import Color, Embed
 from nextcord.ext.commands import Bot, Context
 from pyrebase.pyrebase import Database
-from typing import Deque, List, Union
+from typing import Deque, Dict, List, Union
 from util import QueueEmptyError
 from .deque_encoder import DequeEncoder
 from .lavalink import LavalinkVoiceClient
 import json
 
 
-async def enqueue(bot: Bot, db: Database, query: str, ctx: Context, sp_data: dict = None,
-                  queue_to_db: bool = None, quiet: bool = False) -> bool:
+async def enqueue(bot: Bot, db: Database, query: Union[str, Dict], ctx: Context,
+                  sp_data: dict = None, queue_to_db: bool = None, quiet: bool = False) -> bool:
     # Get the player for this guild from cache
     player = bot.lavalink.player_manager.get(ctx.guild.id)
+
+    # If query is a dict, we must be resuming an old queue
+    if isinstance(query, dict):
+        # Add directly to player
+        if not player.is_connected:
+            await ctx.author.voice.channel.connect(cls=LavalinkVoiceClient)
+        player.add(requester=ctx.author.id, track=query)
+        return await player.play()
 
     # Get the results for the query from Lavalink
     results = await search(player, query)

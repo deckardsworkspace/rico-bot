@@ -115,15 +115,16 @@ async def play(self, ctx: Context, *, query: str = None):
             old_np = self.db.child('player').child(str(ctx.guild.id)).child('np').get().val()
             if old_np:
                 # Send resuming queue embed
-                queue_len = len(get_queue_db(self.db, str(ctx.guild.id))) + 1
-                embed = Embed(color=Color.purple())
-                embed.title = 'Resuming interrupted queue'
-                embed.description = f'{queue_len} items'
+                embed = Embed(color=Color.purple(), title='Resuming interrupted queue')
                 await ctx.reply(embed=embed)
 
                 # Reconstruct track object
                 decoded = await self.bot.lavalink.decode_track(old_np)
-                return await enqueue(self.bot, self.db, f'{decoded["uri"]}', ctx=ctx, quiet=True)
+                track = {
+                    'track': old_np,
+                    'info': decoded
+                }
+                return await enqueue(self.bot, self.db, track, ctx=ctx, quiet=True)
             return await ctx.reply('Please specify a URL or a search term to play.')
 
         # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
