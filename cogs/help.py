@@ -33,6 +33,7 @@ music_help_list = {
     '{0}queue, {0}q': 'Show the current playback queue.',
     '{0}recnow, {0}rn': 'Recommend the currently playing track to the server.',
     '{0}recnow @mention': 'Recommend the currently playing track to someone or yourself.',
+    '{0}removequeue <num/nums>, {0}rmq': 'Remove the specified songs from the queue, i.e. `{0}rmq 2 3` to dequeue songs 2 and 3.',
     '{0}resetplayer, {0}rp': 'Reset the player state for the server.',
     '{0}shuffle, {0}shuf': 'Shuffle the current playback queue.',
     '{0}skip, {0}next': 'Skip currently playing track.',
