@@ -242,6 +242,8 @@ async def skip(self, ctx: Context, queue_end: bool = False):
                 continue
         else:
             if not queue_end:
+                # Remove now playing data from DB
+                self.db.child('player').child(str(ctx.guild.id)).child('np').remove()
                 await self.disconnect(ctx, reason='Reached the end of the queue')
 
         # Save new queue back to DB
