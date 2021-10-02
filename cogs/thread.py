@@ -73,6 +73,15 @@ class ThreadManager(Cog):
             await self.unarchive_thread(str(guild.id), thread)
     
     @Cog.listener()
+    async def on_thread_delete(self, thread: Thread):
+        """Remove deleted thread from DB"""
+        
+        # Get list of excluded thread IDs
+        excluded_threads = self.db.child('thread_manager').child('exclude').child(str(thread.guild.id)).get().val()
+        if excluded_threads is not None and str(thread.id) in excluded_threads.keys():
+            self.db.child('thread_manager').child('exclude').child(str(thread.guild.id)).child(str(thread.id)).remove()
+    
+    @Cog.listener()
     async def on_thread_update(self, before: Thread, after: Thread):
         if not before.archived and after.archived:
             # Thread was archived, unarchive if not excluded
