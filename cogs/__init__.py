@@ -1,7 +1,9 @@
+from nextcord.threads import Thread
 from .recommendation import Recommendation
 from .export import Export
 from .help import Help
 from .music import Music
+from .thread import ThreadManager
 from nextcord.ext.commands import Bot
 from util import get_var, get_pyrebase_config, Spotify
 import pyrebase
@@ -24,3 +26,5 @@ def setup(bot: Bot):
     print('Loaded cog: Music')
     bot.add_cog(Recommendation(bot, db, spotify, get_var('FIREBASE_KEY')))
     print('Loaded cog: Recommendation')
+    bot.add_cog(ThreadManager(bot, db))
+    print('Loaded cog: ThreadManager')
