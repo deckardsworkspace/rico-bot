@@ -202,7 +202,7 @@ async def play(self, ctx: Context, *, query: str = None):
             return await enqueue(self.bot, self.db, query, ctx=ctx)
         else:
             # Query is not a URL. Have Lavalink do a YouTube search for it.
-            return await enqueue(self.bot, self.db, f'ytsearch:{query}', ctx=ctx)
+            return await enqueue(self.bot, self.db, f'ytsearch:{query} audio', ctx=ctx)
 
 
 @command(aliases=['next'])
