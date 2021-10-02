@@ -9,6 +9,7 @@ class Recommendation(commands.Cog):
         self.spotify = spotify.get_client()
         self.spotify_rec = SpotifyRecommendation(self.spotify)
         self.youtube_rec = YouTubeRecommendation(youtube_api_key)
+        print('Loaded cog: Recommendation')
 
     # Commands
     from .cmd_clear import clear, clear_guild, remove, remove_guild

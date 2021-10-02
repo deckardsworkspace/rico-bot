@@ -11,6 +11,7 @@ class Export(commands.Cog):
         self.client = client
         self.db = db
         self.spotify = spotify
+        print('Loaded cog: Export')
 
     async def __cancel_auth(self, ctx, message):
         await ctx.reply(message)

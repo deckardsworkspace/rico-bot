@@ -24,17 +24,18 @@ class ThreadManager(Cog):
         self.bot = bot
         self.db = db
         self.main.start()
+        print('Loaded cog: ThreadManager')
 
     @tasks.loop(seconds=900)
     async def main(self):
         """Run housekeeping every 15 min"""
-        if not self.client.is_closed():
+        if not self.bot.is_closed():
             await self.unarchive_threads()
 
     @main.before_loop
     async def before_main(self):
         """Wait until client is ready before housekeeping."""
-        await self.client.wait_until_ready()
+        await self.bot.wait_until_ready()
 
     async def unarchive_thread(self, guild_id: str, thread: Thread):
         """Unarchive a thread if not excluded from monitoring."""

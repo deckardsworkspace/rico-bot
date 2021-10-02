@@ -60,6 +60,7 @@ help_list = [
 class Help(Cog):
     def __init__(self, client: Bot):
         self.client = client
+        print('Loaded cog: Help')
     
     @command(name='help', aliases=['h'])
     async def help(self, ctx: Context):

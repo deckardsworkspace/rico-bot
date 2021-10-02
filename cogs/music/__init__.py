@@ -25,6 +25,8 @@ class Music(Cog):
         # Listen to Lavalink events
         add_event_hook(self.on_lavalink_event)
 
+        print('Loaded cog: Music')
+
     # Event listeners
     from .cog_listeners import cog_before_invoke, cog_unload, on_voice_state_update
 
