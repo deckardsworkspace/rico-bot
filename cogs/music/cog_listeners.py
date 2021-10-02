@@ -61,25 +61,23 @@ async def on_voice_state_update(self, member: Member, before: VoiceState, after:
         ctx = player.fetch('context')
         return await self.disconnect(ctx, reason='You left me alone :(')
 
-    # Ignore leave events by this bot
-    if after.channel is not None:
+    # Only handle join events by this bot
+    if before.channel is None and after.channel is not None and member.id == self.bot.user.id:
         # Get the player for this guild from cache
         guild_id = after.channel.guild.id
         player = self.bot.lavalink.player_manager.get(guild_id)
         ctx = player.fetch('context')
 
-        # Join events by this bot
-        if before.channel is None and member.id == self.bot.user.id:
-            # Inactivity check
-            time = 0
-            while True:
-                await sleep(1)
-                time = time + 1
+        # Inactivity check
+        time = 0
+        while True:
+            await sleep(1)
+            time = time + 1
 
-                if player is not None:
-                    if player.is_playing and not player.paused:
-                        time = 0
-                    if time == 60:
-                        await self.disconnect(ctx, reason='Inactive for 1 minute')
-                    if not player.is_connected:
-                        break
+            if player is not None:
+                if player.is_playing and not player.paused:
+                    time = 0
+                if time == 60:
+                    await self.disconnect(ctx, reason='Inactive for 1 minute')
+                if not player.is_connected:
+                    break
