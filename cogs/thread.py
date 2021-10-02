@@ -49,7 +49,7 @@ class ThreadManager(Cog):
 
         # Get list of excluded thread IDs
         excluded_threads = self.db.child('thread_manager').child('exclude').child(guild_id).get().val()
-        if excluded_threads is None or (thread_id in excluded_threads.keys() and not excluded_threads[thread_id]):
+        if excluded_threads is None or thread_id not in excluded_threads.keys() or not excluded_threads[thread_id]:
             # Unarchive thread if not excluded from monitoring
             await thread.edit(archived=False)
     
