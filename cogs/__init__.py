@@ -1,4 +1,3 @@
-from nextcord.threads import Thread
 from .recommendation import Recommendation
 from .export import Export
 from .help import Help
