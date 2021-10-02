@@ -89,6 +89,8 @@ class ThreadManager(Cog):
 
     @command(name='tte')
     async def toggle_exclusion(self, ctx: Context):
+        if not ctx.author.guild_permissions.administrator:
+            return await ctx.reply('This command can only be used by an administrator.')
         if not isinstance(ctx.channel, Thread):
             return await ctx.reply('This command is only available in threads.')
 
@@ -109,9 +111,11 @@ class ThreadManager(Cog):
 
     @command(name='ttm')
     async def toggle_monitoring(self, ctx: Context):
-        invoked_guild = str(ctx.guild.id)
+        if not ctx.author.guild_permissions.administrator:
+            return await ctx.reply('This command can only be used by an administrator.')
 
         # Get list of monitored guilds
+        invoked_guild = str(ctx.guild.id)
         monitored_guilds = self.db.child('thread_manager').child('monitored').get().val()
         if monitored_guilds is not None and invoked_guild in monitored_guilds:
             # Already in monitored list
