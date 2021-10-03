@@ -110,8 +110,8 @@ async def pause(self, ctx: Context):
 async def play(self, ctx: Context, *, query: str = None):
     """ Searches and plays a song from a given query. """
     async with ctx.typing():
-        # Pick up where we left off
         if not query:
+            # Pick up where we left off
             old_np = self.db.child('player').child(str(ctx.guild.id)).child('np').get().val()
             if old_np:
                 # Send resuming queue embed
@@ -126,6 +126,11 @@ async def play(self, ctx: Context, *, query: str = None):
                 }
                 return await enqueue(self.bot, self.db, track, ctx=ctx, quiet=True)
             return await ctx.reply('Please specify a URL or a search term to play.')
+        else:
+            # Clear previous queue if not currently playing
+            player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+            if player is not None and not (player.is_playing or player.paused):
+                set_queue_db(self.db, str(ctx.guild.id), deque([]))
 
         # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
         query = query.strip('<>')
