@@ -269,9 +269,18 @@ async def unpause(self, ctx: Context):
 
 
 @command(aliases=['v', 'vol'])
-async def volume(self, ctx: Context, *, query: str = None):
+async def volume(self, ctx: Context, *, vol: str = None):
+    if vol is None:
+        # Get the player for this guild from cache.
+        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+        if player is not None:
+            # Return current player volume
+            await ctx.reply(f':white_check_mark Volume is currently set to **{player.volume}**.')
+            return await ctx.send('To set the volume, use `{0}v <int>`.'.format(get_var('BOT_PREFIX')))
+        return await ctx.reply(f'No active players in {ctx.guild.name}')
+
     try:
-        new_vol = int(query)
+        new_vol = int(vol)
         if new_vol < 0 or new_vol > 1000:
             raise ValueError
     except ValueError:
