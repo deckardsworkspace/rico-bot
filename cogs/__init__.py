@@ -19,6 +19,9 @@ def setup(bot: Bot):
     # Add cogs
     bot.add_cog(Help(bot))
     bot.add_cog(Export(bot, db, spotify))
-    bot.add_cog(Music(bot, db, spotify))
     bot.add_cog(Recommendation(bot, db, spotify, get_var('FIREBASE_KEY')))
     bot.add_cog(ThreadManager(bot, db))
+
+    # Conditional cogs
+    if get_var('ENABLE_MUSIC') == '1':
+        bot.add_cog(Music(bot, db, spotify))

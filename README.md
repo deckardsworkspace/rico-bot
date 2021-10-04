@@ -45,24 +45,16 @@ Populate your chosen platform's build/environment/config variables with your own
 |`SPOTIFY_ID`|Spotify client ID|
 |`SPOTIFY_SECRET`|Spotify client secret|
 
-If you also want to make use of the music player, you will also need to set these variables:
+If you also want to make use of the music player, you will need to set these variables:
 
 |Config key|Description|
 |-----|-----|
+|`ENABLE_MUSIC`|Set to `1` if you want to enable Rico's music player functionality. **Required.**|
 |`LAVALINK_SERVER`|IP address of your Lavalink server|
 |`LAVALINK_PORT`|Port of your Lavalink server|
 |`LAVALINK_PASSWORD`|Password for your Lavalink server|
 
 Make sure your Lavalink server is reachable with these parameters. The bot will throw an error if it cannot authenticate with your server.
-
-If you **don't** want to make use of the music player, simply remove the following line from `cogs/__init__.py` to disable this functionality:
-
-```
-# Add cogs
-...
-bot.add_cog(Music(bot, db, spotify))
-...
-```
 
 If you're testing locally, use `python app.py`. Note that if you're testing locally, your config must be set as environment variables.
 
