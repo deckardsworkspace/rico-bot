@@ -61,7 +61,7 @@ class Music(Cog):
             await self.skip(ctx, queue_end=True)
 
     # Commands
-    from .cmd_player import now_playing, pause, play, skip, unpause
+    from .cmd_player import now_playing, pause, play, skip, unpause, volume
     from .cmd_queue import clear_queue, queue, remove_from_queue, shuffle
     from .cmd_rec import recommend_now_playing
     from .cmd_stop import disconnect, reset_player

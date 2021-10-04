@@ -44,7 +44,8 @@ help_list = [
             '{0}resetplayer, {0}rp': 'Reset the player state for the server.',
             '{0}shuffle, {0}shuf': 'Shuffle the current playback queue.',
             '{0}skip, {0}next': 'Skip currently playing track.',
-            '{0}unpause': 'Resume playback.'
+            '{0}unpause': 'Resume playback.',
+            '{0}volume, {0}v, {0}vol': 'Adjust player volume.'
         }
     },
     {

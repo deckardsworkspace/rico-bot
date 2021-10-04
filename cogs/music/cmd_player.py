@@ -266,3 +266,20 @@ async def unpause(self, ctx: Context):
         await ctx.reply('Unpaused the player.')
     else:
         await ctx.reply('Already unpaused.')
+
+
+@command(aliases=['v', 'vol'])
+async def volume(self, ctx: Context, *, query: str = None):
+    try:
+        new_vol = int(query)
+        if new_vol < 0 or new_vol > 1000:
+            raise ValueError
+    except ValueError:
+        return await ctx.reply('Please specify an integer between 0 and 1000, inclusive.')
+    
+    # Get the player for this guild from cache.
+    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+    if player is not None and player.is_playing and not player.paused:
+        await player.set_volume(new_vol)
+        return await ctx.reply(f':white_check_mark Volume set to **{new_vol}**')
+    return await ctx.reply('Player is not playing or is paused')
