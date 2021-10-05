@@ -275,7 +275,7 @@ async def volume(self, ctx: Context, *, vol: str = None):
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
         if player is not None:
             # Return current player volume
-            await ctx.reply(f':white_check_mark Volume is currently set to **{player.volume}**.')
+            await ctx.reply(f':white_check_mark: Volume is currently set to **{player.volume}**.')
             return await ctx.send('To set the volume, use `{0}v <int>`.'.format(get_var('BOT_PREFIX')))
         return await ctx.reply(f'No active players in {ctx.guild.name}')
 
@@ -290,5 +290,5 @@ async def volume(self, ctx: Context, *, vol: str = None):
     player = self.bot.lavalink.player_manager.get(ctx.guild.id)
     if player is not None and player.is_playing and not player.paused:
         await player.set_volume(new_vol)
-        return await ctx.reply(f':white_check_mark Volume set to **{new_vol}**')
+        return await ctx.reply(f':white_check_mark: Volume set to **{new_vol}**')
     return await ctx.reply('Player is not playing or is paused')
