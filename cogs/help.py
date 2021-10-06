@@ -80,7 +80,7 @@ class Help(Cog):
                 key_idx = valid_keys.index(key)
                 invoked_cmd = f'{cmd_prefix}{ctx.invoked_with}'
                 field_name = f'`{invoked_cmd} {key}`, `{invoked_cmd} {key_idx}`'
-                embed.add_field(name=field_name, value=value, inline=False)
+                embed.add_field(name=field_name, value=value['title'], inline=False)
 
             return await ctx.reply(embed=embed)
         
