@@ -87,7 +87,7 @@ class Help(Cog):
         try:
             key_idx = int(query) - 1
             
-            if key_idx >= len(valid_keys) or key_idx <= 0:
+            if key_idx >= len(valid_keys) or key_idx < 0:
                 embed.title = f'Invalid help index "{query}"'
                 embed.description = f'Valid indices are from 1 to {len(valid_keys)}'
                 return await ctx.reply(embed=embed)
