@@ -77,7 +77,7 @@ class Help(Cog):
             embed.title = f'Help for {ctx.guild.me.nick}'
 
             for key, value in help_list.items():
-                key_idx = valid_keys.index(key)
+                key_idx = valid_keys.index(key) + 1
                 invoked_cmd = f'{cmd_prefix}{ctx.invoked_with}'
                 field_name = f'`{invoked_cmd} {key}`, `{invoked_cmd} {key_idx}`'
                 embed.add_field(name=field_name, value=value['title'], inline=False)
@@ -87,7 +87,7 @@ class Help(Cog):
         try:
             key_idx = int(query) - 1
             
-            if key_idx >= len(valid_keys):
+            if key_idx >= len(valid_keys) or key_idx <= 0:
                 embed.title = f'Invalid help index "{query}"'
                 embed.description = f'Valid indices are from 1 to {len(valid_keys)}'
                 return await ctx.reply(embed=embed)
