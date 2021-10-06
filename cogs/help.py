@@ -66,6 +66,7 @@ class Help(Cog):
     
     @command(name='help', aliases=['h'])
     async def help(self, ctx: Context, *, query: Union[str, int] = None):
+        valid_keys = list(help_list.keys())
         cmd_prefix = get_var('BOT_PREFIX')
         embed = Embed(color=Color.og_blurple())
         embed.set_footer(text='Join the official support server at discord.gg/njtK9G6QRG')
@@ -76,7 +77,7 @@ class Help(Cog):
             embed.title = f'Help for {ctx.guild.me.nick}'
 
             for key, value in help_list.items():
-                key_idx = help_list.keys().index(key)
+                key_idx = valid_keys.index(key)
                 invoked_cmd = f'{cmd_prefix}{ctx.invoked_with}'
                 field_name = f'`{invoked_cmd} {key}`, `{invoked_cmd} {key_idx}`'
                 embed.add_field(name=field_name, value=value, inline=False)
@@ -86,17 +87,17 @@ class Help(Cog):
         try:
             key_idx = int(query) - 1
             
-            if key_idx >= len(help_list.keys()):
+            if key_idx >= len(valid_keys):
                 embed.title = f'Invalid help index "{query}"'
-                embed.description = f'Valid indices are from 1 to {len(help_list.keys())}'
+                embed.description = f'Valid indices are from 1 to {len(valid_keys)}'
                 return await ctx.reply(embed=embed)
 
-            query = help_list.keys()[key_idx]
+            query = valid_keys[key_idx]
         except ValueError:
             # Not an integer query
             pass
 
-        if query in help_list.keys():
+        if query in valid_keys:
             # Display help category
             help_category = help_list[query]
             embed.title = help_category["title"]
@@ -111,7 +112,6 @@ class Help(Cog):
             return await ctx.reply(embed=embed)
         
         # Invalid key
-        valid_keys = ', '.join(help_list.keys())
         embed.title = f'Invalid help key "{query}"'
-        embed.description = f'Valid keys: `{valid_keys}`'
+        embed.description = f'Valid keys: `{", ".join(valid_keys)}`'
         return await ctx.reply(embed=embed)
