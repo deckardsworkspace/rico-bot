@@ -77,7 +77,8 @@ async def on_voice_state_update(self, member: Member, before: VoiceState, after:
             if player is not None:
                 if player.is_playing and not player.paused:
                     time = 0
-                if time == 60:
-                    await self.disconnect(ctx, reason='Inactive for 1 minute')
+                # TODO: Turn this into an environment variable
+                if time == 120:
+                    await self.disconnect(ctx, reason='Inactive for 2 minutes')
                 if not player.is_connected:
                     break
