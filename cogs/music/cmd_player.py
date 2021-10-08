@@ -64,24 +64,28 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
                 m, s = divmod(floor(track_info['length'] / 1000), 60)
                 progress = f'{m:02d} min, {s:02d} sec'
         
-        # Show if track is a live stream
-        current_action = 'streaming' if track_info['isStream'] else 'playing'
-        embed.title = 'Paused' if player.paused else f'Now {current_action}'
+        if track_info is not None:
+            # Show if track is a live stream
+            current_action = 'streaming' if 'isStream' in track_info and track_info['isStream'] else 'playing'
+            embed.title = 'Paused' if player.paused else f'Now {current_action}'
 
-        # Show rich track info
-        track_name = track_info['title']
-        track_artist = track_info['author']
-        track_uri = track_info['uri']
-        if hasattr(track_info, 'spotify'):
-            track_name = track_info['spotify']['name']
-            track_artist = track_info['spotify']['artist']
-            track_uri = f'https://open.spotify.com/track/{track_info["spotify"]["id"]}'
-        embed.description = '\n'.join([
-            f'**[{track_name}]({track_uri})**',
-            f'by {track_artist}',
-            progress if progress is not None else ''
-        ])
-
+            # Show rich track info
+            track_name = track_info['title']
+            track_artist = track_info['author']
+            track_uri = track_info['uri']
+            if hasattr(track_info, 'spotify'):
+                track_name = track_info['spotify']['name']
+                track_artist = track_info['spotify']['artist']
+                track_uri = f'https://open.spotify.com/track/{track_info["spotify"]["id"]}'
+            embed.description = '\n'.join([
+                f'**[{track_name}]({track_uri})**',
+                f'by {track_artist}',
+                progress if progress is not None else ''
+            ])
+        else:
+            # Show basic track info
+            embed.title = 'Paused' if player.paused else 'Now playing'
+            embed.description = player.current.title
     else:
         embed = Embed(color=Color.yellow())
         embed.title = 'Not playing'
