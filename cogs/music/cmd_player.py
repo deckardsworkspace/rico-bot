@@ -2,7 +2,7 @@ from collections import deque
 from math import ceil, floor
 from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
-from typing import Dict, Union
+from typing import Dict
 from util import check_url, check_spotify_url, check_twitch_url, get_var, parse_spotify_url
 from util import SpotifyInvalidURLError
 from .queue_helpers import enqueue, enqueue_db, get_queue_db, set_queue_db
@@ -24,8 +24,6 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
 
     if player.is_playing or player.paused:
         embed = Embed(color=Color.teal())
-        embed.title = 'Paused' if player.paused else 'Now playing'
-        embed.description = player.current.title
 
         # Get requester info
         requester = await self.bot.fetch_user(player.current.requester)
@@ -40,8 +38,8 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
             if stored_info and 'title' in stored_info:
                 track_info = stored_info
 
-                # Don't create progress info for Twitch streams
-                if not check_twitch_url(track_info['uri']):
+                # Don't create progress info for streams
+                if not check_twitch_url(track_info['uri']) and not track_info['isStream']:
                     # Create progress text
                     total_ms = track_info['length']
                     total_m, total_s = divmod(floor(total_ms / 1000), 60)
@@ -61,10 +59,14 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
                     progress = f'\n**{elapsed_text} {progress_bar} {total_text}**'
         else:
             # Invoked by listener
-            # Don't create progress info for Twitch streams
-            if check_twitch_url(track_info['uri']):
+            # Don't create progress info for streams
+            if check_twitch_url(track_info['uri']) and not track_info['isStream']:
                 m, s = divmod(floor(track_info['length'] / 1000), 60)
                 progress = f'{m:02d} min, {s:02d} sec'
+        
+        # Show if track is a live stream
+        current_action = 'streaming' if track_info['isStream'] else 'playing'
+        embed.title = 'Paused' if player.paused else f'Now {current_action}'
 
         # Show rich track info
         track_name = track_info['title']
