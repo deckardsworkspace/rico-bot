@@ -34,6 +34,7 @@ Populate your chosen platform's build/environment/config variables with your own
 |-----|-----|
 |`BOT_PREFIX`|Command prefix for the bot|
 |`DISCORD_TOKEN`|Discord bot token|
+|`ENABLE_THREADMGR`|Set to `1` if you want to enable Rico's automatic thread unarchiver.|
 |`FIREBASE_KEY`|Firebase Realtime Database API key|
 |`FIREBASE_AUTHDOMAIN`|Firebase Realtime Database auth domain|
 |`FIREBASE_DBURL`|Firebase Realtime Database URL|
