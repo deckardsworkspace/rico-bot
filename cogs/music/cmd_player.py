@@ -16,9 +16,9 @@ async def loop(self, ctx: Context):
     # Loop the current track.
     if player and (player.is_playing or player.paused):
         if not player.repeat:
-            await player.set_repeat(repeat=True)
+            player.set_repeat(repeat=True)
             return await ctx.reply(':white_check_mark: **Now looping the current track**')
-        await player.set_repeat(repeat=False)
+        player.set_repeat(repeat=False)
         return await ctx.reply(':white_check_mark: **No longer looping the current track**')
     return await ctx.reply('Not currently playing.')
 
