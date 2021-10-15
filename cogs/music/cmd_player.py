@@ -8,6 +8,21 @@ from util import SpotifyInvalidURLError
 from .queue_helpers import enqueue, enqueue_db, get_queue_db, set_queue_db
 
 
+@command()
+async def loop(self, ctx: Context):
+    # Get the player for this guild from cache.
+    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+
+    # Loop the current track.
+    if player and (player.is_playing or player.paused):
+        if not player.repeat:
+            await player.set_repeat(repeat=True)
+            return await ctx.reply(':white_check_mark: **Now looping the current track**')
+        await player.set_repeat(repeat=False)
+        return await ctx.reply(':white_check_mark: **No longer looping the current track**')
+    return await ctx.reply('Not currently playing.')
+
+
 @command(name='nowplaying', aliases=['np'])
 async def now_playing(self, ctx: Context, track_info: Dict = None):
     # Delete the previous now playing message
