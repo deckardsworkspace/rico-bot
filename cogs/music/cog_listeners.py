@@ -1,5 +1,6 @@
 from asyncio import sleep
-from nextcord import Member, VoiceState
+from lavalink.exceptions import NodeException
+from nextcord import Color, Embed, Member, VoiceState
 from nextcord.ext.commands import Bot, Cog, Context
 from util import VoiceCommandError
 
@@ -25,7 +26,14 @@ def cog_unload(self):
 async def ensure_voice(bot: Bot, ctx: Context):
     """ This check ensures that the bot and command author are in the same voice channel. """
     # Ensure a player exists for this guild
-    player = bot.lavalink.player_manager.create(ctx.guild.id, endpoint=str(ctx.guild.region))
+    try:
+        player = bot.lavalink.player_manager.create(ctx.guild.id, endpoint=str(ctx.guild.region))
+    except NodeException as e:
+        embed = Embed(color=Color.red())
+        embed.title = 'Ouch :('
+        embed.description = 'There are no audio servers currently available to handle your request. Please try again later.'
+        embed.set_footer(text=str(e))
+        return await ctx.reply(embed=embed)
 
     if not ctx.author.voice or not ctx.author.voice.channel:
         raise VoiceCommandError(':raised_hand: | Join a voice channel first.')
