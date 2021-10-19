@@ -51,9 +51,21 @@ If you also want to make use of the music player, you will need to set these var
 |Config key|Description|
 |-----|-----|
 |`ENABLE_MUSIC`|Set to `1` if you want to enable Rico's music player functionality. **Required.**|
-|`LAVALINK_SERVER`|IP address of your Lavalink server|
-|`LAVALINK_PORT`|Port of your Lavalink server|
-|`LAVALINK_PASSWORD`|Password for your Lavalink server|
+|`LAVALINK`|Serialized list of your Lavalink nodes in JSON format.|
+
+Your `LAVALINK` configuration, when deserialized by `json.loads()`, must match this format:
+
+```python
+[
+    {
+        'id': '<node ID>',
+        'region': '<node region - check https://nextcord.readthedocs.io/en/latest/api.html#nextcord.VoiceRegion>',
+        'server': 'something.com:port', # for example, lava.link:80
+        'password': '<lavalink server password'
+    }
+    # You can specify more than one node for fallback. 
+]
+```
 
 Make sure your Lavalink server is reachable with these parameters. The bot will throw an error if it cannot authenticate with your server.
 

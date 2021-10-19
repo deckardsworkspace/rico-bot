@@ -1,8 +1,8 @@
 from lavalink import add_event_hook, Client as LavalinkClient
 from lavalink.events import *
 from nextcord.ext.commands import Bot, Cog, Context
-from util import get_var, Spotify
-from .cog_listeners import ensure_voice
+from util import Spotify
+from .lavalink import init_lavalink
 
 
 class Music(Cog):
@@ -14,13 +14,7 @@ class Music(Cog):
 
         # This ensures the client isn't overwritten during cog reloads
         if not hasattr(bot, 'lavalink'):
-            bot.lavalink = LavalinkClient(bot.user.id)
-            bot.lavalink.add_node(
-                get_var('LAVALINK_SERVER'),
-                get_var('LAVALINK_PORT'),
-                get_var('LAVALINK_PASSWORD'),
-                'ph', 'default-node'
-            )
+            bot.lavalink = init_lavalink(bot.user.id)
 
         # Listen to Lavalink events
         add_event_hook(self.on_lavalink_event)

@@ -1,8 +1,19 @@
 from asyncio import sleep
 from nextcord import Client, StageChannel, VoiceChannel, VoiceClient
 from typing import Union
-from util import get_var
+from util import get_lavalink_nodes
 import lavalink
+
+
+def init_lavalink(id: int) -> lavalink.Client: 
+    client = lavalink.Client(id)
+
+    # Add nodes from env
+    nodes = get_lavalink_nodes()
+    for node in nodes:
+        client.add_node(node['host'], node['port'], node['password'], node['region'], node['id'])
+    
+    return client
 
 
 class LavalinkVoiceClient(VoiceClient):
@@ -23,13 +34,7 @@ class LavalinkVoiceClient(VoiceClient):
         if hasattr(self.client, 'lavalink'):
             self.lavalink = self.client.lavalink
         else:
-            self.client.lavalink = lavalink.Client(client.user.id)
-            self.client.lavalink.add_node(
-                get_var('LAVALINK_SERVER'),
-                get_var('LAVALINK_PORT'),
-                get_var('LAVALINK_PASSWORD'),
-                'ph', 'default-node'
-            )
+            self.client.lavalink = init_lavalink(client.user.id)
             self.lavalink = self.client.lavalink
 
     async def on_voice_server_update(self, data):
