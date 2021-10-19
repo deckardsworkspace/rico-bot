@@ -2,12 +2,25 @@ from collections import deque
 from lavalink.models import AudioTrack, DefaultPlayer
 from nextcord import Color, Embed
 from nextcord.ext.commands import Bot, Context
+from lavalink.models import BasePlayer
 from pyrebase.pyrebase import Database
 from typing import Deque, Dict, List, Union
 from util import QueueEmptyError
 from .deque_encoder import DequeEncoder
 from .lavalink import LavalinkVoiceClient
 import json
+
+
+async def connect_player(player: BasePlayer, bot: Bot, ctx: Context):
+    # Are we connected?
+    if not player.is_connected:
+        # Are we connected according to Discord?
+        for client in bot.voice_clients:
+            if client.guild is ctx.guild:
+                # Remove old connection
+                await client.disconnect()
+
+        await ctx.author.voice.channel.connect(cls=LavalinkVoiceClient)
 
 
 async def enqueue(bot: Bot, db: Database, query: Union[str, Dict], ctx: Context,
@@ -18,8 +31,7 @@ async def enqueue(bot: Bot, db: Database, query: Union[str, Dict], ctx: Context,
     # If query is a dict, we must be resuming an old queue
     if isinstance(query, dict):
         # Add directly to player
-        if not player.is_connected:
-            await ctx.author.voice.channel.connect(cls=LavalinkVoiceClient)
+        await connect_player(player, bot, ctx)
         player.add(requester=ctx.author.id, track=query)
         return await player.play()
 
@@ -34,8 +46,7 @@ async def enqueue(bot: Bot, db: Database, query: Union[str, Dict], ctx: Context,
         return False
     else:
         # If a result is found, connect to voice.
-        if not player.is_connected:
-            await ctx.author.voice.channel.connect(cls=LavalinkVoiceClient)
+        await connect_player(player, bot, ctx)
 
     # Save to DB if player is not idle.
     queue_to_db = queue_to_db if queue_to_db is not None else player.current is not None

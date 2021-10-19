@@ -1,6 +1,6 @@
 from collections import deque
 from math import ceil, floor
-from nextcord import Color, Embed
+from nextcord import ClientException, Color, Embed
 from nextcord.ext.commands import command, Context
 from typing import Dict
 from util import check_url, check_spotify_url, check_twitch_url, get_var, parse_spotify_url
@@ -264,8 +264,7 @@ async def skip(self, ctx: Context, queue_end: bool = False):
                 else:
                     raise Exception('Track object is incomplete')
             except Exception as e:
-                await ctx.send(f'Unable to play {track}. Reason: {e}')
-                continue
+                return await ctx.send(f'Unable to play {track}. Reason: {e}')
         else:
             if not queue_end:
                 # Remove now playing data from DB
