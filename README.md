@@ -59,7 +59,7 @@ You can get a working Lavalink instance in three ways:
 
 ### Use a publicly available Lavalink server
 
-Some hosting providers, such as [Something.Host,]([https://something/host](https://support.something.host/en/article/lavalink-hosting-okm26z/)) offer a publicly available Lavalink server.
+Some hosting providers, such as [Something.Host,](https://support.something.host/en/article/lavalink-hosting-okm26z/) offer a publicly available Lavalink server.
 
 Grab the Lavalink hostname, port, and password on their site, then head over to **[Configuration & deployment.](#configuration--deployment)**
 
