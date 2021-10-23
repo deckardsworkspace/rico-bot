@@ -53,6 +53,8 @@ Since the Discord.py library was discontinued, Rico now uses the community fork 
 * A Spotify developer account (get one [here](https://developer.spotify.com/dashboard/))
 * A working Firebase Realtime Database (create one [here](https://console.firebase.google.com/))
 
+Some of the requirements installed by `pip` require that the Python development headers, like `Python.h`, be present in your system. Others require that a GCC compiler be present as well. Instructions differ per operating system, but generally for Debian/Ubuntu systems you can do `sudo apt install python3-dev build-essential`.
+
 If you want to use Rico's music playing functionality, you will also need a working and reachable Lavalink server. Downloads and sample configuration for Lavalink is available at its [official repository.](https://github.com/freyacodes/Lavalink)
 
 You can get a working Lavalink instance in three ways:
