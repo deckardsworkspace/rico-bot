@@ -28,34 +28,30 @@ async def ensure_voice(bot: Bot, ctx: Context):
     # Ensure a player exists for this guild
     try:
         player = bot.lavalink.player_manager.create(ctx.guild.id, endpoint=str(ctx.guild.region))
-    except NodeException as e:
-        embed = Embed(color=Color.red())
-        embed.title = 'Ouch :('
-        embed.description = 'There are no audio servers currently available to handle your request. Please try again later.'
-        embed.set_footer(text=str(e))
-        return await ctx.reply(embed=embed)
+    except NodeException:
+        raise VoiceCommandError('No audio servers currently available. Please try again later.')
 
     if not ctx.author.voice or not ctx.author.voice.channel:
-        raise VoiceCommandError(':raised_hand: | Join a voice channel first.')
+        raise VoiceCommandError('Join a voice channel first.')
 
     vc = ctx.author.voice.channel
     if not player.is_connected:
         # Bot needs to already be in voice channel to pause, unpause, skip etc.
         if ctx.command.name not in ('play', 'p', 'resetplayer', 'rp'):
-            raise VoiceCommandError(':electric_plug: | I\'m not connected to voice.')
+            raise VoiceCommandError('I\'m not connected to voice.')
 
         permissions = vc.permissions_for(ctx.me)
         if not permissions.connect or not permissions.speak:
-            raise VoiceCommandError(':mute: | I need the `CONNECT` and `SPEAK` permissions.')
+            raise VoiceCommandError('I need the `CONNECT` and `SPEAK` permissions to play music.')
 
         if vc.user_limit and vc.user_limit <= len(vc.members):
-            raise VoiceCommandError(':mute: | Your voice channel is full.')
+            raise VoiceCommandError('Your voice channel is full.')
 
         # Save context for later
         player.store('context', ctx)
     else:
         if int(player.channel_id) != vc.id:
-            raise VoiceCommandError(':speaking_head: | You need to be in my voice channel.')
+            raise VoiceCommandError('You need to be in my voice channel.')
 
 
 @Cog.listener()

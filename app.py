@@ -46,20 +46,22 @@ async def on_message(message: Message):
     try:
         await client.process_commands(message)
     except VoiceCommandError as e:
-        embed = Embed(color=Color.red(), title=f'**{e.message}**')
+        embed = Embed(color=Color.red(), title=f'Error while processing command', description=e.message)
         await message.reply(embed=embed)
 
 
 @client.event
 async def on_command_error(ctx: Context, error):
+    embed = Embed(color=Color.red(), title=f'Error while processing command `{ctx.invoked_with}`')
+
     if type(error) in [errors.PrivateMessageOnly, errors.NoPrivateMessage]:
-        await ctx.reply(str(error))
-        await ctx.message.delete(delay=5.0)
+        embed.description = str(error)
     elif type(error) is CommandNotFound:
-        await ctx.reply('Invalid command.')
+        embed.description = 'Invalid command.'
     else:
-        print(error)
-        await ctx.reply(f'`{type(error).__name__}` encountered while executing `{ctx.invoked_with}`.\n{error}')
+        embed.description = f'`{type(error).__name__}`: {error}'
+
+    await ctx.reply(embed=embed)
 
 
 @loop(seconds=120)
