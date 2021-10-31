@@ -248,28 +248,35 @@ async def skip(self, ctx: Context, queue_end: bool = False):
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
         # Queue up the next (valid) track from DB, if any
-        next_i = get_queue_index(self.db, str(ctx.guild.id)) + 1
-        queue_size = get_queue_size(self.db, str(ctx.guild.id))
-        while next_i < queue_size:
-            track = dequeue_db(self.db, str(ctx.guild.id), next_i)
-            
-            try:
-                if await enqueue(self.bot, track, ctx=ctx):
-                    if not queue_end:
-                        await player.skip()
-                    break
-            except Exception as e:
-                return await ctx.send(f'Unable to play {track}. Reason: {e}')
-            finally:
-                next_i += 1
+        current_i = get_queue_index(self.db, str(ctx.guild.id))
+        if isinstance(current_i, int):
+            next_i = get_queue_index(self.db, str(ctx.guild.id)) + 1
+            queue_size = get_queue_size(self.db, str(ctx.guild.id))
+            while next_i < queue_size:
+                track = dequeue_db(self.db, str(ctx.guild.id), next_i)
+                
+                try:
+                    if await enqueue(self.bot, track, ctx=ctx):
+                        if not queue_end:
+                            await player.skip()
+                        break
+                except Exception as e:
+                    return await ctx.send(f'Unable to play {track}. Reason: {e}')
+                finally:
+                    next_i += 1
+            else:
+                if not queue_end:
+                    # Remove player data from DB
+                    self.db.child('player').child(str(ctx.guild.id)).remove()
+                    return await self.disconnect(ctx, reason='Reached the end of the queue')
+
+            # Save new queue index back to db
+            set_queue_index(self.db, str(ctx.guild.id), next_i)
         else:
             if not queue_end:
                 # Remove player data from DB
                 self.db.child('player').child(str(ctx.guild.id)).remove()
                 return await self.disconnect(ctx, reason='Reached the end of the queue')
-
-        # Save new queue index back to db
-        set_queue_index(self.db, str(ctx.guild.id), next_i)
 
 
 @command()
