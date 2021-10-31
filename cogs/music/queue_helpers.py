@@ -65,7 +65,7 @@ async def connect_player(player: BasePlayer, bot: Bot, ctx: Context):
         await ctx.author.voice.channel.connect(cls=LavalinkVoiceClient)
 
 
-async def enqueue(bot: Bot, query: QueueItem, ctx: Context, quiet: bool = False) -> bool:
+async def enqueue(bot: Bot, query: QueueItem, ctx: Context) -> bool:
     # Get the player for this guild from cache
     player = bot.lavalink.player_manager.get(ctx.guild.id)
 

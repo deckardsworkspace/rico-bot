@@ -141,7 +141,7 @@ async def play(self, ctx: Context, *, query: str = None):
 
                 # Play at index
                 track = dequeue_db(self.db, str(ctx.guild.id), old_np)
-                return await enqueue(self.bot, track, ctx=ctx, quiet=True)
+                return await enqueue(self.bot, track, ctx=ctx)
             return await ctx.reply('Please specify a URL or a search term to play.')
         else:
             # Clear previous queue if not currently playing
@@ -238,7 +238,7 @@ async def play(self, ctx: Context, *, query: str = None):
 
             # Play the first track
             set_queue_index(self.db, str(ctx.guild.id), 0)
-            await enqueue(self.bot, new_tracks[0], ctx, False)
+            await enqueue(self.bot, new_tracks[0], ctx)
 
 
 @command(aliases=['next'])
@@ -254,7 +254,7 @@ async def skip(self, ctx: Context, queue_end: bool = False):
             track = dequeue_db(self.db, str(ctx.guild.id), next_i)
             
             try:
-                if await enqueue(self.bot, track, ctx=ctx, quiet=True):
+                if await enqueue(self.bot, track, ctx=ctx):
                     if not queue_end:
                         await player.skip()
                     break
