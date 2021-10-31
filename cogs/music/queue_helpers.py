@@ -104,8 +104,8 @@ async def enqueue(bot: Bot, query: QueueItem, ctx: Context) -> bool:
             player.store(track['info']['identifier'], track['info'])
 
         # Add track directly to Lavalink queue
-        track = AudioTrack(track, ctx.author.id)
-        player.add(requester=ctx.author.id, track=track)
+        track = AudioTrack(track, query.requester)
+        player.add(requester=query.requester, track=track)
 
     # We don't want to call .play() if the player is not idle
     # as that will effectively skip the current track.
