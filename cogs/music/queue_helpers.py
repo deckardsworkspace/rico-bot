@@ -88,7 +88,7 @@ async def enqueue(bot: Bot, query: QueueItem, ctx: Context) -> bool:
     #   SEARCH_RESULT   - query prefixed with either ytsearch: or scsearch:.
     #   NO_MATCHES      - query yielded no results
     #   LOAD_FAILED     - most likely, the video encountered an exception during loading.
-    if results['loadType'] == 'SEARCH_RESULT':
+    if results['loadType'] == 'SEARCH_RESULT' or results['loadType'] == 'TRACK_LOADED':
         track = results['tracks'][0]
 
         # Add Spotify data to track metadata
@@ -164,4 +164,5 @@ async def search(player: DefaultPlayer, queue_item: QueueItem):
 
 
 def set_queue_db(db: Database, guild_id: str, queue: List[QueueItem]):
-    return db.child('player').child(guild_id).child('queue').set(json.dumps(queue, cls=QueueItem.Encoder))
+    new_queue = queue if not len(queue) else json.dumps(queue, cls=QueueItem.Encoder)
+    return db.child('player').child(guild_id).child('queue').set(new_queue)
