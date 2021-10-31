@@ -1,11 +1,11 @@
 from collections import deque
 from math import ceil, floor
-from nextcord import ClientException, Color, Embed
+from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
 from typing import Dict
 from util import check_url, check_spotify_url, check_twitch_url, get_var, parse_spotify_url
 from util import SpotifyInvalidURLError
-from .queue_helpers import enqueue, enqueue_db, get_queue_db, set_queue_db
+from .queue_helpers import QueueItem, dequeue_db, enqueue, enqueue_db, get_queue_size, get_queue_index, set_queue_index, set_queue_db
 
 
 @command()
@@ -133,28 +133,26 @@ async def play(self, ctx: Context, *, query: str = None):
     async with ctx.typing():
         if not query:
             # Pick up where we left off
-            old_np = self.db.child('player').child(str(ctx.guild.id)).child('np').get().val()
-            if old_np:
+            old_np = get_queue_index(self.db, str(ctx.guild.id))
+            if isinstance(old_np, int):
                 # Send resuming queue embed
                 embed = Embed(color=Color.purple(), title='Resuming interrupted queue')
                 await ctx.reply(embed=embed)
 
-                # Reconstruct track object
-                decoded = await self.bot.lavalink.decode_track(old_np)
-                track = {
-                    'track': old_np,
-                    'info': decoded
-                }
-                return await enqueue(self.bot, self.db, track, ctx=ctx, quiet=True)
+                # Play at index
+                track = dequeue_db(self.db, str(ctx.guild.id), old_np)
+                return await enqueue(self.bot, track, ctx=ctx, quiet=True)
             return await ctx.reply('Please specify a URL or a search term to play.')
         else:
             # Clear previous queue if not currently playing
             player = self.bot.lavalink.player_manager.get(ctx.guild.id)
             if player is not None and not (player.is_playing or player.paused):
-                set_queue_db(self.db, str(ctx.guild.id), deque([]))
+                set_queue_db(self.db, str(ctx.guild.id), [])
 
-        # Remove leading and trailing <>. <> may be used to suppress embedding links in Discord.
+        # Remove leading and trailing <>.
+        # <> may be used to suppress embedding links in Discord.
         query = query.strip('<>')
+        new_tracks = []
         if check_spotify_url(query):
             # Query is a Spotify URL.
             try:
@@ -165,13 +163,25 @@ async def play(self, ctx: Context, *, query: str = None):
             if sp_type == 'track':
                 # Get track details from Spotify
                 track_name, track_artist, track_id = self.spotify.get_track(sp_id)
-                return await enqueue(self.bot, self.db, f'ytsearch:{track_name} {track_artist} audio', ctx=ctx, sp_data={
-                    'name': track_name, 'artist': track_artist, 'id': track_id
-                })
+
+                # Add to database queue
+                new_tracks.append(QueueItem(
+                    requester=ctx.author.id,
+                    title=track_name,
+                    artist=track_artist,
+                    spotify_id=track_id
+                ))
             else:
                 # Get playlist or album tracks from Spotify
                 list_name, list_author, tracks = self.spotify.get_tracks(sp_type, sp_id)
                 track_queue = deque(tracks)
+
+                # Send enqueueing embed
+                embed = Embed(color=Color.blurple())
+                embed.title = f'Enqueueing Spotify {sp_type}'
+                embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
+                embed.set_footer(text='This might take a while, please wait.')
+                await ctx.send(embed=embed)
 
                 if len(tracks) < 1:
                     # No tracks
@@ -179,56 +189,56 @@ async def play(self, ctx: Context, *, query: str = None):
                 elif len(tracks) == 1:
                     # Single track
                     track_name, track_artist, track_id = tracks[0]
-                    return await enqueue(self.bot, self.db, f'ytsearch{track_name} {track_artist} audio', ctx=ctx, sp_data={
-                        'name': track_name, 'artist': track_artist, 'id': track_id
-                    })
+                    new_tracks.append(QueueItem(
+                        requester=ctx.author.id,
+                        title=track_name,
+                        artist=track_artist,
+                        spotify_id=track_id
+                    ))
                 else:
                     # Multiple tracks
-                    # There is no way to queue multiple items in one batch through Lavalink.py,
-                    # and performing a search takes time which adds up as playlists grow larger.
-                    # Hence, to allow the user to start listening immediately,
-                    # we play the first one and store the rest of the queue in DB for later.
-                    await ctx.reply(f':arrow_forward: | Enqueueing {sp_type}, this might take a while...')
-
-                    queries = []
-                    success = False
-                    while len(track_queue):
-                        track = track_queue.popleft()
+                    for track in track_queue:
                         track_name, track_artist, track_id = track
-                        track_query = f'ytsearch:{track_name} {track_artist} audio'
-
-                        if not success:
-                            # Enqueue the first valid track
-                            success = await enqueue(self.bot, self.db, track_query, ctx=ctx, quiet=True, sp_data={
-                                'name': track_name, 'artist': track_artist, 'id': track_id
-                            })
-                        else:
-                            # Append to db queue
-                            track_obj = {
-                                'requester': ctx.author.id,
-                                'spotify': {
-                                    'name': track_name,
-                                    'artist': track_artist,
-                                    'id': track_id
-                                }
-                            }
-                            queries.append(track_obj)
-                    else:
-                        if len(queries):
-                            # Append everything in one go to save DB accesses
-                            enqueue_db(self.db, str(ctx.guild.id), queries)
-
-                    # Send enqueued embed
-                    embed = Embed(color=Color.blurple())
-                    embed.title = f'Spotify {sp_type} enqueued'
-                    embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
-                    return await ctx.reply(embed=embed)
-        elif check_url(query) or query.startswith('ytsearch:') or query.startswith('scsearch:'):
-            # Query is a non-Spotify URL, or begins with the search modifiers 'ytsearch' or 'scsearch'
-            return await enqueue(self.bot, self.db, query, ctx=ctx)
+                        new_tracks.append(QueueItem(
+                            requester=ctx.author.id,
+                            title=track_name,
+                            artist=track_artist,
+                            spotify_id=track_id
+                        ))
+        elif check_url(query):
+            # Query is a non-Spotify URL.
+            new_tracks.append(QueueItem(
+                requester=ctx.author.id,
+                url=query
+            ))
         else:
-            # Query is not a URL. Have Lavalink do a YouTube search for it.
-            return await enqueue(self.bot, self.db, f'ytsearch:{query} audio', ctx=ctx)
+            # Query is not a URL.
+            if query.startswith('ytsearch:') or query.startswith('scsearch:'):
+                # Query begins with the search modifiers 'ytsearch' or 'scsearch'
+                new_tracks.append(QueueItem(
+                    requester=ctx.author.id,
+                    query=query
+                ))
+            else:
+                # Have Lavalink do a YouTube search for the query
+                new_tracks.append(QueueItem(
+                    requester=ctx.author.id,
+                    query=f'ytsearch:{query}'
+                ))
+
+        if len(new_tracks):
+            # Add new tracks to queue
+            enqueue_db(self.db, str(ctx.guild.id), new_tracks)
+
+            # Send embed
+            embed = Embed(color=Color.blurple())
+            embed.title = f'Added to queue'
+            embed.description = f'{len(new_tracks)} item(s)'
+            await ctx.reply(embed=embed)
+
+            # Play the first track
+            set_queue_index(self.db, str(ctx.guild.id), 0)
+            await enqueue(self.bot, new_tracks[0], ctx, False)
 
 
 @command(aliases=['next'])
@@ -238,41 +248,28 @@ async def skip(self, ctx: Context, queue_end: bool = False):
         player = self.bot.lavalink.player_manager.get(ctx.guild.id)
 
         # Queue up the next (valid) track from DB, if any
-        queue = get_queue_db(self.db, str(ctx.guild.id))
-        while len(queue):
-            track = queue.popleft()
+        next_i = get_queue_index(self.db, str(ctx.guild.id)) + 1
+        queue_size = get_queue_size(self.db, str(ctx.guild.id))
+        while next_i < queue_size:
+            track = dequeue_db(self.db, str(ctx.guild.id), next_i)
+            
             try:
-                if 'spotify' in track:
-                    # Perform query
-                    track_name = track["spotify"]["name"]
-                    track_artist = track["spotify"]["artist"]
-                    query = f'ytsearch:{track_name} {track_artist} audio'
-                    if await enqueue(self.bot, self.db, query, ctx=ctx, quiet=True,
-                                     sp_data=track['spotify'], queue_to_db=False):
-                        if not queue_end:
-                            await player.skip()
-                        break
-                elif 'info' in track:
-                    # Save track metadata to player storage
-                    if 'identifier' in track['info']:
-                        player.store(track['info']['identifier'], track['info'])
-
-                    # Play track
-                    player.add(requester=track['requester'], track=track)
-                    await player.play()
+                if await enqueue(self.bot, track, ctx=ctx, quiet=True):
+                    if not queue_end:
+                        await player.skip()
                     break
-                else:
-                    raise Exception('Track object is incomplete')
             except Exception as e:
                 return await ctx.send(f'Unable to play {track}. Reason: {e}')
+            finally:
+                next_i += 1
         else:
             if not queue_end:
-                # Remove now playing data from DB
-                self.db.child('player').child(str(ctx.guild.id)).child('np').remove()
-                await self.disconnect(ctx, reason='Reached the end of the queue')
+                # Remove player data from DB
+                self.db.child('player').child(str(ctx.guild.id)).remove()
+                return await self.disconnect(ctx, reason='Reached the end of the queue')
 
-        # Save new queue back to DB
-        set_queue_db(self.db, str(ctx.guild.id), queue)
+        # Save new queue index back to db
+        set_queue_index(self.db, str(ctx.guild.id), next_i)
 
 
 @command()
