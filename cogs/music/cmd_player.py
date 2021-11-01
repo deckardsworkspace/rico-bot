@@ -42,10 +42,6 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
         embed = Embed(color=Color.teal())
         automatic = track_info is not None
 
-        # Get requester info
-        requester = await self.bot.fetch_user(player.current.requester)
-        embed.set_footer(text=f'Requested by {requester.name}#{requester.discriminator}')
-
         # Try to recover track info
         if not automatic:
             # Invoked by command
@@ -77,8 +73,6 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
                 progress = f'\n**{create_progress_bar(elapsed_ms, total_ms)}**'
 
         # Show rich track info
-        current_action = 'streaming' if track_info['isStream'] else 'playing'
-        embed.title = 'Paused' if player.paused else f'Now {current_action}'
         track_name = track_info['title']
         track_artist = track_info['author']
         track_uri = track_info['uri']
@@ -86,10 +80,17 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
             track_name = track_info['spotify']['name']
             track_artist = track_info['spotify']['artist']
             track_uri = f'https://open.spotify.com/track/{track_info["spotify"]["id"]}'
+
+        # Show requester info and avatar
+        requester = await self.bot.fetch_user(player.current.requester)
+        current_action = 'streaming' if track_info['isStream'] else 'playing'
+        embed_title = 'Paused' if player.paused else f'Now {current_action}'
+        embed.set_author(name=embed_title, icon_url=requester.display_avatar.url)
         embed.description = '\n'.join([
             f'**[{track_name}]({track_uri})**',
             f'by {track_artist}',
-            progress if progress is not None else ''
+            progress if progress is not None else '',
+            f'\nRequested by {requester.mention}'
         ])
     else:
         embed = Embed(color=Color.yellow())
