@@ -1,9 +1,10 @@
 from collections import deque
-from math import ceil, floor
+from lavalink.models import AudioTrack
+from math import floor
 from nextcord import Color, Embed
 from nextcord.ext.commands import command, Context
 from typing import Dict
-from util import check_url, check_spotify_url, check_twitch_url, get_var, parse_spotify_url
+from util import check_url, check_spotify_url, create_progress_bar, get_var, parse_spotify_url
 from util import SpotifyInvalidURLError
 from .queue_helpers import QueueItem, dequeue_db, enqueue, enqueue_db, get_queue_size, get_queue_index, set_queue_index, set_queue_db
 
@@ -39,78 +40,64 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
 
     if player.is_playing or player.paused:
         embed = Embed(color=Color.teal())
+        automatic = track_info is not None
 
         # Get requester info
         requester = await self.bot.fetch_user(player.current.requester)
         embed.set_footer(text=f'Requested by {requester.name}#{requester.discriminator}')
 
         # Try to recover track info
-        progress = None
-        if track_info is None:
+        if not automatic:
             # Invoked by command
             current_id = player.current.identifier
             stored_info = player.fetch(current_id)
             if stored_info and 'title' in stored_info:
                 track_info = stored_info
+        if track_info is None or isinstance(track_info, AudioTrack):
+            track_info = {
+                'title': player.current.title,
+                'author': player.current.author,
+                'uri': player.current.uri,
+                'isStream': player.current.stream,
+                'length': player.current.duration
+            }
+            
+        # Don't create progress info for streams
+        progress = None
+        if not track_info['isStream']:
+            # Create progress text
+            total_ms = track_info['length']
 
-                # Don't create progress info for streams
-                if not check_twitch_url(track_info['uri']) and not track_info['isStream']:
-                    # Create progress text
-                    total_ms = track_info['length']
-                    total_m, total_s = divmod(floor(total_ms / 1000), 60)
-                    total_text = f'{total_m:02d}:{total_s:02d}'
-                    elapsed_ms = player.position
-                    elapsed_m, elapsed_s = divmod(floor(elapsed_ms / 1000), 60)
-                    elapsed_text = f'{elapsed_m:02d}:{elapsed_s:02d}'
+            # Build progress info
+            if automatic:
+                total_m, total_s = divmod(floor(total_ms / 1000), 60)
+                progress = f'{total_m:02d} min, {total_s:02d} sec'
+            else:
+                elapsed_ms = player.position
+                progress = f'\n**{create_progress_bar(elapsed_ms, total_ms)}**'
 
-                    # Create progress bar
-                    total = 20
-                    elapsed_perc = elapsed_ms / total_ms
-                    elapsed = '-' * (ceil(elapsed_perc * total) - 1)
-                    remain = ' ' * floor((1 - elapsed_perc) * total)
-                    progress_bar = f'`[{elapsed}O{remain}]`'
-
-                    # Build progress info
-                    progress = f'\n**{elapsed_text} {progress_bar} {total_text}**'
-        else:
-            # Invoked by listener
-            # Don't create progress info for streams
-            if check_twitch_url(track_info['uri']) and not track_info['isStream']:
-                m, s = divmod(floor(track_info['length'] / 1000), 60)
-                progress = f'{m:02d} min, {s:02d} sec'
-        
-        if track_info is not None:
-            # Show if track is a live stream
-            current_action = 'streaming' if 'isStream' in track_info and track_info['isStream'] else 'playing'
-            embed.title = 'Paused' if player.paused else f'Now {current_action}'
-
-            # Show rich track info
-            track_name = track_info['title']
-            track_artist = track_info['author']
-            track_uri = track_info['uri']
-            if hasattr(track_info, 'spotify'):
-                track_name = track_info['spotify']['name']
-                track_artist = track_info['spotify']['artist']
-                track_uri = f'https://open.spotify.com/track/{track_info["spotify"]["id"]}'
-            embed.description = '\n'.join([
-                f'**[{track_name}]({track_uri})**',
-                f'by {track_artist}',
-                progress if progress is not None else ''
-            ])
-        else:
-            # Show basic track info
-            embed.title = 'Paused' if player.paused else 'Now playing'
-            embed.description = player.current.title
+        # Show rich track info
+        current_action = 'streaming' if track_info['isStream'] else 'playing'
+        embed.title = 'Paused' if player.paused else f'Now {current_action}'
+        track_name = track_info['title']
+        track_artist = track_info['author']
+        track_uri = track_info['uri']
+        if hasattr(track_info, 'spotify'):
+            track_name = track_info['spotify']['name']
+            track_artist = track_info['spotify']['artist']
+            track_uri = f'https://open.spotify.com/track/{track_info["spotify"]["id"]}'
+        embed.description = '\n'.join([
+            f'**[{track_name}]({track_uri})**',
+            f'by {track_artist}',
+            progress if progress is not None else ''
+        ])
     else:
         embed = Embed(color=Color.yellow())
         embed.title = 'Not playing'
         embed.description = 'To play, use `{0}play <URL/search term>`. Try `{0}help` for more.'.format(get_var('BOT_PREFIX'))
 
     # Save this message
-    if track_info is not None:
-        message = await ctx.send(embed=embed)
-    else:
-        message = await ctx.reply(embed=embed)
+    message = await ctx.send(embed=embed)
     self.db.child('player').child(str(ctx.guild.id)).child('npmessage').set(str(message.id))
 
 
@@ -234,7 +221,7 @@ async def play(self, ctx: Context, *, query: str = None):
             # Send embed
             embed = Embed(color=Color.blurple())
             embed.title = f'Added to queue'
-            embed.description = f'{len(new_tracks)} item(s)'
+            embed.description = query if len(new_tracks) == 1 else f'{len(new_tracks)} item(s)'
             await ctx.reply(embed=embed)
 
             # Play the first track
@@ -252,7 +239,7 @@ async def skip(self, ctx: Context, queue_end: bool = False):
         # Queue up the next (valid) track from DB, if any
         current_i = get_queue_index(self.db, str(ctx.guild.id))
         if isinstance(current_i, int):
-            next_i = get_queue_index(self.db, str(ctx.guild.id)) + 1
+            next_i = current_i + 1
             queue_size = get_queue_size(self.db, str(ctx.guild.id))
             while next_i < queue_size:
                 track = dequeue_db(self.db, str(ctx.guild.id), next_i)
@@ -261,24 +248,19 @@ async def skip(self, ctx: Context, queue_end: bool = False):
                     if await enqueue(self.bot, track, ctx=ctx):
                         if not queue_end:
                             await player.skip()
-                        break
-                except Exception as e:
-                    return await ctx.send(f'Unable to play {track}. Reason: {e}')
-                finally:
-                    next_i += 1
-            else:
-                if not queue_end:
-                    # Remove player data from DB
-                    self.db.child('player').child(str(ctx.guild.id)).remove()
-                    return await self.disconnect(ctx, reason='Reached the end of the queue')
 
-            # Save new queue index back to db
-            set_queue_index(self.db, str(ctx.guild.id), next_i)
-        else:
-            if not queue_end:
-                # Remove player data from DB
-                self.db.child('player').child(str(ctx.guild.id)).remove()
-                return await self.disconnect(ctx, reason='Reached the end of the queue')
+                        # Save new queue index back to db
+                        set_queue_index(self.db, str(ctx.guild.id), next_i)
+                        return
+                except Exception as e:
+                    await ctx.send(f'Unable to play {track}. Reason: {e}')
+                
+                next_i += 1
+
+        # Remove player data from DB
+        if not queue_end:
+            self.db.child('player').child(str(ctx.guild.id)).remove()
+            return await self.disconnect(ctx, reason='Reached the end of the queue')
 
 
 @command()

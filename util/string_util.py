@@ -1,5 +1,6 @@
 import validators
 import re
+from math import ceil, floor
 from urllib.parse import urlparse, parse_qs
 from .exception import *
 
@@ -30,6 +31,24 @@ def check_twitch_url(url: str) -> bool:
 def check_youtube_url(url: str) -> bool:
     url_regex = r"(?:https?://)?(?:www\.)?youtu\.?be(?:\.com)?/?.*(?:watch|embed)?(?:.*v=|v/|/)([\w\-_]+)\&?"
     return re.match(url_regex, url) is not None
+
+
+def create_progress_bar(elapsed_ms: int, total_ms: int) -> str:
+    # Decompose ms into m and s
+    total_m, total_s = divmod(floor(total_ms / 1000), 60)
+    total_text = f'{total_m:02d}:{total_s:02d}'
+    elapsed_m, elapsed_s = divmod(floor(elapsed_ms / 1000), 60)
+    elapsed_text = f'{elapsed_m:02d}:{elapsed_s:02d}'
+
+    # Create progress bar
+    total = 20
+    elapsed_perc = elapsed_ms / total_ms
+    elapsed = '-' * (ceil(elapsed_perc * total) - 1)
+    remain = ' ' * floor((1 - elapsed_perc) * total)
+    progress_bar = f'`[{elapsed}O{remain}]`'
+
+    # Build progress info
+    return f'{elapsed_text} {progress_bar} {total_text}'
 
 
 def ellipsis_truncate(string: str, length: int = 200) -> str:
