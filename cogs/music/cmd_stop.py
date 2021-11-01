@@ -7,7 +7,7 @@ from .queue_helpers import set_queue_db
 @command(aliases=['stop', 'dc'])
 async def disconnect(self, ctx: Context, reason: str = None):
     """ Disconnects the player from the voice channel and clears its queue. """
-    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+    player = self.get_player(ctx.guild.id)
 
     if reason is None:
         if not player.is_connected:

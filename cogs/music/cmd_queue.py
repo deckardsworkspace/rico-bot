@@ -21,7 +21,7 @@ async def queue(self, ctx: Context):
     # Get now playing index
     current_i = -1
     current_info = ()
-    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+    player = self.get_player(ctx.guild.id)
     if player.current is not None:
         current_i = get_queue_index(self.db, str(ctx.guild.id))
 

@@ -12,7 +12,7 @@ from .queue_helpers import QueueItem, dequeue_db, enqueue, enqueue_db, get_queue
 @command()
 async def loop(self, ctx: Context):
     # Get the player for this guild from cache.
-    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+    player = self.get_player(ctx.guild.id)
 
     # Loop the current track.
     if player and (player.is_playing or player.paused):
@@ -36,7 +36,7 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
         print(f'Error while trying to delete old npmsg: {e}')
 
     # Get the player for this guild from cache
-    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+    player = self.get_player(ctx.guild.id)
 
     if player.is_playing or player.paused:
         embed = Embed(color=Color.teal())
@@ -105,7 +105,7 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
 @command()
 async def pause(self, ctx: Context):
     # Get the player for this guild from cache.
-    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+    player = self.get_player(ctx.guild.id)
 
     # Pause the player.
     if not player.paused:
@@ -119,7 +119,7 @@ async def pause(self, ctx: Context):
 async def play(self, ctx: Context, *, query: str = None):
     """ Searches and plays a song from a given query. """
     async with ctx.typing():
-        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+        player = self.get_player(ctx.guild.id)
         is_playing = player is not None and (player.is_playing or player.paused)
         if not query:
             # Pick up where we left off
@@ -235,7 +235,7 @@ async def play(self, ctx: Context, *, query: str = None):
 async def skip(self, ctx: Context, queue_end: bool = False):
     async with ctx.typing():
         # Get the player for this guild from cache.
-        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+        player = self.get_player(ctx.guild.id)
 
         # Queue up the next (valid) track from DB, if any
         current_i = get_queue_index(self.db, str(ctx.guild.id))
@@ -267,7 +267,7 @@ async def skip(self, ctx: Context, queue_end: bool = False):
 @command()
 async def unpause(self, ctx: Context):
     # Get the player for this guild from cache.
-    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+    player = self.get_player(ctx.guild.id)
 
     # Unpause the player.
     if player.paused:
@@ -281,7 +281,7 @@ async def unpause(self, ctx: Context):
 async def volume(self, ctx: Context, *, vol: str = None):
     if vol is None:
         # Get the player for this guild from cache.
-        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+        player = self.get_player(ctx.guild.id)
         if player is not None:
             # Return current player volume
             embed = Embed(color=Color.purple())
@@ -298,7 +298,7 @@ async def volume(self, ctx: Context, *, vol: str = None):
         return await ctx.reply('Please specify an integer between 0 and 1000, inclusive.')
     
     # Get the player for this guild from cache.
-    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+    player = self.get_player(ctx.guild.id)
     if player is not None and player.is_playing and not player.paused:
         await player.set_volume(new_vol)
         return await ctx.reply(f':white_check_mark: Volume set to **{new_vol}**')

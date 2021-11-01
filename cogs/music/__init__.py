@@ -53,6 +53,9 @@ class Music(Cog):
         elif isinstance(event, QueueEndEvent):
             # Queue up the next (valid) track from DB, if any
             await self.skip(ctx, queue_end=True)
+    
+    def get_player(self, guild_id: int):
+        return self.bot.lavalink.player_manager.get(guild_id)
 
     # Commands
     from .cmd_player import loop, now_playing, pause, play, skip, unpause, volume

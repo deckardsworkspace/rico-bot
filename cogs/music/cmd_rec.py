@@ -5,7 +5,7 @@ from util import sanitize_youtube_name
 @command(name='recnow', aliases=['rn'])
 async def recommend_now_playing(self, ctx: Context):
     # Get the player for this guild from cache
-    player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+    player = self.get_player(ctx.guild.id)
 
     # Get recommend command
     cmd = self.bot.get_command('recommend')
