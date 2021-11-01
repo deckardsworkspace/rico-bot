@@ -67,8 +67,9 @@ async def recommend_text(self, ctx: Context, *args):
     # Check for previous context
     if len(args):
         mentions = [user.id for user in ctx.message.mentions]
+        rec_name = [arg for arg in args if not re.match(r"<((@[&!]?)|#)(\d+)>", arg)]
         await add(ctx, self.db, mentions, {
-            "name": ' '.join(args),
+            "name": ' '.join(rec_name),
             "recommender": ctx.author.id,
             "type": "text"
         })
