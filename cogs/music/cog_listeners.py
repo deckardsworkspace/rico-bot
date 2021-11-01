@@ -29,7 +29,7 @@ async def ensure_voice(bot: Bot, ctx: Context):
     try:
         player = bot.lavalink.player_manager.create(ctx.guild.id, endpoint=str(ctx.guild.region))
     except NodeException:
-        if ctx.command.name not in ('play', 'p', 'resetplayer', 'rp'):
+        if ctx.command.name in ('play', 'p'):
             raise VoiceCommandError('No audio servers currently available. Please try again later.')
 
     if not ctx.author.voice or not ctx.author.voice.channel:
