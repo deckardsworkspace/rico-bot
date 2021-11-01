@@ -50,7 +50,7 @@ async def recommend(self, ctx, *args):
                     # Generic link
                     await add(ctx, self.db, mentions, {
                         "name": arg,
-                        "recommender": ctx.author.name,
+                        "recommender": ctx.author.id,
                         "type": "bookmark",
                     })
                 else:
@@ -69,7 +69,7 @@ async def recommend_text(self, ctx: Context, *args):
         mentions = [user.id for user in ctx.message.mentions]
         await add(ctx, self.db, mentions, {
             "name": ' '.join(args),
-            "recommender": ctx.author.name,
+            "recommender": ctx.author.id,
             "type": "text"
         })
     else:

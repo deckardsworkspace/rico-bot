@@ -72,7 +72,7 @@ def get_raw_recommendations(db: Database, entity_id: int, server: bool = False):
     return db.child("recommendations").child("server" if server else "user").child(str(entity_id))
 
 
-async def get_recommendations(ctx: Context, db: Database, name: str, image: str,
+async def get_recommendations(ctx: Context, client: Bot, db: Database, name: str, image: str,
                               server: bool = False, entity_id: str = ""):
     # Get all recommendations for user/server
     entity = ctx.guild.id if server else entity_id
@@ -98,7 +98,14 @@ async def get_recommendations(ctx: Context, db: Database, name: str, image: str,
                 if "id" in item:
                     desc += "{}\n".format(reconstruct_url(item['type'], item['id']))
 
-                desc += "{0}\nAdded by {1}".format(item['type'], item['recommender'])
+                # Recover recommender if possible
+                try:
+                    recommender_id = int(item['recommender'])
+                    recommender_user = await client.fetch_user(recommender_id)
+                    recommender = recommender_user.mention
+                except:
+                    recommender = item['recommender']
+                desc += "{0}\nAdded by {1}".format(item['type'], recommender)
                 field_name = "{0} - {1}".format(index, item['name'])
                 embed.add_field(name=field_name, value=desc, inline=False)
                 index += 1
