@@ -84,11 +84,11 @@ async def get_recommendations(ctx: Context, db: Database, name: str, image: str,
         paginator = Paginator(ctx)
         embeds = []
         embed_title = "Recommendations for {}".format(name)
-        embed_desc = "{} items total".format(len(rec_list.keys()))
+        embed_desc = "{} item(s) total".format(len(rec_list.keys()))
 
         for chunk in dict_chunks(rec_list):
-            embed = Embed(title=embed_title, description=embed_desc, color=0x20ce09)
-            embed.set_thumbnail(url=image)
+            embed = Embed(title=embed_title, color=0x20ce09)
+            embed.set_author(name=embed_desc, icon_url=image)
             for key in chunk:
                 item = rec_list[key]
                 desc = ""
