@@ -32,8 +32,8 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
         if old_message_id:
             old_message = await ctx.fetch_message(int(old_message_id))
             await old_message.delete()
-    except Exception as e:
-        print(f'Error while trying to delete old npmsg: {e}')
+    except:
+        pass
 
     # Get the player for this guild from cache
     player = self.get_player(ctx.guild.id)
