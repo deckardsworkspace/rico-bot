@@ -131,6 +131,8 @@ async def pause(self, ctx: Context):
 async def play(self, ctx: Context, *, query: str = None):
     """ Searches and plays a song from a given query. """
     async with ctx.typing():
+        player = self.bot.lavalink.player_manager.get(ctx.guild.id)
+        is_playing = player is not None and (player.is_playing or player.paused)
         if not query:
             # Pick up where we left off
             old_np = get_queue_index(self.db, str(ctx.guild.id))
@@ -145,8 +147,7 @@ async def play(self, ctx: Context, *, query: str = None):
             return await ctx.reply('Please specify a URL or a search term to play.')
         else:
             # Clear previous queue if not currently playing
-            player = self.bot.lavalink.player_manager.get(ctx.guild.id)
-            if player is not None and not (player.is_playing or player.paused):
+            if not is_playing:
                 set_queue_db(self.db, str(ctx.guild.id), [])
 
         # Remove leading and trailing <>.
@@ -237,8 +238,9 @@ async def play(self, ctx: Context, *, query: str = None):
             await ctx.reply(embed=embed)
 
             # Play the first track
-            set_queue_index(self.db, str(ctx.guild.id), 0)
-            await enqueue(self.bot, new_tracks[0], ctx)
+            if not is_playing:
+                set_queue_index(self.db, str(ctx.guild.id), 0)
+                await enqueue(self.bot, new_tracks[0], ctx)
 
 
 @command(aliases=['next'])
