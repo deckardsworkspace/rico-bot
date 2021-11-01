@@ -1,10 +1,9 @@
 from asyncio.exceptions import TimeoutError
-from DiscordUtils.Pagination import AutoEmbedPaginator
 from nextcord import Embed
 from nextcord.ext.commands import Bot, Context
 from pyrebase.pyrebase import Database
 from typing import Dict, List
-from util import dict_chunks, reconstruct_url
+from util import dict_chunks, reconstruct_url, Paginator
 
 
 async def add(ctx: Context, db: Database, mentions: List[int], rec: Dict):
@@ -82,7 +81,7 @@ async def get_recommendations(ctx: Context, db: Database, name: str, image: str,
 
     if rec_list and len(rec_list.keys()):
         # Create paginated embeds
-        paginator = AutoEmbedPaginator(ctx)
+        paginator = Paginator(ctx)
         embeds = []
         embed_title = "Recommendations for {}".format(name)
         embed_desc = "{} items total".format(len(rec_list.keys()))
