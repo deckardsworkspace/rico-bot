@@ -1,12 +1,12 @@
 from __future__ import annotations
 from dataclasses import asdict, dataclass
 from lavalink.models import AudioTrack, DefaultPlayer
-from nextcord import Color, Embed
+from nextcord import Color
 from nextcord.ext.commands import Bot, Context
 from lavalink.models import BasePlayer
 from pyrebase.pyrebase import Database
-from typing import Dict, List, Optional, Union
-from util import QueueEmptyError
+from typing import Dict, List, Optional
+from util import MusicEmbed, QueueEmptyError
 from .lavalink import LavalinkVoiceClient
 import json
 
@@ -75,8 +75,12 @@ async def enqueue(bot: Bot, query: QueueItem, ctx: Context) -> bool:
     # Results could be None if Lavalink returns an invalid response (non-JSON/non-200 (OK)).
     # Alternatively, results['tracks'] could be an empty array if the query yielded no tracks.
     if not results or not results['tracks']:
-        embed = Embed(color=Color.red(), title='Nothing found for item', description=query)
-        await ctx.send(embed=embed)
+        embed = MusicEmbed(
+            color=Color.red(),
+            title=':x:｜Nothing found for search query',
+            description=query
+        )
+        await embed.send(ctx)
         return False
 
     # If a result is found, connect to voice.

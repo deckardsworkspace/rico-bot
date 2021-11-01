@@ -1,5 +1,6 @@
+from nextcord import Color
 from nextcord.ext.commands import command, Context
-from util import sanitize_youtube_name
+from util import sanitize_youtube_name, MusicEmbed
 
 
 @command(name='recnow', aliases=['rn'])
@@ -23,6 +24,16 @@ async def recommend_now_playing(self, ctx: Context):
                 track_name = sanitize_youtube_name(track_info['title'])
                 return await ctx.invoke(cmd, track_name)
         else:
-            return await ctx.reply('Error: Invalid now playing info.')
+            embed = MusicEmbed(
+                color=Color.red(),
+                title=':x:｜Error encountered',
+                description='Incomplete or missing info for now playing track.'
+            )
+            return await embed.send(ctx, as_reply=True)
     else:
-        return await ctx.reply('Nothing is playing right now!')
+        embed = MusicEmbed(
+            color=Color.red(),
+            title=':x:｜Nothing is playing right now',
+            description='Try this command again while Rico is playing music.'
+        )
+        return await embed.send(ctx, as_reply=True)

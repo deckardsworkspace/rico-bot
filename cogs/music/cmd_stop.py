@@ -1,7 +1,6 @@
-from collections import deque
-from nextcord import Color, Embed
+from nextcord import Color
 from nextcord.ext.commands import command, Context
-from .queue_helpers import set_queue_db
+from util import MusicEmbed
 
 
 @command(aliases=['stop', 'dc'])
@@ -10,15 +9,6 @@ async def disconnect(self, ctx: Context, reason: str = None):
     player = self.get_player(ctx.guild.id)
 
     if reason is None:
-        if not player.is_connected:
-            # We can't disconnect, if we're not connected.
-            return await ctx.reply('Not connected.')
-
-        if not ctx.author.voice or (player.is_connected and ctx.author.voice.channel.id != int(player.channel_id)):
-            # Abuse prevention. Users not in voice channels, or not in the same voice channel as the bot
-            # may not disconnect the bot.
-            return await ctx.reply('You\'re not in my voice channel!')
-
         # Clear the queue to ensure old tracks don't start playing
         # when someone else queues something.
         self.db.child('player').child(str(ctx.guild.id)).remove()
@@ -30,10 +20,12 @@ async def disconnect(self, ctx: Context, reason: str = None):
     # Disconnect from the voice channel.
     if hasattr(ctx.voice_client, 'disconnect'):
         await ctx.voice_client.disconnect(force=True)
-    embed = Embed(color=Color.blurple())
-    embed.title = 'Disconnected from voice'
-    embed.description = reason if reason is not None else 'Stopped the player'
-    await ctx.send(embed=embed)
+    embed = MusicEmbed(
+        color=Color.blurple(),
+        title=':wave:｜Disconnected from voice',
+        description=reason if reason is not None else 'Stopped the player'
+    )
+    return await embed.send(ctx)
 
 
 @command(name='resetplayer', aliases=['rp'])

@@ -1,6 +1,6 @@
 from asyncio import sleep
 from lavalink.exceptions import NodeException
-from nextcord import Color, Embed, Member, VoiceState
+from nextcord import Member, VoiceState
 from nextcord.ext.commands import Bot, Cog, Context
 from util import VoiceCommandError
 

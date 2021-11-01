@@ -1,8 +1,7 @@
 from collections import deque
-from nextcord import Color, Embed
+from nextcord import Color
 from nextcord.ext.commands import command, Context
-from typing import List
-from util import list_chunks, Paginator
+from util import list_chunks, MusicEmbed, Paginator
 from .queue_helpers import get_queue_index, get_queue_db, set_queue_db
 import random
 
@@ -11,7 +10,7 @@ import random
 async def clear_queue(self, ctx: Context):
     # Empty queue in DB
     set_queue_db(self.db, str(ctx.guild.id), deque([]))
-    return await ctx.reply(f'**:wastebasket: | Cleared the queue for {ctx.guild.name}**')
+    return await ctx.reply(f'**:wastebasket:｜Cleared the queue for {ctx.guild.name}**')
 
 
 @command(aliases=['q'])
@@ -32,20 +31,22 @@ async def queue(self, ctx: Context):
             current_info = (stored_info['title'], stored_info['author'])
 
     if not len(db_queue):
-        embed = Embed(color=Color.lighter_grey())
-        embed.title = 'Queue is empty'
-        return await ctx.reply(embed=embed)
+        embed = MusicEmbed(
+            color=Color.dark_grey(),
+            title=f':information_source:｜Queue is empty'
+        )
+        return await embed.send(ctx, as_reply=True)
     else:
         # Create paginated embeds
         paginator = Paginator(ctx)
         home_chunk = 0
         count = 1
-        embeds: List[Embed] = []
+        embeds = []
         embed_title = f'Queue for {ctx.guild.name}'
         embed_desc = f'{len(db_queue)} items total'
 
         for i, chunk in enumerate(list_chunks(list(db_queue))):
-            embed = Embed(title=embed_title, description=embed_desc, color=Color.lighter_gray())
+            fields = []
 
             for track in chunk:
                 artist = 'Unknown'
@@ -59,17 +60,23 @@ async def queue(self, ctx: Context):
                 
                 if len(current_info) and count - 1 == current_i:
                     # Add now playing emoji and index
-                    title = f'▶️ | {count}. {current_info[0]}'
+                    title = f'▶️｜{count}. {current_info[0]}'
                     artist = current_info[1]
                     home_chunk = i
                 else:
                     # Add index only
                     title = f'{count}. {title}'
 
-                embed.add_field(name=title, value=artist, inline=False)
+                fields.append([title, artist])
                 count += 1
 
-            embeds.append(embed)
+            embed = MusicEmbed(
+                title=embed_title,
+                description=embed_desc,
+                color=Color.lighter_gray(),
+                fields=fields
+            )
+            embeds.append(embed.get())
 
         if len(embeds) > 1:
             return await paginator.run(embeds, start=home_chunk)
@@ -85,7 +92,15 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
         try:
             positions = list(map(lambda x: int(x) - 1, query.split(' ')))
         except ValueError as e:
-            return await ctx.reply(f'Please check your input - this command only accepts numbers.\n`{e}`')
+            embed = MusicEmbed(
+                color=Color.red(),
+                title=f':x:｜Invalid arguments',
+                description=[
+                    'This command only accepts integers.',
+                    f'`ValueError: {e}`'
+                ]
+            )
+            return await embed.send(ctx, as_reply=True)
         
         # Sort positions in descending order so we can remove them
         # one by one without messing up the indexing
@@ -93,7 +108,6 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
 
         # Start dequeueing
         dequeued = 0
-        embed = Embed(color=Color.greyple(), title='Removed from queue')
         for i in positions:
             if i > len(db_queue) or i < 0:
                 await ctx.send(f'Cannot remove song {i + 1} as it is out of range.')
@@ -104,9 +118,13 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
 
         if dequeued:
             # At least one song was removed from the queue
-            embed.description = f'{dequeued} track(s)'
             set_queue_db(self.db, str(ctx.guild.id), db_queue)
-            return await ctx.reply(embed=embed)
+            embed = MusicEmbed(
+                color=Color.orange(),
+                title=f':white_check_mark:｜Removed from queue',
+                description=f'{dequeued} track(s)'
+            )
+            return await embed.send(ctx, as_reply=True)
 
 
 @command(aliases=['shuf'])
@@ -114,11 +132,23 @@ async def shuffle(self, ctx: Context):
     async with ctx.typing():
         db_queue = get_queue_db(self.db, str(ctx.guild.id))
         if not len(db_queue):
-            return await ctx.reply('The queue is empty. Nothing to shuffle.')
+            embed = MusicEmbed(
+                color=Color.red(),
+                title=':x:｜Queue is empty',
+                description='There is nothing to shuffle!'
+            )
+            return await embed.send(ctx, as_reply=True)
 
+        # Shuffle whole queue
+        # TODO: Shuffle a list of indices instead,
+        #       so we can undo the shuffle.
         random.shuffle(db_queue)
         set_queue_db(self.db, str(ctx.guild.id), db_queue)
-        embed = Embed(color=Color.gold())
-        embed.title = 'Shuffled the queue'
-        embed.description = f'{len(db_queue)} tracks shuffled'
-        return await ctx.reply(embed=embed)
+
+        # Send reply
+        embed = MusicEmbed(
+            color=Color.gold(),
+            title=':twisted_rightwards_arrows:｜Shuffled the queue',
+            description=f'{len(db_queue)} tracks shuffled'
+        )
+        return await embed.send(ctx, as_reply=True)

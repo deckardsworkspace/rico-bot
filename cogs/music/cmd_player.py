@@ -1,10 +1,10 @@
 from collections import deque
 from lavalink.models import AudioTrack
 from math import floor
-from nextcord import Color, Embed
+from nextcord import Color
 from nextcord.ext.commands import command, Context
 from typing import Dict
-from util import check_url, check_spotify_url, create_progress_bar, get_var, parse_spotify_url
+from util import check_url, check_spotify_url, create_progress_bar, get_var, parse_spotify_url, MusicEmbed
 from util import SpotifyInvalidURLError
 from .queue_helpers import QueueItem, dequeue_db, enqueue, enqueue_db, get_queue_size, get_queue_index, set_queue_index, set_queue_db
 
@@ -15,13 +15,20 @@ async def loop(self, ctx: Context):
     player = self.get_player(ctx.guild.id)
 
     # Loop the current track.
+    message = ''
     if player and (player.is_playing or player.paused):
         if not player.repeat:
             player.set_repeat(repeat=True)
-            return await ctx.reply(':white_check_mark: **Now looping the current track**')
-        player.set_repeat(repeat=False)
-        return await ctx.reply(':white_check_mark: **No longer looping the current track**')
-    return await ctx.reply('Not currently playing.')
+            message = ':white_check_mark:｜Now looping the current track'
+        else:
+            player.set_repeat(repeat=False)
+            message = ':white_check_mark:｜No longer looping the current track'
+    else:
+        message = ':stop_button:｜Not currently playing'
+    
+    # Send reply
+    reply = MusicEmbed(title=message)
+    return await reply.send(ctx, as_reply=True)
 
 
 @command(name='nowplaying', aliases=['np'])
@@ -39,7 +46,6 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
     player = self.get_player(ctx.guild.id)
 
     if player.is_playing or player.paused:
-        embed = Embed(color=Color.teal())
         automatic = track_info is not None
 
         # Try to recover track info
@@ -84,55 +90,77 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
         # Show requester info and avatar
         requester = await self.bot.fetch_user(player.current.requester)
         current_action = 'streaming' if track_info['isStream'] else 'playing'
-        embed_title = 'Paused' if player.paused else f'Now {current_action}'
-        embed.set_author(name=embed_title, icon_url=requester.display_avatar.url)
-        embed.description = '\n'.join([
-            f'**[{track_name}]({track_uri})**',
-            f'by {track_artist}',
-            progress if progress is not None else '',
-            f'\nRequested by {requester.mention}'
-        ])
+
+        # Build embed
+        embed = MusicEmbed(
+            color=Color.teal(),
+            header='Paused' if player.paused else f'Now {current_action}',
+            header_icon_url=requester.display_avatar.url,
+            description=[
+                f'**[{track_name}]({track_uri})**',
+                f'by {track_artist}',
+                progress if progress is not None else '',
+                f'\nRequested by {requester.mention}'
+            ]
+        )
     else:
-        embed = Embed(color=Color.yellow())
-        embed.title = 'Not playing'
-        embed.description = 'To play, use `{0}play <URL/search term>`. Try `{0}help` for more.'.format(get_var('BOT_PREFIX'))
+        # Not playing
+        prefix = get_var('BOT_PREFIX')
+        embed = MusicEmbed(
+            color=Color.yellow(),
+            title='Not playing',
+            description=[
+                f'To play, use `{prefix}play <URL/search term>`',
+                f'Try `{prefix}help` for more.'
+            ]
+        )
 
     # Save this message
-    message = await ctx.send(embed=embed)
+    message = await embed.send(ctx)
     self.db.child('player').child(str(ctx.guild.id)).child('npmessage').set(str(message.id))
 
 
 @command()
 async def pause(self, ctx: Context):
-    # Get the player for this guild from cache.
+    # Get the player for this guild from cache
     player = self.get_player(ctx.guild.id)
 
-    # Pause the player.
+    # Pause the player
     if not player.paused:
         await player.set_pause(pause=True)
-        await ctx.reply('Paused the player.')
+        message = 'Paused the player.'
     else:
-        await ctx.reply('Already paused.')
+        message = 'Already paused.'
+    
+    # Send reply
+    reply = MusicEmbed(title=f':pause_button:｜{message}', color=Color.dark_orange())
+    return await reply.send(ctx, as_reply=True)
 
 
 @command(aliases=['p'])
 async def play(self, ctx: Context, *, query: str = None):
     """ Searches and plays a song from a given query. """
     async with ctx.typing():
+        # Get player from cache
         player = self.get_player(ctx.guild.id)
+
+        # Are we adding to a queue or resuming an old queue?
         is_playing = player is not None and (player.is_playing or player.paused)
         if not query:
-            # Pick up where we left off
+            # Try to resume an old queue if it exists
             old_np = get_queue_index(self.db, str(ctx.guild.id))
             if isinstance(old_np, int):
                 # Send resuming queue embed
-                embed = Embed(color=Color.purple(), title='Resuming interrupted queue')
-                await ctx.reply(embed=embed)
+                embed = MusicEmbed(color=Color.purple(), title=':hourglass:｜Resuming interrupted queue')
+                await embed.send(ctx, as_reply=True)
 
                 # Play at index
                 track = dequeue_db(self.db, str(ctx.guild.id), old_np)
                 return await enqueue(self.bot, track, ctx=ctx)
-            return await ctx.reply('Please specify a URL or a search term to play.')
+            
+            # Old queue does not exist
+            embed = MusicEmbed(color=Color.red(), title=':x:｜Specify something to play.')
+            return await embed.send(ctx, as_reply=True)
         else:
             # Clear previous queue if not currently playing
             if not is_playing:
@@ -147,7 +175,11 @@ async def play(self, ctx: Context, *, query: str = None):
             try:
                 sp_type, sp_id = parse_spotify_url(query, valid_types=['track', 'album', 'playlist'])
             except SpotifyInvalidURLError:
-                return await ctx.reply('Only Spotify track, album, and playlist URLs are supported.')
+                embed = MusicEmbed(
+                    color=Color.red(),
+                    title=':x:｜Can only play tracks, albums, and playlists from Spotify.'
+                )
+                return await embed.send(ctx, as_reply=True)
 
             if sp_type == 'track':
                 # Get track details from Spotify
@@ -166,11 +198,17 @@ async def play(self, ctx: Context, *, query: str = None):
                 track_queue = deque(tracks)
 
                 # Send enqueueing embed
-                embed = Embed(color=Color.blurple())
-                embed.title = f'Enqueueing Spotify {sp_type}'
-                embed.description = f'[{list_name}]({query}) by {list_author} ({len(tracks)} tracks)'
-                embed.set_footer(text='This might take a while, please wait.')
-                await ctx.send(embed=embed)
+                embed = MusicEmbed(
+                    color=Color.green(),
+                    header=f'Enqueueing Spotify {sp_type}',
+                    title=f'[{list_name}]({query})',
+                    description=[
+                        f'by {list_author}',
+                        f'{len(tracks)} track(s)'
+                    ],
+                    footer='This might take a while, please wait...'
+                )
+                await embed.send(ctx)
 
                 if len(tracks) < 1:
                     # No tracks
@@ -220,10 +258,12 @@ async def play(self, ctx: Context, *, query: str = None):
             enqueue_db(self.db, str(ctx.guild.id), new_tracks)
 
             # Send embed
-            embed = Embed(color=Color.blurple())
-            embed.title = f'Added to queue'
-            embed.description = query if len(new_tracks) == 1 else f'{len(new_tracks)} item(s)'
-            await ctx.reply(embed=embed)
+            embed = MusicEmbed(
+                color=Color.gold(),
+                title=':white_check_mark:｜Added to queue',
+                description=query if len(new_tracks) == 1 else f'{len(new_tracks)} item(s)'
+            )
+            await embed.send(ctx, as_reply=True)
 
             # Play the first track
             if not is_playing:
@@ -254,7 +294,15 @@ async def skip(self, ctx: Context, queue_end: bool = False):
                         set_queue_index(self.db, str(ctx.guild.id), next_i)
                         return
                 except Exception as e:
-                    await ctx.send(f'Unable to play {track}. Reason: {e}')
+                    embed = MusicEmbed(
+                        color=Color.red(),
+                        title=f':x:｜Unable to play track',
+                        description=[
+                            f'Track: `{track}`'
+                            f'Reason: `{e}`'
+                        ]
+                    )
+                    await embed.send(ctx)
                 
                 next_i += 1
 
@@ -272,34 +320,53 @@ async def unpause(self, ctx: Context):
     # Unpause the player.
     if player.paused:
         await player.set_pause(pause=False)
-        await ctx.reply('Unpaused the player.')
+        message = 'Unpaused the player.'
     else:
-        await ctx.reply('Already unpaused.')
+        message = 'Already unpaused.'
+    
+    # Send reply
+    reply = MusicEmbed(title=f':play_button:｜{message}', color=Color.dark_green())
+    return await reply.send(ctx, as_reply=True)
 
 
 @command(aliases=['v', 'vol'])
 async def volume(self, ctx: Context, *, vol: str = None):
+    # Get the player for this guild from cache
+    player = self.get_player(ctx.guild.id)
+
     if vol is None:
-        # Get the player for this guild from cache.
-        player = self.get_player(ctx.guild.id)
         if player is not None:
             # Return current player volume
-            embed = Embed(color=Color.purple())
-            embed.title = f':loud_sound: Volume is currently at {player.volume}'
-            embed.description = f'To set, use `{get_var("BOT_PREFIX")}{ctx.invoked_with} <int>`.'
-            return await ctx.reply(embed=embed)
-        return await ctx.reply(f'No active players in {ctx.guild.name}')
+            embed = MusicEmbed(
+                color=Color.dark_grey(),
+                title=f':loud_sound:｜Volume is currently at {player.volume}',
+                description=f'To set, use `{get_var("BOT_PREFIX")}{ctx.invoked_with} <int>`.'
+            )
+            return await embed.send(ctx)
 
-    try:
-        new_vol = int(vol)
-        if new_vol < 0 or new_vol > 1000:
-            raise ValueError
-    except ValueError:
-        return await ctx.reply('Please specify an integer between 0 and 1000, inclusive.')
-    
-    # Get the player for this guild from cache.
-    player = self.get_player(ctx.guild.id)
     if player is not None and player.is_playing and not player.paused:
+        try:
+            new_vol = int(vol)
+            if new_vol < 0 or new_vol > 1000:
+                raise ValueError
+        except ValueError:
+            embed = MusicEmbed(
+                color=Color.red(),
+                title=f':x:｜Invalid volume `{vol}`',
+                description='Please specify an integer between 0 and 1000, inclusive.'
+            )
+            return await embed.send(ctx)
+
         await player.set_volume(new_vol)
-        return await ctx.reply(f':white_check_mark: Volume set to **{new_vol}**')
-    return await ctx.reply('Player is not playing or is paused')
+        embed = MusicEmbed(
+            color=Color.dark_grey(),
+            title=f':white_check_mark:｜Volume set to {new_vol}',
+        )
+        return await embed.send(ctx)
+    
+    # Not playing
+    embed = MusicEmbed(
+        color=Color.red(),
+        title=':x:｜Player is not playing or is paused',
+    )
+    return await embed.send(ctx)
