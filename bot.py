@@ -57,6 +57,6 @@ async def bot_loop_before():
     await client.wait_until_ready()
 
 
-def run_bot():
+if __name__ == '__main__':
     bot_loop.start()
     client.run(get_var('DISCORD_TOKEN'))
