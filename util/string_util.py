@@ -124,7 +124,7 @@ def reconstruct_url(rec_type: str, rec_id: str) -> str:
         split = rec_type.split('-')
         return 'https://open.spotify.com/{0}/{1}'.format(split[1], rec_id)
     elif rec_type == "youtube-video":
-        return 'https://youtube.com/watch/{}'.format(rec_id)
+        return 'https://www.youtube.com/watch?v={}'.format(rec_id)
     return rec_id
 
 
