@@ -90,7 +90,7 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
             # Build progress info
             if automatic:
                 total_m, total_s = divmod(floor(total_ms / 1000), 60)
-                progress = f'{total_m:02d} min, {total_s:02d} sec'
+                progress = f'\n{total_m:02d} min, {total_s:02d} sec'
             else:
                 elapsed_ms = player.position
                 progress = f'\n**{create_progress_bar(elapsed_ms, total_ms)}**'

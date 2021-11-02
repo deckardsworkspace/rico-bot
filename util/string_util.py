@@ -41,11 +41,11 @@ def create_progress_bar(elapsed_ms: int, total_ms: int) -> str:
     elapsed_text = f'{elapsed_m:02d}:{elapsed_s:02d}'
 
     # Create progress bar
-    total = 20
+    total = 25
     elapsed_perc = elapsed_ms / total_ms
     elapsed = '-' * (ceil(elapsed_perc * total) - 1)
     remain = ' ' * floor((1 - elapsed_perc) * total)
-    progress_bar = f'`[{elapsed}O{remain}]`'
+    progress_bar = f'`[{elapsed}|{remain}]`'
 
     # Build progress info
     return f'{elapsed_text} {progress_bar} {total_text}'
