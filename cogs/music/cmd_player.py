@@ -222,9 +222,9 @@ async def play(self, ctx: Context, *, query: str = None):
                 embed = MusicEmbed(
                     color=Color.green(),
                     header=f'Enqueueing Spotify {sp_type}',
-                    title=f'[{list_name}]({query})',
+                    title=list_name,
                     description=[
-                        f'by {list_author}',
+                        f'by [{list_author}]({query})',
                         f'{len(tracks)} track(s)'
                     ],
                     footer='This might take a while, please wait...'
