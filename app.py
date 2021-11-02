@@ -1,24 +1,7 @@
 from nextcord import Activity, ActivityType, Embed, Color, Message
-from nextcord.ext.commands import Bot, Cog, command, CommandNotFound, Context, errors, is_owner
+from nextcord.ext.commands import Bot, CommandNotFound, Context, errors
 from nextcord.ext.tasks import loop
 from util import get_var, VoiceCommandError
-
-
-# Owner-only cog
-class OwnerCog(Cog):
-    def __init__(self, bot: Bot):
-        self.bot = bot
-    
-    @command(name='reload')
-    @is_owner()
-    async def reload_cogs(self, ctx: Context):
-        try:
-            self.bot.unload_extension('cogs')
-            self.bot.load_extension('cogs')
-        except Exception as e:
-            await ctx.reply(f'Failed to reload cogs. {type(e).__name__}: {e}')
-        else:
-            await ctx.reply('Reloaded cogs.')
 
 
 # Create Discord client
@@ -33,9 +16,6 @@ async def on_ready():
     
     # Add cogs
     client.load_extension('cogs')
-
-    # Add admin-only cogs
-    client.add_cog(OwnerCog(client))
 
 @client.event
 async def on_message(message: Message):
