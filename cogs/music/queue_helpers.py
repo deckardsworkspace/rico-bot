@@ -5,7 +5,7 @@ from nextcord import Color
 from nextcord.ext.commands import Bot, Context
 from lavalink.models import BasePlayer
 from pyrebase.pyrebase import Database
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from util import MusicEmbed, QueueEmptyError
 from .lavalink import LavalinkVoiceClient
 import json
@@ -35,6 +35,19 @@ class QueueItem:
     # Prefixed search query (priority 3)
     query: Optional[str] = None
 
+    # Get title and artist
+    def get_details(self) -> Tuple[str, str]:
+        if self.spotify_id is not None:
+            title = self.title
+            artist = f'by {self.artist}'
+        elif self.url is not None:
+            title = self.url
+            artist = 'Direct link'
+        else:
+            title = self.query.replace('ytsearch:', '')
+            artist = 'Search query'
+        
+        return title, artist
 
 # Reconstruct QueueItem from dict
 def queue_item_from_dict(d: Dict[str, str]) -> QueueItem:

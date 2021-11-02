@@ -1,9 +1,23 @@
 from collections import deque
-from nextcord import Color
+from nextcord import Color, Message
 from nextcord.ext.commands import command, Context
+from typing import Optional
 from util import list_chunks, MusicEmbed, Paginator
 from .queue_helpers import get_loop_all, get_queue_index, get_queue_db, set_queue_db, set_queue_index
 import random
+
+
+async def send_invalid_arg(ctx: Context, err: str, e: Optional[Exception] = None) -> Message:
+    err_desc = [err]
+    if e is not None:
+        err_desc.append(f'`{e}`')
+
+    embed = MusicEmbed(
+        color=Color.red(),
+        title=f':x:｜Invalid arguments',
+        description=err_desc
+    )
+    return await embed.send(ctx, as_reply=True)
 
 
 @command(name='clearqueue', aliases=['cq'])
@@ -11,6 +25,55 @@ async def clear_queue(self, ctx: Context):
     # Empty queue in DB
     set_queue_db(self.db, str(ctx.guild.id), deque([]))
     return await ctx.reply(f'**:wastebasket:｜Cleared the queue for {ctx.guild.name}**')
+
+
+@command(aliases=['m'])
+async def move(self, ctx: Context, *, positions: str = None):
+    async with ctx.typing():
+        db_queue = get_queue_db(self.db, str(ctx.guild.id))
+        
+        # Parse all positions
+        positions = positions.split()
+        if len(positions) != 2:
+            return await send_invalid_arg(ctx, 'Please specify a source and destination position.')
+        try:
+            src = int(positions[0]) - 1
+            dest = int(positions[1]) - 1
+
+            if src == dest:
+                return await send_invalid_arg(ctx, 'Cannot move item to the same spot.')
+            if dest + 1 < 0 or dest + 1 >= len(db_queue):
+                return await send_invalid_arg(ctx, f'Destination `{positions[1]}` is out of range (1 to {len(db_queue)}).')
+        except ValueError as e:
+            return await send_invalid_arg(ctx, 'This command only accepts integers.', e)
+        
+        # Check if we need to adjust current position
+        current_i = get_queue_index(self.db, str(ctx.guild.id))
+        if isinstance(current_i, int) and dest <= current_i:
+            # Track will be moved to before the current track.
+            # Increment the current position.
+            set_queue_index(self.db, str(ctx.guild.id), current_i + 1)
+
+        # Move track
+        # Remove track at index first...
+        src_item = db_queue[src]
+        title, artist = src_item.get_details()
+        del db_queue[src]
+        # ...then insert at destination
+        db_queue.insert(dest, src_item)
+
+        # Success!
+        set_queue_db(self.db, str(ctx.guild.id), db_queue)
+        embed = MusicEmbed(
+            color=Color.orange(),
+            title=f':white_check_mark:｜Moved track',
+            description=[
+                f'**{title}**',
+                artist,
+                f'Now at position **{dest + 1}**'
+            ]
+        )
+        return await embed.send(ctx, as_reply=True)
 
 
 @command(aliases=['q'])
@@ -54,15 +117,7 @@ async def queue(self, ctx: Context):
             fields = []
 
             for track in chunk:
-                if track.spotify_id is not None:
-                    title = track.title
-                    artist = f'by {track.artist}'
-                elif track.url is not None:
-                    title = track.url
-                    artist = 'Direct link'
-                else:
-                    title = track.query.replace('ytsearch:', '')
-                    artist = 'Search query'
+                title, artist = track.get_details()
                 
                 if len(current_info) and count - 1 == current_i:
                     # Add now playing emoji and index
@@ -100,15 +155,7 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
         try:
             positions = list(map(lambda x: int(x) - 1, query.split(' ')))
         except ValueError as e:
-            embed = MusicEmbed(
-                color=Color.red(),
-                title=f':x:｜Invalid arguments',
-                description=[
-                    'This command only accepts integers.',
-                    f'`ValueError: {e}`'
-                ]
-            )
-            return await embed.send(ctx, as_reply=True)
+            return await send_invalid_arg(ctx, e)
         
         # Sort positions in descending order so we can remove them
         # one by one without messing up the indexing
