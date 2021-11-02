@@ -44,6 +44,7 @@ six==1.16.0
 spotipy==2.18.0
 typing-extensions==3.10.0.0
 urllib3==1.26.6
+uWSGI==2.0.20
 validators==0.18.2
 waitress==2.0.0
 Werkzeug==2.0.2
