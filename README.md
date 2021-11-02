@@ -100,7 +100,6 @@ Populate your chosen platform's build/environment/config variables with your own
 |`FIREBASE_CLIENT_ID`|Firebase service account client ID|
 |`FIREBASE_PRIVATE_KEY`|Firebase service account private key|
 |`FIREBASE_PRIVATE_KEY_ID`|Firebase service account private key ID|
-|`FLASK_PORT`|Port through which Flask will serve the dashboard.|
 |`SPOTIFY_ID`|Spotify client ID|
 |`SPOTIFY_SECRET`|Spotify client secret|
 
@@ -162,7 +161,7 @@ Make sure your Lavalink server(s) are reachable with these parameters. The bot w
 
 ## Usage
 
-If you're testing locally, run `python app.py`. Note that depending on your environment, your config must either be set as environment variables or enumerated in an `.env` file as `KEY="VALUE"` pairs.
+If you're testing locally, run `python bot.py`. Note that depending on your environment, your config must either be set as environment variables or enumerated in an `.env` file as `KEY="VALUE"` pairs.
 
 Once the bot is up and running in your server, type `<COMMAND_PREFIX>help` for a list of commands.
 
