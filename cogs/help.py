@@ -35,7 +35,8 @@ help_list = {
         'commands': {
             '{0}clearqueue, {0}cq': 'Clear the playback queue for the server.',
             '{0}disconnect, {0}dc': 'Stop playback, clear the queue, and disconnect from voice.',
-            '{0}loop': 'Loop the current track.',
+            '{0}loop': 'Loop the current track. Use this command again to disable looping.',
+            '{0}loop all': 'Loop the whole queue. Use this command again to disable looping.',
             '{0}nowplaying, {0}np': 'Show the currently playing track.',
             '{0}play <URL/search term>, {0}p': 'Play a song, album, or playlist. Supports YouTube, Spotify, and Twitch URLs.',
             '{0}pause': 'Pause playback.',

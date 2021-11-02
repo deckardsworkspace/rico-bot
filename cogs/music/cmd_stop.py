@@ -1,12 +1,16 @@
 from nextcord import Color
 from nextcord.ext.commands import command, Context
 from util import MusicEmbed
+from .queue_helpers import set_loop_all
 
 
 @command(aliases=['stop', 'dc'])
 async def disconnect(self, ctx: Context, reason: str = None):
     """ Disconnects the player from the voice channel and clears its queue. """
     player = self.get_player(ctx.guild.id)
+
+    # Don't loop future queues by default
+    set_loop_all(self.db, str(ctx.guild.id), False)
 
     if reason is None:
         # Clear the queue to ensure old tracks don't start playing

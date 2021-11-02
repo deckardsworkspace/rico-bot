@@ -6,23 +6,40 @@ from nextcord.ext.commands import command, Context
 from typing import Dict
 from util import check_url, check_spotify_url, create_progress_bar, get_var, parse_spotify_url, MusicEmbed
 from util import SpotifyInvalidURLError
-from .queue_helpers import QueueItem, dequeue_db, enqueue, enqueue_db, get_queue_size, get_queue_index, set_queue_index, set_queue_db
+from .queue_helpers import (
+    QueueItem,
+    dequeue_db, enqueue, enqueue_db, set_queue_db,
+    get_queue_size, get_queue_index, set_queue_index,
+    get_loop_all, set_loop_all
+)
 
 
 @command()
-async def loop(self, ctx: Context):
+async def loop(self, ctx: Context, *, arg: str = None):
     # Get the player for this guild from cache.
     player = self.get_player(ctx.guild.id)
 
-    # Loop the current track.
     message = ''
     if player and (player.is_playing or player.paused):
-        if not player.repeat:
-            player.set_repeat(repeat=True)
-            message = ':white_check_mark:｜Now looping the current track'
+        if arg == 'all':
+            # Loop the whole queue.
+            loop_all = get_loop_all(self.db, str(ctx.guild.id))
+            set_loop_all(self.db, str(ctx.guild.id), not loop_all)
+            if not loop_all:
+                message = ':white_check_mark:｜Now looping the whole queue'
+            else:
+                player.set_repeat(repeat=False)
+                message = ':x:｜No longer looping the whole queue'
+        elif arg is None:    
+            # Loop the current track.
+            if not player.repeat:
+                player.set_repeat(repeat=True)
+                message = ':white_check_mark:｜Now looping the current track'
+            else:
+                player.set_repeat(repeat=False)
+                message = ':x:｜No longer looping the current track'
         else:
-            player.set_repeat(repeat=False)
-            message = ':white_check_mark:｜No longer looping the current track'
+            message = f':stop_button:｜Invalid argument {arg}'
     else:
         message = ':stop_button:｜Not currently playing'
     
@@ -279,12 +296,32 @@ async def skip(self, ctx: Context, queue_end: bool = False):
 
         # Queue up the next (valid) track from DB, if any
         current_i = get_queue_index(self.db, str(ctx.guild.id))
+        loop_all = get_loop_all(self.db, str(ctx.guild.id))
         if isinstance(current_i, int):
-            next_i = current_i + 1
             queue_size = get_queue_size(self.db, str(ctx.guild.id))
+            next_i = current_i
             while next_i < queue_size:
+                # Have we reached the end of the queue?
+                if next_i == queue_size - 1:
+                    # Reached the end of the queue, are we looping?
+                    if loop_all:
+                        embed = MusicEmbed(
+                            color=Color.dark_green(),
+                            title=f':repeat:｜Looping back to the start',
+                            description=[
+                                'Reached the end of the queue.',
+                                f'Use the `loop all` command to disable.'
+                            ]
+                        )
+                        await embed.send(ctx)
+                        next_i = 0
+                    else:
+                        # We are not looping
+                        break
+                else:
+                    next_i += 1
+
                 track = dequeue_db(self.db, str(ctx.guild.id), next_i)
-                
                 try:
                     if await enqueue(self.bot, track, ctx=ctx):
                         if not queue_end:
@@ -303,8 +340,6 @@ async def skip(self, ctx: Context, queue_end: bool = False):
                         ]
                     )
                     await embed.send(ctx)
-                
-                next_i += 1
 
         # Remove player data from DB
         if not queue_end:

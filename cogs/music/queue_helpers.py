@@ -132,6 +132,17 @@ def dequeue_db(db: Database, guild_id: str, index: Optional[int] = None) -> Queu
     return queue[index]
 
 
+def get_loop_all(db: Database, guild_id: str) -> bool:
+    current_loop = db.child('player').child(guild_id).child('loop_all').get().val()
+    if current_loop:
+        return current_loop == 'true'
+    return False
+
+
+def set_loop_all(db: Database, guild_id: str, loop: bool):
+    return db.child('player').child(guild_id).child('loop_all').set('true' if loop else 'false')
+
+
 def get_queue_db(db: Database, guild_id: str) -> List[QueueItem]:
     queue_items = db.child('player').child(guild_id).child('queue').get().val()
     if queue_items:

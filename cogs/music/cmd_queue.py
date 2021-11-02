@@ -2,7 +2,7 @@ from collections import deque
 from nextcord import Color
 from nextcord.ext.commands import command, Context
 from util import list_chunks, MusicEmbed, Paginator
-from .queue_helpers import get_queue_index, get_queue_db, set_queue_db, set_queue_index
+from .queue_helpers import get_loop_all, get_queue_index, get_queue_db, set_queue_db, set_queue_index
 import random
 
 
@@ -43,25 +43,31 @@ async def queue(self, ctx: Context):
         count = 1
         embeds = []
         embed_title = f'Queue for {ctx.guild.name}'
-        embed_desc = f'{len(db_queue)} items total'
+
+        # Show loop status
+        embed_desc = [f'{len(db_queue)} item(s) total']
+        loop_all = get_loop_all(self.db, str(ctx.guild.id))
+        if loop_all:
+            embed_desc.append('Looping the whole queue :repeat:')
 
         for i, chunk in enumerate(list_chunks(list(db_queue))):
             fields = []
 
             for track in chunk:
-                artist = 'Unknown'
                 if track.spotify_id is not None:
                     title = track.title
-                    artist = track.artist
+                    artist = f'by {track.artist}'
                 elif track.url is not None:
                     title = track.url
+                    artist = 'Direct link'
                 else:
                     title = track.query.replace('ytsearch:', '')
+                    artist = 'Search query'
                 
                 if len(current_info) and count - 1 == current_i:
                     # Add now playing emoji and index
                     title = f'▶️｜{count}. {current_info[0]}'
-                    artist = current_info[1]
+                    artist = f'by {current_info[1]}'
                     home_chunk = i
                 else:
                     # Add index only
@@ -73,6 +79,7 @@ async def queue(self, ctx: Context):
             embed = MusicEmbed(
                 title=embed_title,
                 description=embed_desc,
+                thumbnail_url=ctx.guild.icon.url,
                 color=Color.lighter_gray(),
                 fields=fields
             )
