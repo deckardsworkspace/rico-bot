@@ -100,6 +100,7 @@ Populate your chosen platform's build/environment/config variables with your own
 |`FIREBASE_CLIENT_ID`|Firebase service account client ID|
 |`FIREBASE_PRIVATE_KEY`|Firebase service account private key|
 |`FIREBASE_PRIVATE_KEY_ID`|Firebase service account private key ID|
+|`FLASK_PORT`|Port through which Flask will serve the dashboard.|
 |`SPOTIFY_ID`|Spotify client ID|
 |`SPOTIFY_SECRET`|Spotify client secret|
 

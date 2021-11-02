@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rico Spotify integration</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/static/styles/spotify_auth.css">
+</head>
+<body>
+  <div class="bg-image">
+    <img src="/static/img/sample.svg" alt="">
+  </div>
+  <div class="content">
+    <div class="header">
+      <img src="/static/img/rico-spotify-header.svg" alt="Rico &rarr; Spotify">
+    </div>
+    <div class="body loading">
+      <p>Please wait... (make sure JavaScript is enabled!)</p>
+    </div>
+    <div class="body success">
+      <p>You’re almost there! Copy the code below and<br>
+        <a href="https://discord.com/channels/@me/860449304447549441" target="_blank" rel="noopener">send it to Rico</a>
+        via direct message.</p>
+      <div id="code">
+        <div class="hint">
+          <p id="hint">Click or tap to copy</p>
+        </div>
+        <span id="token"></span>
+      </div>
+    </div>
+    <div class="body error">
+      <p>There was an error authenticating with Spotify.</p>
+      <p>Please try again later.</p>
+      <span id="error"></span>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="text/javascript">
+    window.onload = () => {
+      // Get params - https://stackoverflow.com/a/901144/3350320
+      const urlSearchParams = new URLSearchParams(window.location.search);
+      const params = Object.fromEntries(urlSearchParams.entries());
+
+      if ("code" in params) {
+        document.body.classList.add('success');
+
+        // Display code
+        const encoded = window.btoa(JSON.stringify(params));
+        const code = `rc!finishauth ${encoded}`;
+        const el = document.getElementById("token");
+        el.innerText = code;
+
+        // Copy on click
+        const hint_el = document.getElementById("hint");
+        const copy_el = document.getElementById("code");
+        copy_el.addEventListener('click', () => {
+          // Make hidden textarea
+          let tempArea = document.createElement('textarea');
+          tempArea.classname = 'clipboard';
+          tempArea.contentEditable = 'true';
+          tempArea.readonly = false;
+          tempArea.value = code;
+          document.body.appendChild(tempArea);
+          tempArea.focus();
+          tempArea.select();
+
+          // Special treatment for iOS
+          if (!!navigator.platform && /iPad|iPhone|iPod/.test(navigator.platform)) {
+            let range = document.createRange();
+            let sel = window.getSelection();
+            range.selectNodeContents(tempArea);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            tempArea.setSelectionRange(0, 999999);
+          }
+
+          try {
+            document.execCommand('copy');
+            hint_el.innerText = "Copied to clipboard!";
+          } catch (err) {
+            hint_el.innerText = 'Error copying to clipboard';
+          }
+
+          // Restore original hint text after 2 sec
+          window.setTimeout(() => {
+            document.getElementById("hint").innerText = "Click or tap to copy";
+          }, 2000);
+
+          document.body.removeChild(tempArea);
+        })
+      } else {
+        document.body.classList.add('error');
+
+        // Show error
+        const error_el = document.getElementById('error');
+        if ("error" in params) {
+          error_el.innerText = params['error'];
+        } else {
+          error_el.innerText = "Unknown error";
+        }
+      }
+    }
+  </script>
+</body>
+</html>
