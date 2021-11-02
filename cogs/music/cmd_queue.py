@@ -23,7 +23,7 @@ async def send_invalid_arg(ctx: Context, err: str, e: Optional[Exception] = None
 @command(name='clearqueue', aliases=['cq'])
 async def clear_queue(self, ctx: Context):
     # Empty queue in DB
-    set_queue_db(self.db, str(ctx.guild.id), deque([]))
+    set_queue_db(self.db, str(ctx.guild.id), [])
     return await ctx.reply(f'**:wastebasket:｜Cleared the queue for {ctx.guild.name}**')
 
 
