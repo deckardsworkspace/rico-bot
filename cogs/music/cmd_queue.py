@@ -66,7 +66,8 @@ async def queue(self, ctx: Context):
                 
                 if len(current_info) and count - 1 == current_i:
                     # Add now playing emoji and index
-                    title = f'▶️｜{count}. {current_info[0]}'
+                    emoji = ':repeat:' if player.repeat else ':arrow_forward:'
+                    title = f'{emoji}｜{count}. {current_info[0]}'
                     artist = f'by {current_info[1]}'
                     home_chunk = i
                 else:

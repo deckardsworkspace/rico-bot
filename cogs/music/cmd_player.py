@@ -109,16 +109,20 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
         current_action = 'streaming' if track_info['isStream'] else 'playing'
 
         # Build embed
+        embed_desc = [
+            f'**[{track_name}]({track_uri})**',
+            f'by **{track_artist}**',
+            f'requested by {requester.mention}'
+        ]
+        if progress is not None:
+            embed_desc.append(progress)
+        if player.repeat:
+            embed_desc.append('\n:repeat: **On repeat**\nUse the `loop` command to disable.')
         embed = MusicEmbed(
             color=Color.teal(),
             header='Paused' if player.paused else f'Now {current_action}',
             header_icon_url=requester.display_avatar.url,
-            description=[
-                f'**[{track_name}]({track_uri})**',
-                f'by {track_artist}',
-                progress if progress is not None else '',
-                f'\nRequested by {requester.mention}'
-            ]
+            description=embed_desc
         )
     else:
         # Not playing
