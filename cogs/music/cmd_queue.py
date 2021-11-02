@@ -78,7 +78,14 @@ async def move(self, ctx: Context, *, positions: str = None):
 
 @command(aliases=['q'])
 async def queue(self, ctx: Context):
-    db_queue = get_queue_db(self.db, str(ctx.guild.id))
+    # Delete the previous now playing message
+    try:
+        old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('qmessage').get().val()
+        if old_message_id:
+            old_message = await ctx.fetch_message(int(old_message_id))
+            await old_message.delete()
+    except:
+        pass
 
     # Get now playing index
     current_i = -1
@@ -93,6 +100,8 @@ async def queue(self, ctx: Context):
             # Spotify info available for current track
             current_info = (stored_info['title'], stored_info['author'])
 
+    # Display queue
+    db_queue = get_queue_db(self.db, str(ctx.guild.id))
     if not len(db_queue):
         embed = MusicEmbed(
             color=Color.dark_grey(),
@@ -141,9 +150,13 @@ async def queue(self, ctx: Context):
             )
             embeds.append(embed.get())
 
+        # Save this message
+        def save_msg(msg_id: int):
+            self.db.child('player').child(str(ctx.guild.id)).child('qmessage').set(str(msg_id))
         if len(embeds) > 1:
-            return await paginator.run(embeds, start=home_chunk)
-        return await ctx.send(embed=embeds[0])
+            return await paginator.run(embeds, start=home_chunk, callback=save_msg)
+        message = await ctx.send(embed=embeds[0])
+        return save_msg(message.id)
 
 
 @command(name='removequeue', aliases=['rmq'])

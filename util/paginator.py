@@ -1,7 +1,7 @@
 from asyncio import TimeoutError
-from nextcord import Embed, Member, Message, Reaction
+from nextcord import Embed, Member, Message, NotFound, Reaction
 from nextcord.ext.commands import Context
-from typing import List
+from typing import Callable, List
 
 
 class Paginator:
@@ -12,7 +12,7 @@ class Paginator:
         self.current = 0
         self.timeout = 60
     
-    async def run(self, embeds: List[Embed], start: int = 0, timeout: int = 0):
+    async def run(self, embeds: List[Embed], start: int = 0, timeout: int = 0, callback: Callable[[int], None] = None):
         # Based on https://github.com/toxicrecker/DiscordUtils/blob/master/DiscordUtils/Pagination.py
         # but with support for custom home page
         control_emojis = ('⏮️', '⏪', '🏠', '⏩', '⏭️')
@@ -24,10 +24,14 @@ class Paginator:
         for i in range(len(embeds)):
             embeds[i].set_footer(text=f'Page {i + 1} of {len(embeds)}')
 
-        # Send initial embed and add reactions
+        # Send initial embed and call callback with message ID
         self.current = start
         msg = await self.ctx.send(embed=embeds[start])
         msg: Message = await msg.channel.fetch_message(msg.id)
+        if callback is not None:
+            callback(msg.id)
+        
+        # Add reactions
         for emoji in control_emojis:
             try:
                 await msg.add_reaction(emoji)
@@ -40,11 +44,13 @@ class Paginator:
         while True:
             # Wait for reaction add until timeout runs out
             try:
-                r, u = await self.bot.wait_for('reaction_add', check=check, timeout=self.timeout)
-                
-                # Remove user reaction and reset timeout
-                await msg.remove_reaction(r.emoji, u)
-                self.timeout = timeout
+                # Remove user reaction
+                try:
+                    r, u = await self.bot.wait_for('reaction_add', check=check, timeout=self.timeout)
+                    await msg.remove_reaction(r.emoji, u)
+                except NotFound:
+                    # Message has likely been deleted
+                    return
 
                 if str(r.emoji) == control_emojis[0]:     # Start
                     self.current = 0
