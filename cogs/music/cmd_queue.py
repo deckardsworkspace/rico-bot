@@ -2,7 +2,7 @@ from collections import deque
 from nextcord import Color
 from nextcord.ext.commands import command, Context
 from util import list_chunks, MusicEmbed, Paginator
-from .queue_helpers import get_queue_index, get_queue_db, set_queue_db
+from .queue_helpers import get_queue_index, get_queue_db, set_queue_db, set_queue_index
 import random
 
 
@@ -108,17 +108,36 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
 
         # Start dequeueing
         dequeued = 0
+        current_i = get_queue_index(self.db, str(ctx.guild.id))
+        adjust_current = 0
         for i in positions:
             if i > len(db_queue) or i < 0:
                 await ctx.send(f'Cannot remove song {i + 1} as it is out of range.')
                 continue
 
+            # Adjust current position
+            if isinstance(current_i, int):
+                if current_i == i:
+                    await ctx.send(f'Cannot remove currently playing song {i + 1}.')
+                    continue
+                if current_i > i:
+                    # We are removing songs from the past,
+                    # so we decrement the current position by 1
+                    # to allow backward seeks to work properly.
+                    adjust_current += 1
+            
+            # Remove from queue
             dequeued = dequeued + 1
             del db_queue[i]
 
         if dequeued:
             # At least one song was removed from the queue
             set_queue_db(self.db, str(ctx.guild.id), db_queue)
+
+            # Adjust current position if applicable
+            if isinstance(current_i, int) and adjust_current > 0:
+                set_queue_index(self.db, str(ctx.guild.id), current_i - adjust_current)
+
             embed = MusicEmbed(
                 color=Color.orange(),
                 title=f':white_check_mark:｜Removed from queue',
