@@ -364,7 +364,7 @@ async def unpause(self, ctx: Context):
         message = 'Already unpaused.'
     
     # Send reply
-    reply = MusicEmbed(title=f':play_button:｜{message}', color=Color.dark_green())
+    reply = MusicEmbed(title=f':arrow_forward:｜{message}', color=Color.dark_green())
     return await reply.send(ctx, as_reply=True)
 
 
