@@ -6,6 +6,7 @@ from nextcord.ext.commands import command, Context
 from typing import Dict
 from util import check_url, check_spotify_url, create_progress_bar, get_var, parse_spotify_url, MusicEmbed
 from util import SpotifyInvalidURLError
+from util.string_util import human_readable_time
 from .queue_helpers import (
     QueueItem,
     dequeue_db, enqueue, enqueue_db, set_queue_db,
@@ -89,8 +90,10 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
 
             # Build progress info
             if automatic:
-                total_m, total_s = divmod(floor(total_ms / 1000), 60)
-                progress = f'\n{total_m:02d} min, {total_s:02d} sec'
+                h, m, s = human_readable_time(total_ms)
+                progress = f'\n{m} min, {s} sec'
+                if h:
+                    progress = f'\n{h} hr, {m} min, {s} sec'
             else:
                 elapsed_ms = player.position
                 progress = f'\n**{create_progress_bar(elapsed_ms, total_ms)}**'

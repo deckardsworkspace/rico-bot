@@ -81,8 +81,8 @@ class Debug(Cog):
                 if check_ip_addr(node.host) and check_local_ip(node.host):
                     node_name = f'{node.host} (local)'
                 
-                node_uptime_h, node_uptime_m, node_uptime_s = human_readable_time(node.stats.uptime)
-                node_uptime_d, node_uptime_h = divmod(node_uptime_h, 24)
+                h, m, s = human_readable_time(node.stats.uptime)
+                d, h = divmod(h, 24)
                 node_load = node.stats.lavalink_load * 100
                 node_stats = '\n'.join([
                     f'Node #       :: {i + 1}',
@@ -91,7 +91,7 @@ class Debug(Cog):
                     f'Players      :: {node.stats.playing_players} playing out of {node.stats.players} total',
                     f'CPU usage    :: {node_load:.2f}% across {node.stats.cpu_cores} core(s)',
                     f'Memory usage :: {human_readable_size(node.stats.memory_used)}',
-                    f'Uptime       :: {node_uptime_d:.0f} days, {node_uptime_h:.0f}:{node_uptime_m:.0f}:{node_uptime_s:.0f}'
+                    f'Uptime       :: {d:.0f} days, {h:.0f}:{str(m).zfill(2)}:{str(s).zfill(2)}'
                 ])
                 nodes_info.append(f'```asciidoc\n{node_stats}```')
             

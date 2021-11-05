@@ -96,7 +96,7 @@ def human_readable_size(size_bytes: int) -> str:
 def human_readable_time(ms: int) -> Tuple[int, int, int]:
     m, s = divmod(ms / 1000, 60)
     h, m = divmod(m, 60)
-    return h, m, s
+    return floor(h), floor(m), floor(s)
 
 
 def is_int(string: str) -> bool:
