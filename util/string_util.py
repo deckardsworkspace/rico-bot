@@ -29,7 +29,7 @@ def check_twitch_url(url: str) -> bool:
 
 
 def check_youtube_url(url: str) -> bool:
-    url_regex = r"(?:https?://)?(?:www\.)?youtu\.?be(?:\.com)?/?.*(?:watch|embed)?(?:.*v=|v/|/)([\w\-_]+)\&?"
+    url_regex = r"(?:https?://)?(?:youtu\.be/|(?:www\.|m\.)?youtube\.com/(?:watch|v|embed)(?:\.php)?(?:\?.*v=|/))([a-zA-Z0-9_-]+)"
     return re.match(url_regex, url) is not None
 
 

@@ -1,4 +1,5 @@
 from asyncio.exceptions import TimeoutError
+from dataclasses import asdict
 from math import floor, ceil
 from nextcord import Embed
 from nextcord.ext.commands import Context
@@ -6,10 +7,11 @@ from pyrebase.pyrebase import Database
 from spotipy import Spotify
 from typing import Dict
 from util import get_var, num_to_emoji, remove_multiple_messages, SpotifyRecommendation
+from util.recommendation import rec_factory
 from .recommend_db import add
 
 
-async def create_match_reacts(ctx: Context, db: Database, spotify_rec: SpotifyRecommendation, search_ctx: Dict):
+async def create_match_reacts(ctx: Context, db: Database, search_ctx: Dict):
     num_reacts = [num_to_emoji(i, unicode=True) for i in range(1, 6)]
     match_types = ['track', 'album', 'artist']
     messages = search_ctx['embeds']
@@ -32,7 +34,7 @@ async def create_match_reacts(ctx: Context, db: Database, spotify_rec: SpotifyRe
         match_type = match_types[messages.index(reaction.message.id)]
         match_index = num_reacts.index(reaction.emoji)
         match_id = search_ctx[match_type][match_index]
-        await handle_match(ctx, db, spotify_rec, match_type, match_id)
+        await handle_match(ctx, db, match_type, match_id)
     except TimeoutError:
         await ctx.reply('Took too long selecting a match, aborting.')
     finally:
@@ -40,15 +42,15 @@ async def create_match_reacts(ctx: Context, db: Database, spotify_rec: SpotifyRe
         await remove_multiple_messages(ctx, messages)
 
 
-async def handle_match(ctx: Context, db: Database, spotify_rec: SpotifyRecommendation,
-                       match_type: str, match_id: str):
+async def handle_match(ctx: Context, db: Database, match_type: str, match_id: str):
     """Select which item to recommend from results given by rc!recommend."""
     spotify_uri = "spotify:{0}:{1}".format(match_type, match_id)
     mentions = [user.id for user in ctx.message.mentions]
-    await add(ctx, db, mentions, spotify_rec.parse(spotify_uri, ctx.author.name))
+    rec = SpotifyRecommendation(spotify_uri, ctx.author.name)
+    await add(ctx, db, mentions, asdict(rec, dict_factory=rec_factory))
 
 
-async def search(db: Database, spotify: Spotify, spotify_rec: SpotifyRecommendation, ctx: Context, query: str):
+async def search(db: Database, spotify: Spotify, ctx: Context, query: str):
     if not len(query):
         return
 
@@ -115,4 +117,4 @@ async def search(db: Database, spotify: Spotify, spotify_rec: SpotifyRecommendat
         query, get_var('BOT_PREFIX'), query
     ))
     context["embeds"].append(msg.id)
-    await create_match_reacts(ctx, db, spotify_rec, context)
+    await create_match_reacts(ctx, db, context)

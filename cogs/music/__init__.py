@@ -1,4 +1,4 @@
-from lavalink import add_event_hook, Client as LavalinkClient
+from lavalink import add_event_hook
 from lavalink.events import *
 from nextcord.ext.commands import Bot, Cog, Context
 from util import Spotify

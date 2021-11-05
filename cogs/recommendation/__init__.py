@@ -1,14 +1,11 @@
-from nextcord.ext import commands
-from util import SpotifyRecommendation
+from nextcord.ext.commands import Cog
 
 
-class Recommendation(commands.Cog):
-    def __init__(self, client, db, spotify, youtube):
+class Recommendation(Cog):
+    def __init__(self, client, db, spotify):
         self.client = client
         self.db = db
         self.spotify = spotify.get_client()
-        self.spotify_rec = SpotifyRecommendation(self.spotify)
-        self.youtube_rec = youtube
         print('Loaded cog: Recommendation')
 
     # Commands

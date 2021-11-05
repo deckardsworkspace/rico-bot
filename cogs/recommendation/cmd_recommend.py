@@ -1,7 +1,12 @@
+from dataclasses import asdict
 from nextcord.ext.commands import command, Context, guild_only
 from spotipy.exceptions import SpotifyException
-from util import check_spotify_url, check_url
-from util import SpotifyInvalidURLError, SpotifyNotFoundError
+from util import (
+    check_spotify_url, check_url, check_youtube_url,
+    SpotifyInvalidURLError, SpotifyNotFoundError,
+    SpotifyRecommendation, YouTubeRecommendation
+)
+from util.recommendation import rec_factory
 from .recommend_db import add
 from .search import search
 import re
@@ -30,15 +35,17 @@ async def recommend(self, ctx, *args):
                 # Check if we are dealing with a Spotify link
                 if check_spotify_url(arg):
                     try:
-                        await add(ctx, self.db, mentions, self.spotify_rec.parse(arg, ctx.author.name))
+                        rec = SpotifyRecommendation(arg, ctx.author.name)
+                        await add(ctx, self.db, mentions, asdict(rec, dict_factory=rec_factory))
                     except SpotifyException:
                         await ctx.reply("Spotify link doesn't point to a valid Spotify item.")
                     except (SpotifyInvalidURLError, SpotifyNotFoundError) as e:
                         await ctx.reply(e)
                 # Check if we are dealing with a YouTube video link
-                elif self.youtube_rec.match(arg):
+                elif check_youtube_url(arg):
                     try:
-                        await add(ctx, self.db, mentions, self.youtube_rec.parse(arg, ctx.author.name))
+                        rec = YouTubeRecommendation(arg, ctx.author.name)
+                        await add(ctx, self.db, mentions, asdict(rec, dict_factory=rec_factory))
                     except Exception as e:
                         await ctx.reply("Error processing YouTube link: {}".format(e))
                         await add(ctx, self.db, mentions, {
@@ -57,7 +64,7 @@ async def recommend(self, ctx, *args):
                     non_links.append(arg)
 
         # Process everything that isn't a link
-        await search(self.db, self.spotify, self.spotify_rec, ctx, " ".join(non_links))
+        await search(self.db, self.spotify, ctx, " ".join(non_links))
     else:
         await ctx.reply("Please specify something to recommend.")
 

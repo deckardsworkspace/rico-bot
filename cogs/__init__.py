@@ -5,16 +5,13 @@ from .music import Music
 from .owner import Owner
 from .thread import ThreadManager
 from nextcord.ext.commands import Bot
-from util import get_var, get_pyrebase_config, Spotify, YouTube
+from util import get_var, get_pyrebase_config, Spotify
 import pyrebase
 
 
 def setup(bot: Bot):
     # Instantiate Spotipy
     spotify = Spotify()
-
-    # Instantiate YouTube
-    youtube = YouTube(get_var('FIREBASE_KEY'))
 
     # Instantiate Pyrebase
     firebase = pyrebase.initialize_app(get_pyrebase_config())
@@ -24,7 +21,7 @@ def setup(bot: Bot):
     bot.add_cog(Owner(bot))
     bot.add_cog(Help(bot))
     bot.add_cog(Export(bot, db, spotify))
-    bot.add_cog(Recommendation(bot, db, spotify, youtube))
+    bot.add_cog(Recommendation(bot, db, spotify))
 
     # Conditional cogs
     if get_var('ENABLE_THREADMGR') == '1':
