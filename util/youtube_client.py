@@ -4,7 +4,7 @@ from .exception import YouTubeInvalidURLError
 from .string_util import get_ytid_from_url
 
 
-class YouTubeRecommendation:
+class YouTube:
     def __init__(self, api_key):
         self.api_key = api_key
 
