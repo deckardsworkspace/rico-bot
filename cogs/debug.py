@@ -10,7 +10,7 @@ from util import check_ip_addr, human_readable_size, human_readable_time
 from util.message_util import MusicEmbed
 
 
-def check_local_ip(host: str) -> bool:
+def check_local_host(host: str) -> bool:
     """
     Check if the host is local.
     """
@@ -81,7 +81,7 @@ class Debug(Cog):
             nodes = self.bot.lavalink.node_manager.available_nodes
             for i, node in enumerate(nodes):
                 node_name = node.name
-                if check_ip_addr(node.host) and check_local_ip(node.host):
+                if check_local_host(node.host):
                     node_name = f'{node.host} (local)'
                 
                 h, m, s = human_readable_time(node.stats.uptime)
