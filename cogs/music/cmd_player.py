@@ -1,17 +1,16 @@
 from collections import deque
 from lavalink.models import AudioTrack
-from math import floor
 from nextcord import Color
-from nextcord.ext.commands import command, Context
+from nextcord.ext.commands import BucketType, command, Context, cooldown
 from typing import Dict
-from util import check_url, check_spotify_url, create_progress_bar, get_var, parse_spotify_url, MusicEmbed
-from util import SpotifyInvalidURLError
-from util.string_util import human_readable_time
+from util import (
+    check_url, check_spotify_url, create_progress_bar, get_var, human_readable_time,
+    parse_spotify_url, MusicEmbed, SpotifyInvalidURLError
+)
 from .queue_helpers import (
-    QueueItem,
     dequeue_db, enqueue, enqueue_db, set_queue_db,
     get_queue_size, get_queue_index, set_queue_index,
-    get_loop_all, set_loop_all
+    get_loop_all, set_loop_all, QueueItem
 )
 
 
@@ -162,6 +161,7 @@ async def pause(self, ctx: Context):
 
 
 @command(aliases=['p'])
+@cooldown(1, 1, BucketType.guild)
 async def play(self, ctx: Context, *, query: str = None):
     """ Searches and plays a song from a given query. """
     async with ctx.typing():
