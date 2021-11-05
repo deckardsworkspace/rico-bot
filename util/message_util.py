@@ -17,6 +17,7 @@ class MusicEmbed:
 
     # Header and footer
     header: str = Embed.Empty
+    header_url: str = Embed.Empty
     header_icon_url: str = Embed.Empty
     footer: str = Embed.Empty
     footer_icon_url: str = Embed.Empty
@@ -43,7 +44,7 @@ class MusicEmbed:
         if self.image_url is not Embed.Empty:
             embed.set_image(url=self.image_url)
         if self.header is not Embed.Empty:
-            embed.set_author(name=self.header, icon_url=self.header_icon_url)
+            embed.set_author(name=self.header, url=self.header_url, icon_url=self.header_icon_url)
         if self.footer is not Embed.Empty:
             embed.set_footer(text=self.footer, icon_url=self.footer_icon_url)
         if len(self.fields):

@@ -1,6 +1,7 @@
+from typing import Tuple
 import validators
 import re
-from math import ceil, floor
+from math import ceil, floor, log, pow
 from urllib.parse import urlparse, parse_qs
 from .exception import *
 
@@ -35,10 +36,14 @@ def check_youtube_url(url: str) -> bool:
 
 def create_progress_bar(elapsed_ms: int, total_ms: int) -> str:
     # Decompose ms into m and s
-    total_m, total_s = divmod(floor(total_ms / 1000), 60)
-    total_text = f'{total_m:02d}:{total_s:02d}'
-    elapsed_m, elapsed_s = divmod(floor(elapsed_ms / 1000), 60)
-    elapsed_text = f'{elapsed_m:02d}:{elapsed_s:02d}'
+    total_h, total_m, total_s = human_readable_time(total_ms)
+    elapsed_h, elapsed_m, elapsed_s = human_readable_time(elapsed_ms)
+    if total_h:
+        total_text = f'{total_h}:{total_m:02d}:{total_s:02d}'
+        elapsed_text = f'{elapsed_h}:{elapsed_m:02d}:{elapsed_s:02d}'
+    else:
+        total_text = f'{total_m:02d}:{total_s:02d}'
+        elapsed_text = f'{elapsed_m:02d}:{elapsed_s:02d}'
 
     # Create progress bar
     total = 25
@@ -75,6 +80,23 @@ def get_ytid_from_url(url):
         return query.path[1:]
     else:
         raise YouTubeInvalidURLError(url)
+
+
+def human_readable_size(size_bytes: int) -> str:
+    # https://stackoverflow.com/a/14822210
+    if size_bytes == 0:
+        return "0 B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(floor(log(size_bytes, 1024)))
+    p = pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return f'{s} {size_name[i]}'
+
+
+def human_readable_time(ms: int) -> Tuple[int, int, int]:
+    m, s = divmod(ms / 1000, 60)
+    h, m = divmod(m, 60)
+    return h, m, s
 
 
 def is_int(string: str) -> bool:

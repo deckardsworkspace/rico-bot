@@ -2,7 +2,7 @@ from .recommendation import Recommendation
 from .export import Export
 from .help import Help
 from .music import Music
-from .owner import Owner
+from .debug import Debug
 from .thread import ThreadManager
 from nextcord.ext.commands import Bot
 from util import get_var, get_pyrebase_config, Spotify
@@ -18,7 +18,7 @@ def setup(bot: Bot):
     db = firebase.database()
 
     # Add cogs
-    bot.add_cog(Owner(bot))
+    bot.add_cog(Debug(bot))
     bot.add_cog(Help(bot))
     bot.add_cog(Export(bot, db, spotify))
     bot.add_cog(Recommendation(bot, db, spotify))

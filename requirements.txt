@@ -12,6 +12,7 @@ cryptography==3.4.7
 decorator==5.1.0
 Deprecated==1.2.12
 discord.py==1.7.3
+distro==1.6.0
 Flask==2.0.2
 gcloud==0.18.3
 googleapis-common-protos==1.53.0
