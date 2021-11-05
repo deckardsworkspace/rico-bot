@@ -120,9 +120,9 @@ class Debug(Cog):
 
         # Build and send embed
         embed = MusicEmbed(
-            header=f'Version {version}',
+            header=f'version {version}',
             header_url=f'https://github.com/jareddantis/rico/tree/{commit_hash}',
-            title=f'Info for {ctx.guild.me.display_name}',
+            title=f'About {ctx.guild.me.display_name}',
             thumbnail_url=self.bot.user.avatar.url,
             color=Color.green(),
             description='\n\n'.join(['\n'.join(i) for i in info]),
