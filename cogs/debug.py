@@ -14,6 +14,9 @@ def check_local_ip(host: str) -> bool:
     """
     Check if the host is local.
     """
+    if host in ('localhost', '0.0.0.0', '127.0.0.1', '::1'):
+        return True
+
     local_nets = [
         ipaddress.ip_network('192.168.0.0/24'),
         ipaddress.ip_network('172.16.0.0/12'),
