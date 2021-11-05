@@ -33,6 +33,7 @@ pendulum==2.1.2
 pipdeptree==2.1.0
 pkce==1.0.3
 protobuf==3.17.3
+psutil==5.8.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pycparser==2.20
