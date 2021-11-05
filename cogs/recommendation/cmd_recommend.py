@@ -35,7 +35,7 @@ async def recommend(self, ctx, *args):
                 # Check if we are dealing with a Spotify link
                 if check_spotify_url(arg):
                     try:
-                        rec = SpotifyRecommendation(arg, ctx.author.name)
+                        rec = SpotifyRecommendation(url=arg, recommender=ctx.author.name, spotify=self.spotify)
                         await add(ctx, self.db, mentions, asdict(rec, dict_factory=rec_factory))
                     except SpotifyException:
                         await ctx.reply("Spotify link doesn't point to a valid Spotify item.")
@@ -44,7 +44,7 @@ async def recommend(self, ctx, *args):
                 # Check if we are dealing with a YouTube video link
                 elif check_youtube_url(arg):
                     try:
-                        rec = YouTubeRecommendation(arg, ctx.author.name)
+                        rec = YouTubeRecommendation(url=arg, recommender=ctx.author.name)
                         await add(ctx, self.db, mentions, asdict(rec, dict_factory=rec_factory))
                     except Exception as e:
                         await ctx.reply("Error processing YouTube link: {}".format(e))
