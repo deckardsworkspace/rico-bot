@@ -40,6 +40,7 @@ class Debug(Cog):
         print('Loaded debug cog')
     
     @command(aliases=['i'])
+    @is_owner()
     async def info(self, ctx: Context):
         info = []
 
