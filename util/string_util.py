@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Union
 import validators
 import re
 from math import ceil, floor, log, pow
@@ -93,7 +93,7 @@ def human_readable_size(size_bytes: int) -> str:
     return f'{s} {size_name[i]}'
 
 
-def human_readable_time(ms: int) -> Tuple[int, int, int]:
+def human_readable_time(ms: Union[int, float]) -> Tuple[int, int, int]:
     m, s = divmod(ms / 1000, 60)
     h, m = divmod(m, 60)
     return floor(h), floor(m), floor(s)

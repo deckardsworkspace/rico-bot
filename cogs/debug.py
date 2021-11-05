@@ -2,12 +2,13 @@ import distro
 import ipaddress
 import os
 import platform
+import psutil
 import subprocess
 from datetime import datetime
 from nextcord import Color
 from nextcord.ext.commands import Bot, Cog, command, is_owner, Context
-from util import check_ip_addr, human_readable_size, human_readable_time
-from util.message_util import MusicEmbed
+from time import time
+from util import human_readable_size, human_readable_time, MusicEmbed
 
 
 def check_local_host(host: str) -> bool:
@@ -42,36 +43,43 @@ class Debug(Cog):
     async def info(self, ctx: Context):
         info = []
 
-        # Get Git commit
-        commit_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode()
-        commit_date = subprocess.check_output(['git', 'show', '-s', '--format=%cd', '--date=short']).strip().decode()
-        tree_url = f'https://github.com/jareddantis/rico-bot/tree/{commit_hash}'
-
         # Count users
         guilds = self.bot.guilds
         users = 0
         for guild in guilds:
-            users += guild.member_count
+            # Don't count the bot!
+            users += guild.member_count - 1
+        
+        # Calculate uptime
+        time_now = time()
+        bot_process = psutil.Process(os.getpid())
+        h, m, s = human_readable_time((time_now - bot_process.create_time()) * 1000)
+        d, h = divmod(h, 24)
         info.append([
             '__**Bot info**__',
             '\n'.join([
-                f'Logged in as **{self.bot.user.name}#{self.bot.user.discriminator}**',
+                f'Logged in as `{self.bot.user.name}#{self.bot.user.discriminator}`',
+                f'Listening to `{users}` users across `{len(guilds)}` servers',
                 f'Latency to Discord is `{(self.bot.latency * 1000):.02f} ms`',
-                f'Listening to **{users}** users across **{len(guilds)}** servers',
-                f'Version `{commit_hash[:7]}` [**({commit_date})**]({tree_url})'
+                f'Online for {d:.0f} days, {h:.0f}:{str(m).zfill(2)}:{str(s).zfill(2)}'
             ])
         ])
 
         # Display server info
+        h, m, s = human_readable_time((time_now - psutil.boot_time()) * 1000)
+        d, h = divmod(h, 24)
         server_os = platform.system()
+        server_mem = human_readable_size(psutil.virtual_memory().total)
         if server_os == 'Linux':
             # Display Linux distribution
             server_os = distro.name(pretty=True)
         info.append([
-            '__**Bot environment**__',
+            '__**Bot server**__',
             '\n'.join([
-                f'Python version `{platform.python_version()}` on `{server_os}`',
-                f'running on `{os.cpu_count()}x {platform.processor()}` CPUs'
+                f'Python version `{platform.python_version()}`',
+                f'Installed on `{server_os}`',
+                f'`{os.cpu_count()}` CPUs and `{server_mem}` RAM available',
+                f'Server up for {d:.0f} days, {h:.0f}:{str(m).zfill(2)}:{str(s).zfill(2)}'
             ])
         ])
 
@@ -91,11 +99,11 @@ class Debug(Cog):
                 mem_max = human_readable_size(node.stats.memory_reservable)
                 node_stats = '\n'.join([
                     f'Node #     :: {i + 1}',
-                    f'Host       :: {node_name}',
                     f'Connected  :: {node.available}',
-                    f'Players    :: {node.stats.playing_players} playing out of {node.stats.players} total',
+                    f'Host       :: {node_name}',
+                    f'Players    :: {node.stats.playing_players} active out of {node.stats.players}',
                     f'CPU usage  :: {node_load:.2f}% across {node.stats.cpu_cores} core(s)',
-                    f'Memory     :: {mem_used} used of {mem_max} maximum',
+                    f'Mem usage  :: {mem_used} of {mem_max}',
                     f'Uptime     :: {d:.0f} days, {h:.0f}:{str(m).zfill(2)}:{str(s).zfill(2)}'
                 ])
                 nodes_info.append(f'```asciidoc\n{node_stats}```')
@@ -104,9 +112,16 @@ class Debug(Cog):
                 nodes_info = [':warning: No nodes available! Bot cannot play music.']
             info.append(['__**Lavalink node status**__', '\n'.join(nodes_info)])
 
+        # Get Git commit
+        commit_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode()
+        commit_date = subprocess.check_output(['git', 'show', '-s', '--format=%cd', '--date=short']).strip().decode()
+        version = f'{commit_date.replace("-", "")}-{commit_hash[:7]}'
+
         # Build and send embed
         embed = MusicEmbed(
-            header=f'Info for {ctx.guild.me.display_name}',
+            header=f'Version {version}',
+            header_url=f'https://github.com/jareddantis/rico/tree/{commit_hash}',
+            title=f'Info for {ctx.guild.me.display_name}',
             thumbnail_url=self.bot.user.avatar.url,
             color=Color.green(),
             description='\n\n'.join(['\n'.join(i) for i in info]),
