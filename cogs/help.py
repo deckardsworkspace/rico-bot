@@ -84,7 +84,7 @@ class Help(Cog):
 
         if query is None:
             # Display available help categories
-            embed.title = f'Help for {ctx.guild.me.nick}'
+            embed.title = f'Help for {ctx.guild.me.display_name}'
 
             for key, value in help_list.items():
                 key_idx = valid_keys.index(key) + 1
