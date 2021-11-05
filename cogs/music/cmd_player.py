@@ -282,10 +282,12 @@ async def play(self, ctx: Context, *, query: str = None):
             enqueue_db(self.db, str(ctx.guild.id), new_tracks)
 
             # Send embed
+            first = new_tracks[0]
+            first_name = f'**{first.title}**\nby {first.artist}' if first.title is not None else query
             embed = MusicEmbed(
                 color=Color.gold(),
                 title=':white_check_mark:｜Added to queue',
-                description=query if len(new_tracks) == 1 else f'{len(new_tracks)} item(s)'
+                description=first_name if len(new_tracks) == 1 else f'{len(new_tracks)} item(s)'
             )
             await embed.send(ctx, as_reply=True)
 
