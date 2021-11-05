@@ -87,14 +87,16 @@ class Debug(Cog):
                 h, m, s = human_readable_time(node.stats.uptime)
                 d, h = divmod(h, 24)
                 node_load = node.stats.lavalink_load * 100
+                mem_used = human_readable_size(node.stats.memory_used)
+                mem_max = human_readable_size(node.stats.memory_reservable)
                 node_stats = '\n'.join([
-                    f'Node #       :: {i + 1}',
-                    f'Host         :: {node_name}',
-                    f'Connected    :: {node.available}',
-                    f'Players      :: {node.stats.playing_players} playing out of {node.stats.players} total',
-                    f'CPU usage    :: {node_load:.2f}% across {node.stats.cpu_cores} core(s)',
-                    f'Memory usage :: {human_readable_size(node.stats.memory_used)}',
-                    f'Uptime       :: {d:.0f} days, {h:.0f}:{str(m).zfill(2)}:{str(s).zfill(2)}'
+                    f'Node #     :: {i + 1}',
+                    f'Host       :: {node_name}',
+                    f'Connected  :: {node.available}',
+                    f'Players    :: {node.stats.playing_players} playing out of {node.stats.players} total',
+                    f'CPU usage  :: {node_load:.2f}% across {node.stats.cpu_cores} core(s)',
+                    f'Memory     :: {mem_used} used of {mem_max} maximum',
+                    f'Uptime     :: {d:.0f} days, {h:.0f}:{str(m).zfill(2)}:{str(s).zfill(2)}'
                 ])
                 nodes_info.append(f'```asciidoc\n{node_stats}```')
             
