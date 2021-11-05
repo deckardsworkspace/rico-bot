@@ -2,11 +2,10 @@ from dataclasses import asdict
 from nextcord.ext.commands import command, Context, guild_only
 from spotipy.exceptions import SpotifyException
 from util import (
-    check_spotify_url, check_url, check_youtube_url,
+    check_spotify_url, check_url, check_youtube_url, rec_factory,
     SpotifyInvalidURLError, SpotifyNotFoundError,
     SpotifyRecommendation, YouTubeRecommendation
 )
-from util.recommendation import rec_factory
 from .recommend_db import add
 from .search import search
 import re

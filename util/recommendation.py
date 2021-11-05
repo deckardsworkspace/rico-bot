@@ -23,7 +23,7 @@ def rec_factory(data: Dict):
         'url': 'url',
         'author': 'author'
     }
-    return { safe_keys.get(k): v for k, v in data }
+    return { safe_keys.get(k): v for k, v in data if k in safe_keys.keys() }
 
 @dataclass
 class SpotifyRecommendation(Recommendation):
