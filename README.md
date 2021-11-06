@@ -2,9 +2,9 @@
 
 Rico is a Discord bot that allows you to recommend stuff to others, manage stuff recommended to you, keep conversations going in threads, and even play music.
 
-This bot is designed to be deployed on a cloud platform service like Heroku. Configuration is performed through build/environment variables.
+This bot is best deployed on a cloud platform service like Heroku, but can be hosted at home or on a VPS. Configuration is performed through environment variables.
 
-Data is stored in a Firebase Realtime Database (handled by [pyrebase](https://github.com/thisbejim/Pyrebase)), and music data is pulled from Spotify (handled by [spotipy](https://github.com/plamere/spotipy)).
+Data is stored in a Firebase Realtime Database (handled by [pyrebase](https://github.com/thisbejim/Pyrebase)), and music data is pulled from Spotify (handled by [spotipy](https://github.com/plamere/spotipy)) and YouTube (handled by [youtubesearchpython](https://github.com/alexmercerind/youtube-search-python)).
 
 Since the Discord.py library was discontinued, Rico now uses the community fork [Nextcord](https://github.com/nextcord/nextcord) to interface with the Discord API.
 
@@ -42,6 +42,8 @@ Since the Discord.py library was discontinued, Rico now uses the community fork 
 - **Music playback**
 
   Rico has rudimentary support for YouTube, Spotify, and Twitch playback in voice channels, powered by [Lavalink](https://github.com/freyacodes/Lavalink) and [Lavalink.py.](https://github.com/Devoxin/Lavalink.py) See **[Requirements](Requirements)** below.
+
+  Rico also has a command `info` for displaying stats about the bot's host and Lavalink nodes.
 
   *This is an optional feature.* See **[Configuration & deployment](#music-player-configuration-optional)** to learn how to enable this feature.
 
@@ -123,6 +125,7 @@ If you want to make use of the music player, you will also need to set these var
 |-----|-----|
 |`ENABLE_MUSIC`|Set to `1` if you want to enable Rico's music player functionality.|
 |`LAVALINK`|Serialized list of your Lavalink nodes in JSON format.|
+|`INACTIVE_SEC`|Time to wait (in seconds) before disconnecting for inactivity. Must be > 0.|
 
 To create a valid `LAVALINK` configuration, edit the following code accordingly and run it with Python:
 

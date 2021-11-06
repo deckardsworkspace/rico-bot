@@ -1,17 +1,25 @@
 from asyncio import sleep
 from nextcord import Client, StageChannel, VoiceChannel, VoiceClient
 from typing import Union
-from util import get_lavalink_nodes
+from util import get_lavalink_nodes, get_var
 import lavalink
 
 
 def init_lavalink(id: int) -> lavalink.Client: 
     client = lavalink.Client(id)
 
+    # Check that our inactivity timeout is valid
+    inactivity_timeout = int(get_var('INACTIVE_SEC'))
+    if inactivity_timeout < 1:
+        raise ValueError('$INACTIVE_SEC must be an integer greater than 0')
+
     # Add nodes from env
     nodes = get_lavalink_nodes()
     for node in nodes:
-        client.add_node(node['host'], node['port'], node['password'], node['region'], node['id'])
+        client.add_node(
+            node['host'], node['port'], node['password'],
+            node['region'], node['id'], inactivity_timeout, node['id']
+        )
     
     return client
 
