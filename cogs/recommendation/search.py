@@ -117,4 +117,4 @@ async def search(db: Database, spotify: Spotify, ctx: Context, query: str):
         query, get_var('BOT_PREFIX'), query
     ))
     context["embeds"].append(msg.id)
-    await create_match_reacts(ctx, db, context)
+    await create_match_reacts(ctx, db, spotify, context)
