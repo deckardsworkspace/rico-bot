@@ -11,7 +11,7 @@ from util.recommendation import rec_factory
 from .recommend_db import add
 
 
-async def create_match_reacts(ctx: Context, db: Database, search_ctx: Dict):
+async def create_match_reacts(ctx: Context, db: Database, spotify: Spotify, search_ctx: Dict):
     num_reacts = [num_to_emoji(i, unicode=True) for i in range(1, 6)]
     match_types = ['track', 'album', 'artist']
     messages = search_ctx['embeds']
@@ -34,7 +34,7 @@ async def create_match_reacts(ctx: Context, db: Database, search_ctx: Dict):
         match_type = match_types[messages.index(reaction.message.id)]
         match_index = num_reacts.index(reaction.emoji)
         match_id = search_ctx[match_type][match_index]
-        await handle_match(ctx, db, match_type, match_id)
+        await handle_match(ctx, db, spotify, match_type, match_id)
     except TimeoutError:
         await ctx.reply('Took too long selecting a match, aborting.')
     finally:
@@ -42,11 +42,11 @@ async def create_match_reacts(ctx: Context, db: Database, search_ctx: Dict):
         await remove_multiple_messages(ctx, messages)
 
 
-async def handle_match(ctx: Context, db: Database, match_type: str, match_id: str):
+async def handle_match(ctx: Context, db: Database, spotify: Spotify, match_type: str, match_id: str):
     """Select which item to recommend from results given by rc!recommend."""
     spotify_uri = "spotify:{0}:{1}".format(match_type, match_id)
     mentions = [user.id for user in ctx.message.mentions]
-    rec = SpotifyRecommendation(spotify_uri, ctx.author.name)
+    rec = SpotifyRecommendation(url=spotify_uri, recommender=ctx.author.name, spotify=spotify)
     await add(ctx, db, mentions, asdict(rec, dict_factory=rec_factory))
 
 
