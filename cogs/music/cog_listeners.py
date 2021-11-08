@@ -75,8 +75,8 @@ async def on_voice_state_update(self, member: Member, before: VoiceState, after:
 
         # Inactivity check
         time = 0
-        inactive_s = int(get_var('INACTIVE_SEC'))
-        inactive_h, inactive_m, inactive_s = human_readable_time(inactive_s * 1000)
+        inactive_sec = int(get_var('INACTIVE_SEC'))
+        inactive_h, inactive_m, inactive_s = human_readable_time(inactive_sec * 1000)
         inactive_h = f'{inactive_h}h ' if inactive_h else ''
         inactive_m = f'{inactive_m}m ' if inactive_m else ''
         inactive_s = f'{inactive_s}s' if inactive_s else ''
@@ -88,7 +88,7 @@ async def on_voice_state_update(self, member: Member, before: VoiceState, after:
                 if player.is_playing and not player.paused:
                     time = 0
                 # TODO: Turn this into an environment variable
-                if time == inactive_s:
+                if time == inactive_sec:
                     await self.disconnect(ctx, reason=f'Inactive for {inactive_h}{inactive_m}{inactive_s}')
                 if not player.is_connected:
                     break
