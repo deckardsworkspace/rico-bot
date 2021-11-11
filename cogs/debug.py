@@ -122,14 +122,13 @@ class Debug(Cog):
         except:
             if 'SOURCE_VERSION' in os.environ:
                 commit_hash = os.environ['SOURCE_VERSION']
+                repo_url = f'https://github.com/jareddantis/rico-bot/tree/{commit_hash}'
                 version = commit_hash[:7]
             else:
+                repo_url = 'https://github.com/jareddantis/rico-bot'
                 version = 'Unknown version'
 
         # Build and send embed
-        repo_url = f'https://github.com/jareddantis/rico-bot'
-        if commit_hash:
-            repo_url = f'{repo_url}/tree/{commit_hash}'
         embed = MusicEmbed(
             header=f'version {version}',
             header_url=repo_url,
