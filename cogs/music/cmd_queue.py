@@ -77,7 +77,25 @@ async def move(self, ctx: Context, *, positions: str = None):
 
 
 @command(aliases=['q'])
-async def queue(self, ctx: Context):
+async def queue(self, ctx: Context, *, query: str = None):
+    # Catch users trying to add to queue using this command
+    if query is not None:
+        # Give them a tip
+        embed = MusicEmbed(
+            title=':information_source:｜Tip',
+            description=[
+                'You can use the `play`/`p` command to play tracks!',
+                'This command (`queue`/`q`) is for listing the current queue.'
+            ],
+            color=Color.lighter_gray()
+        )
+        await embed.send(ctx, as_reply=True)
+
+        # Let's invoke the play command for them
+        cmd = self.bot.get_command('play')
+        return await ctx.invoke(cmd, query)
+
+    # Get queue from DB
     # Delete the previous now playing message
     try:
         old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('qmessage').get().val()
