@@ -114,14 +114,25 @@ class Debug(Cog):
             info.append(['__**Lavalink node status**__', '\n'.join(nodes_info)])
 
         # Get Git commit
-        commit_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode()
-        commit_date = subprocess.check_output(['git', 'show', '-s', '--format=%cd', '--date=short']).strip().decode()
-        version = f'{commit_date.replace("-", "")}-{commit_hash[:7]}'
+        try:
+            commit_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).strip().decode()
+            commit_date = subprocess.check_output(['git', 'show', '-s', '--format=%cd', '--date=short']).strip().decode()
+            version = f'{commit_date.replace("-", "")}-{commit_hash[:7]}'
+            repo_url = f'https://github.com/jareddantis/rico-bot/tree/{commit_hash}'
+        except:
+            if 'SOURCE_VERSION' in os.environ:
+                commit_hash = os.environ['SOURCE_VERSION']
+                version = commit_hash[:7]
+            else:
+                version = 'Unknown version'
 
         # Build and send embed
+        repo_url = f'https://github.com/jareddantis/rico-bot'
+        if commit_hash:
+            repo_url = f'{repo_url}/tree/{commit_hash}'
         embed = MusicEmbed(
             header=f'version {version}',
-            header_url=f'https://github.com/jareddantis/rico-bot/tree/{commit_hash}',
+            header_url=repo_url,
             title=f'About {ctx.guild.me.display_name}',
             thumbnail_url=self.bot.user.avatar.url,
             color=Color.green(),
