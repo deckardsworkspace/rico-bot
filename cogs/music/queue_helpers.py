@@ -37,9 +37,12 @@ class QueueItem:
 
     # Get title and artist
     def get_details(self) -> Tuple[str, str]:
-        if self.spotify_id is not None:
+        if self.title is not None:
             title = self.title
-            artist = f'by {self.artist}'
+            if self.artist is not None:
+                artist = f'by {self.artist}'
+            else:
+                artist = 'by Unknown artist'
         elif self.url is not None:
             title = self.url
             artist = 'Direct link'
