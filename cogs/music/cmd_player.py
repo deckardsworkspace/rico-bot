@@ -171,6 +171,20 @@ async def play(self, ctx: Context, *, query: str = None):
         # Are we adding to a queue or resuming an old queue?
         is_playing = player is not None and (player.is_playing or player.paused)
         if not query:
+            if is_playing:
+                if player.paused:
+                    # Unpause the player
+                    cmd = self.bot.get_command('pause')
+                    return await ctx.invoke(cmd)
+                else:
+                    # An active player already exists for this guild
+                    embed = MusicEmbed(
+                        color=Color.red(),
+                        title=':x:｜Already playing',
+                        description='Use `play <query/URL>` to add to the queue, or use `unpause` to resume playback if paused.'
+                    )
+                    return await embed.send(ctx, as_reply=True)
+
             # Try to resume an old queue if it exists
             old_np = get_queue_index(self.db, str(ctx.guild.id))
             if isinstance(old_np, int):
