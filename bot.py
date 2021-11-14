@@ -32,6 +32,11 @@ async def on_message(message: Message):
 
 @client.event
 async def on_command_error(ctx: Context, error):
+    if 'NotFound:' in str(error):
+        # Print error to console instead of sending embed
+        print(error)
+        return
+
     embed = Embed(color=Color.red(), title=f'Error while processing command `{ctx.invoked_with}`')
 
     if type(error) in [errors.PrivateMessageOnly, errors.NoPrivateMessage]:
