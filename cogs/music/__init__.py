@@ -59,6 +59,6 @@ class Music(Cog):
 
     # Commands
     from .cmd_player import loop, now_playing, pause, play, skip, unpause, volume
-    from .cmd_queue import clear_queue, move, queue, remove_from_queue, shuffle
+    from .cmd_queue import clear_queue, move, queue, remove_from_queue, shuffle, unshuffle
     from .cmd_rec import recommend_now_playing
     from .cmd_stop import disconnect, reset_player

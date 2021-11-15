@@ -7,10 +7,11 @@ from util import (
     check_url, check_spotify_url, create_progress_bar, get_var, human_readable_time,
     parse_spotify_url, MusicEmbed, SpotifyInvalidURLError
 )
+from .player_helpers import *
 from .queue_helpers import (
     dequeue_db, enqueue, enqueue_db, set_queue_db,
     get_queue_size, get_queue_index, set_queue_index,
-    get_loop_all, set_loop_all, QueueItem
+    get_loop_all, set_loop_all, get_shuffle_indices, QueueItem, set_shuffle_indices
 )
 
 
@@ -203,6 +204,7 @@ async def play(self, ctx: Context, *, query: str = None):
             # Clear previous queue if not currently playing
             if not is_playing:
                 set_queue_db(self.db, str(ctx.guild.id), [])
+                set_shuffle_indices(self.db, str(ctx.guild.id), [])
 
         # Remove leading and trailing <>.
         # <> may be used to suppress embedding links in Discord.
@@ -321,22 +323,19 @@ async def skip(self, ctx: Context, queue_end: bool = False):
         current_i = get_queue_index(self.db, str(ctx.guild.id))
         loop_all = get_loop_all(self.db, str(ctx.guild.id))
         if isinstance(current_i, int):
+            # Are we shuffling?
+            shuffle_indices = get_shuffle_indices(self.db, str(ctx.guild.id))
+            is_shuffling = len(shuffle_indices) > 0
+
+            # Set initial index
             queue_size = get_queue_size(self.db, str(ctx.guild.id))
-            next_i = current_i
+            next_i = shuffle_indices.index(current_i) if is_shuffling else current_i
             while next_i < queue_size:
                 # Have we reached the end of the queue?
                 if next_i == queue_size - 1:
                     # Reached the end of the queue, are we looping?
                     if loop_all:
-                        embed = MusicEmbed(
-                            color=Color.dark_green(),
-                            title=f':repeat:｜Looping back to the start',
-                            description=[
-                                'Reached the end of the queue.',
-                                f'Use the `loop all` command to disable.'
-                            ]
-                        )
-                        await embed.send(ctx)
+                        await send_loop_embed(ctx)
                         next_i = 0
                     else:
                         # We are not looping
@@ -344,25 +343,9 @@ async def skip(self, ctx: Context, queue_end: bool = False):
                 else:
                     next_i += 1
 
-                track = dequeue_db(self.db, str(ctx.guild.id), next_i)
-                try:
-                    if await enqueue(self.bot, track, ctx=ctx):
-                        if not queue_end:
-                            await player.skip()
-
-                        # Save new queue index back to db
-                        set_queue_index(self.db, str(ctx.guild.id), next_i)
-                        return
-                except Exception as e:
-                    embed = MusicEmbed(
-                        color=Color.red(),
-                        title=f':x:｜Unable to play track',
-                        description=[
-                            f'Track: `{track}`'
-                            f'Reason: `{e}`'
-                        ]
-                    )
-                    await embed.send(ctx)
+                # Try playing the track
+                if await try_enqueue(ctx, self.db, player, shuffle_indices[next_i] if is_shuffling else next_i, queue_end):
+                    return
 
         # Remove player data from DB
         if not queue_end:

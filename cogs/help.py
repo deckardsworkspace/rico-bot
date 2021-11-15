@@ -31,7 +31,7 @@ help_list = {
         }
     },
     'music': {
-        'title': 'Music player commands (alpha - will break!)',
+        'title': 'Music player commands (beta)',
         'commands': {
             '{0}clearqueue, {0}cq': 'Clear the playback queue for the server.',
             '{0}disconnect, {0}dc': 'Stop playback, clear the queue, and disconnect from voice.',
@@ -46,7 +46,8 @@ help_list = {
             '{0}recnow @mention': 'Recommend the currently playing track to someone or yourself.',
             '{0}removequeue <num/nums>, {0}rmq': 'Remove the specified songs from the queue, i.e. `{0}rmq 2 3` to dequeue songs 2 and 3.',
             '{0}resetplayer, {0}rp': 'Reset the player state for the server.',
-            '{0}shuffle, {0}shuf': 'Shuffle the current playback queue.',
+            '{0}shuffle, {0}shuf': 'Shuffle the current playback queue. If already shuffled, this command will shuffle it again.',
+            '{0}unshuffle, {0}unshuf': 'Unshuffle the current playback queue.',
             '{0}skip, {0}next': 'Skip currently playing track.',
             '{0}unpause': 'Resume playback.',
             '{0}volume, {0}v, {0}vol': 'Adjust player volume.'
@@ -116,9 +117,9 @@ class Help(Cog):
             for key, value in help_category['commands'].items():
                 cmd_name = key.format(cmd_prefix)
                 cmd_desc = value.format(cmd_prefix)
-                help_cat_text.append('`{0}` - {1}'.format(cmd_name, cmd_desc))
+                help_cat_text.append('**`{0}`**\n{1}'.format(cmd_name, cmd_desc))
 
-            embed.description = '\n'.join(help_cat_text)
+            embed.description = '\n\n'.join(help_cat_text)
             return await ctx.reply(embed=embed)
         
         # Invalid key

@@ -3,7 +3,10 @@ from nextcord import Color, Message
 from nextcord.ext.commands import command, Context
 from typing import Optional
 from util import list_chunks, MusicEmbed, Paginator
-from .queue_helpers import get_loop_all, get_queue_index, get_queue_db, set_queue_db, set_queue_index
+from .queue_helpers import (
+    get_loop_all, get_queue_index, get_queue_db, get_shuffle_indices,
+    set_queue_db, set_queue_index, set_shuffle_indices
+)
 import random
 
 
@@ -140,7 +143,17 @@ async def queue(self, ctx: Context, *, query: str = None):
         if loop_all:
             embed_desc.append('Looping the whole queue :repeat:')
 
-        for i, chunk in enumerate(list_chunks(list(db_queue))):
+        # Show shuffled queue if applicable
+        shuffle_indices = get_shuffle_indices(self.db, str(ctx.guild.id))
+        shuffled = len(shuffle_indices) > 0
+        if shuffled:
+            current_i = shuffle_indices.index(current_i)
+            embed_desc.append('Queue is shuffled :twisted_rightwards_arrows:')
+
+        # Split queue into chunks of 10 tracks each
+        chunks = list_chunks([db_queue[i] for i in shuffle_indices]) if shuffled else list_chunks(db_queue)
+
+        for i, chunk in enumerate(chunks):
             fields = []
 
             for track in chunk:
@@ -243,17 +256,49 @@ async def shuffle(self, ctx: Context):
                 description='There is nothing to shuffle!'
             )
             return await embed.send(ctx, as_reply=True)
+        
+        # Are we already shuffling?
+        reshuffle = len(get_shuffle_indices(self.db, str(ctx.guild.id))) > 0
+        action = 'Reshuffled' if reshuffle else 'Shuffled'
 
-        # Shuffle whole queue
-        # TODO: Shuffle a list of indices instead,
-        #       so we can undo the shuffle.
-        random.shuffle(db_queue)
-        set_queue_db(self.db, str(ctx.guild.id), db_queue)
+        # Shuffle indices
+        current_i = get_queue_index(self.db, str(ctx.guild.id))
+        indices = [i for i in range(len(db_queue)) if i != current_i]
+        random.shuffle(indices)
+
+        # Put current track at the start of the list
+        indices.insert(0, current_i)
+
+        # Save shuffled indices to db
+        set_shuffle_indices(self.db, str(ctx.guild.id), indices)
 
         # Send reply
         embed = MusicEmbed(
             color=Color.gold(),
-            title=':twisted_rightwards_arrows:｜Shuffled the queue',
-            description=f'{len(db_queue)} tracks shuffled'
+            title=f':twisted_rightwards_arrows:｜{action} the queue',
+            description=f'{len(db_queue)} tracks shuffled. To unshuffle, use the `unshuffle` command.'
+        )
+        return await embed.send(ctx, as_reply=True)
+
+
+@command(aliases=['unshuf'])
+async def unshuffle(self, ctx: Context):
+    async with ctx.typing():
+        # Are we even shuffling?
+        shuffling = len(get_shuffle_indices(self.db, str(ctx.guild.id))) > 0
+        if not shuffling:
+            embed = MusicEmbed(
+                color=Color.red(),
+                title=':x:｜Queue is not shuffled'
+            )
+            return await embed.send(ctx, as_reply=True)
+
+        # Remove shuffle indices from db
+        set_shuffle_indices(self.db, str(ctx.guild.id), [])
+
+        # Send reply
+        embed = MusicEmbed(
+            color=Color.gold(),
+            title=':twisted_rightwards_arrows:｜Queue is no longer shuffled'
         )
         return await embed.send(ctx, as_reply=True)

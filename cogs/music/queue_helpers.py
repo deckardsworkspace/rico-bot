@@ -178,6 +178,17 @@ def set_queue_index(db: Database, guild_id: str, new_index: int):
     return db.child('player').child(guild_id).child('queue_index').set(new_index)
 
 
+def get_shuffle_indices(db: Database, guild_id: str) -> List[int]:
+    indices = db.child('player').child(guild_id).child('shuffle_indices').get().val()
+    if indices:
+        return json.loads(indices)
+    return []
+
+
+def set_shuffle_indices(db: Database, guild_id: str, indices: List[int]):
+    return db.child('player').child(guild_id).child('shuffle_indices').set(json.dumps(indices))
+
+
 async def search(player: DefaultPlayer, queue_item: QueueItem):
     if queue_item.url is not None:
         # Tell Lavalink to play the URL directly
