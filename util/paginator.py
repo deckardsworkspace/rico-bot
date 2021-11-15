@@ -67,4 +67,8 @@ class Paginator:
             except TimeoutError:
                 # Remove all reactions
                 self.current = start
-                return await msg.clear_reactions()
+                try:
+                    await msg.clear_reactions()
+                except:
+                    pass
+                return
