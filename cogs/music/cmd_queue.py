@@ -158,17 +158,17 @@ async def queue(self, ctx: Context, *, query: str = None):
 
             for track in chunk:
                 title, artist = track.get_details()
+                index = shuffle_indices[count - 1] if shuffled else count
                 
                 if len(current_info) and count - 1 == current_i:
                     # Add now playing emoji and index
-                    index = shuffle_indices[count - 1] if shuffled else count
                     emoji = ':repeat:' if player.repeat else ':arrow_forward:'
                     title = f'{emoji}｜{index}. {current_info[0]}'
                     artist = f'by {current_info[1]}'
                     home_chunk = i
                 else:
                     # Add index only
-                    title = f'{count}. {title}'
+                    title = f'{index}. {title}'
 
                 fields.append([title, artist])
                 count += 1
