@@ -158,17 +158,16 @@ async def queue(self, ctx: Context, *, query: str = None):
 
             for track in chunk:
                 title, artist = track.get_details()
-                index = shuffle_indices[count - 1] if shuffled else count
                 
                 if len(current_info) and count - 1 == current_i:
                     # Add now playing emoji and index
                     emoji = ':repeat:' if player.repeat else ':arrow_forward:'
-                    title = f'{emoji}｜{index}. {current_info[0]}'
+                    title = f'{emoji}｜{count}. {current_info[0]}'
                     artist = f'by {current_info[1]}'
                     home_chunk = i
                 else:
                     # Add index only
-                    title = f'{index}. {title}'
+                    title = f'{count}. {title}'
 
                 fields.append([title, artist])
                 count += 1
@@ -200,6 +199,10 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
         # Parse all positions
         try:
             positions = list(map(lambda x: int(x) - 1, query.split(' ')))
+
+            if len(shuffle_indices) > 0:
+                # Translate positions to their shuffled equivalents
+                positions = [shuffle_indices[i] for i in positions]
         except ValueError as e:
             return await send_invalid_arg(ctx, e)
         
@@ -228,29 +231,29 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
                     adjust_current += 1
             
             # Remove from queue
-            dequeued = dequeued + 1
+            dequeued += 1
             del db_queue[i]
-            if i in shuffle_indices:
-                shuffle_indices.remove(i)
 
         if dequeued:
             # At least one song was removed from the queue
             set_queue_db(self.db, str(ctx.guild.id), db_queue)
 
-            # Adjust current position and shuffle indices
-            if isinstance(current_i, int) and adjust_current > 0:
+            # Adjust current position
+            if isinstance(current_i, int):
                 set_queue_index(self.db, str(ctx.guild.id), current_i - adjust_current)
-                for i in range(len(shuffle_indices)):
-                    if shuffle_indices[i] > current_i:
-                        shuffle_indices[i] = shuffle_indices[i] - adjust_current
-                set_shuffle_indices(self.db, str(ctx.guild.id), shuffle_indices)
 
+            # Update user
             embed = MusicEmbed(
                 color=Color.orange(),
                 title=f':white_check_mark:｜Removed from queue',
                 description=f'{dequeued} track(s)'
             )
-            return await embed.send(ctx, as_reply=True)
+            await embed.send(ctx, as_reply=True)
+
+            # Reshuffle queue if applicable
+            if len(shuffle_indices) > 0:
+                cmd = self.bot.get_command('shuffle')
+                await ctx.invoke(cmd)
 
 
 @command(aliases=['shuf'])
