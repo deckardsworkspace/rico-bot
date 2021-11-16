@@ -161,8 +161,9 @@ async def queue(self, ctx: Context, *, query: str = None):
                 
                 if len(current_info) and count - 1 == current_i:
                     # Add now playing emoji and index
+                    index = shuffle_indices[count - 1] if shuffled else count
                     emoji = ':repeat:' if player.repeat else ':arrow_forward:'
-                    title = f'{emoji}｜{count}. {current_info[0]}'
+                    title = f'{emoji}｜{index}. {current_info[0]}'
                     artist = f'by {current_info[1]}'
                     home_chunk = i
                 else:
@@ -239,7 +240,7 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
             
                 # Adjust shuffle indices too, if applicable
                 shuffle_indices = get_shuffle_indices(self.db, str(ctx.guild.id))
-                for i in len(shuffle_indices):
+                for i in range(len(shuffle_indices)):
                     if shuffle_indices[i] > current_i:
                         shuffle_indices[i] = shuffle_indices[i] - adjust_current
                 set_shuffle_indices(self.db, str(ctx.guild.id), shuffle_indices)
