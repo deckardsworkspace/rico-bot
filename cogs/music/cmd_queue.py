@@ -236,6 +236,13 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
             # Adjust current position if applicable
             if isinstance(current_i, int) and adjust_current > 0:
                 set_queue_index(self.db, str(ctx.guild.id), current_i - adjust_current)
+            
+                # Adjust shuffle indices too, if applicable
+                shuffle_indices = get_shuffle_indices(self.db, str(ctx.guild.id))
+                for i in len(shuffle_indices):
+                    if shuffle_indices[i] > current_i:
+                        shuffle_indices[i] = shuffle_indices[i] - adjust_current
+                set_shuffle_indices(self.db, str(ctx.guild.id), shuffle_indices)
 
             embed = MusicEmbed(
                 color=Color.orange(),
