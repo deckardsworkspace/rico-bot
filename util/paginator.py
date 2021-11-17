@@ -20,8 +20,9 @@ class Paginator:
         self.timeout = timeout
         self.embeds = embeds
 
-        # Add footer to every embed
+        # Add footer and timestamp to every embed
         for i in range(len(embeds)):
+            embeds[i].timestamp = self.ctx.message.created_at
             embeds[i].set_footer(text=f'Page {i + 1} of {len(embeds)}')
 
         # Send initial embed and call callback with message ID
