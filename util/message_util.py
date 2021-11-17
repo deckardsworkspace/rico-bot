@@ -60,6 +60,9 @@ class MusicEmbed:
         
     # Send embed
     async def send(self, ctx: Context, as_reply: bool = False) -> Message:
+        # Add timestamp to embed
+        self.embed.timestamp = ctx.message.created_at
+
         if as_reply:
             return await ctx.reply(embed=self.embed)
         return await ctx.send(embed=self.embed)

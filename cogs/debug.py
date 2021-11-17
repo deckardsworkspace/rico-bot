@@ -135,8 +135,7 @@ class Debug(Cog):
             title=f'About {ctx.guild.me.display_name}',
             thumbnail_url=self.bot.user.avatar.url,
             color=Color.green(),
-            description='\n\n'.join(['\n'.join(i) for i in info]),
-            footer=f'Generated at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+            description='\n\n'.join(['\n'.join(i) for i in info])
         )
         return await embed.send(ctx=ctx, as_reply=True)
     
