@@ -1,5 +1,6 @@
 from nextcord.ext.commands import Bot, Cog, command, Context
 from nextcord import Color, Embed
+from typing import Union
 from util import get_var
 
 
@@ -75,7 +76,7 @@ class Help(Cog):
         print('Loaded cog: Help')
     
     @command(name='help', aliases=['h'])
-    async def help(self, ctx: Context, *, query: str | int = None):
+    async def help(self, ctx: Context, *, query: Union[str, int] = None):
         valid_keys = list(help_list.keys())
         cmd_prefix = get_var('BOT_PREFIX')
         embed = Embed(color=Color.og_blurple())

@@ -1,5 +1,6 @@
 from asyncio import sleep
 from nextcord import Client, StageChannel, VoiceChannel, VoiceClient
+from typing import Union
 from util import get_lavalink_nodes, get_var
 import lavalink
 
@@ -33,7 +34,7 @@ class LavalinkVoiceClient(VoiceClient):
     Originally from https://github.com/tailoric/Lavalink.py/commit/11124bd3ac17423520594adaf66b3950775b58f5
     """
 
-    def __init__(self, client: Client, channel: StageChannel | VoiceChannel):
+    def __init__(self, client: Client, channel: Union[StageChannel, VoiceChannel]):
         self.client = client
         self.channel = channel
 
