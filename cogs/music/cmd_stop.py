@@ -27,7 +27,8 @@ async def disconnect(self, ctx: Context, reason: str = None):
     embed = MusicEmbed(
         color=Color.blurple(),
         title=':wave:｜Disconnected from voice',
-        description=reason if reason is not None else 'Stopped the player'
+        description=reason if reason is not None else 'Stopped the player',
+        timestamp_now=True
     )
     return await embed.send(ctx)
 

@@ -125,7 +125,8 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
             color=Color.teal(),
             header='Paused' if player.paused else f'Now {current_action}',
             header_icon_url=requester.display_avatar.url,
-            description=embed_desc
+            description=embed_desc,
+            timestamp_now=True
         )
     else:
         # Not playing

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from datetime import datetime
 from nextcord import Color, Embed, Message
 from nextcord.ext.commands import Context
 from typing import List, Union
@@ -21,6 +22,7 @@ class MusicEmbed:
     header_icon_url: str = Embed.Empty
     footer: str = Embed.Empty
     footer_icon_url: str = Embed.Empty
+    timestamp_now: bool = False
 
     # Create embed
     def __post_init__(self):
@@ -61,7 +63,10 @@ class MusicEmbed:
     # Send embed
     async def send(self, ctx: Context, as_reply: bool = False) -> Message:
         # Add timestamp to embed
-        self.embed.timestamp = ctx.message.created_at
+        if self.timestamp_now:
+            self.embed.timestamp = datetime.now()
+        else:
+            self.embed.timestamp = ctx.message.created_at
 
         if as_reply:
             return await ctx.reply(embed=self.embed)
