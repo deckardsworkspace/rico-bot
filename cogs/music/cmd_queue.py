@@ -211,7 +211,7 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
         positions.sort(reverse=True)
 
         # Start dequeueing
-        dequeued = 0
+        dequeued = []
         current_i = get_queue_index(self.db, str(ctx.guild.id))
         adjust_current = 0
         for i in positions:
@@ -230,30 +230,32 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
                     # to allow backward seeks to work properly.
                     adjust_current += 1
             
-            # Remove from queue
-            dequeued += 1
+            # Remove from queue and shuffle indices
+            dequeued.append(i)
             del db_queue[i]
+            if len(shuffle_indices):
+                shuffle_indices.remove(i)
 
-        if dequeued:
+        if len(dequeued):
             # At least one song was removed from the queue
             set_queue_db(self.db, str(ctx.guild.id), db_queue)
 
-            # Adjust current position
+            # Adjust current position and shuffle indices
             if isinstance(current_i, int):
                 set_queue_index(self.db, str(ctx.guild.id), current_i - adjust_current)
+                if len(shuffle_indices):
+                    for i in dequeued:
+                        # Terribly inefficient, but I can't think of a better way right now...
+                        shuffle_indices = [j - 1 if j > i else j for j in shuffle_indices]
+                    set_shuffle_indices(self.db, str(ctx.guild.id), shuffle_indices)
 
             # Update user
             embed = MusicEmbed(
                 color=Color.orange(),
                 title=f':white_check_mark:｜Removed from queue',
-                description=f'{dequeued} track(s)'
+                description=f'{len(dequeued)} track(s)'
             )
-            await embed.send(ctx, as_reply=True)
-
-            # Reshuffle queue if applicable
-            if len(shuffle_indices) > 0:
-                cmd = self.bot.get_command('shuffle')
-                await ctx.invoke(cmd)
+            return await embed.send(ctx, as_reply=True)
 
 
 @command(aliases=['shuf'])
