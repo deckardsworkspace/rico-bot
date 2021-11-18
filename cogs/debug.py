@@ -120,8 +120,8 @@ class Debug(Cog):
             version = f'{commit_date.replace("-", "")}-{commit_hash[:7]}'
             repo_url = f'https://github.com/jareddantis/rico-bot/tree/{commit_hash}'
         except:
-            if 'SOURCE_VERSION' in os.environ:
-                commit_hash = os.environ['SOURCE_VERSION']
+            if 'HEROKU_SLUG_COMMIT' in os.environ:
+                commit_hash = os.environ['HEROKU_SLUG_COMMIT']
                 repo_url = f'https://github.com/jareddantis/rico-bot/tree/{commit_hash}'
                 version = commit_hash[:7]
             else:
