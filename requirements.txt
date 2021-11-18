@@ -1,6 +1,7 @@
-aiohttp==3.6.3
+aiohttp==3.8.1
+aiosignal==1.2.0
 anyio==3.3.4
-async-timeout==3.0.1
+async-timeout==4.0.1
 attrs==21.2.0
 certifi==2021.5.30
 cffi==1.14.5
@@ -14,6 +15,7 @@ Deprecated==1.2.12
 discord.py==1.7.3
 distro==1.6.0
 Flask==2.0.2
+frozenlist==1.2.0
 gcloud==0.18.3
 googleapis-common-protos==1.53.0
 h11==0.12.0
