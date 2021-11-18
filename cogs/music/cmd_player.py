@@ -173,7 +173,7 @@ async def play(self, ctx: Context, *, query: str = None):
         # Are we adding to a queue or resuming an old queue?
         is_playing = player is not None and (player.is_playing or player.paused)
         if not query:
-            if is_playing:
+            if player.is_connected and is_playing:
                 if player.paused:
                     # Unpause the player
                     cmd = self.bot.get_command('pause')
