@@ -8,7 +8,7 @@ from datetime import datetime
 from nextcord import Color
 from nextcord.ext.commands import Bot, Cog, command, is_owner, Context
 from time import time
-from util import human_readable_size, human_readable_time, MusicEmbed
+from util import human_readable_size, human_readable_time, RicoEmbed
 
 
 def check_local_host(host: str) -> bool:
@@ -129,7 +129,7 @@ class Debug(Cog):
                 version = 'Unknown version'
 
         # Build and send embed
-        embed = MusicEmbed(
+        embed = RicoEmbed(
             header=f'version {version}',
             header_url=repo_url,
             title=f'About {ctx.guild.me.display_name}',

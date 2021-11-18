@@ -1,6 +1,6 @@
 from nextcord import Color
 from nextcord.ext.commands import command, Context
-from util import MusicEmbed
+from util import RicoEmbed
 from .queue_helpers import set_loop_all
 
 
@@ -24,7 +24,7 @@ async def disconnect(self, ctx: Context, reason: str = None):
     # Disconnect from the voice channel.
     if hasattr(ctx.voice_client, 'disconnect'):
         await ctx.voice_client.disconnect(force=True)
-    embed = MusicEmbed(
+    embed = RicoEmbed(
         color=Color.blurple(),
         title=':wave:｜Disconnected from voice',
         description=reason if reason is not None else 'Stopped the player',

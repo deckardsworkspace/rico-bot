@@ -6,7 +6,7 @@ from typing import List, Union
 
 
 @dataclass
-class MusicEmbed:
+class RicoEmbed:
     # All optional
     title: str = Embed.Empty
     color: Color = Color.og_blurple()

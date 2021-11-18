@@ -6,7 +6,7 @@ from nextcord.ext.commands import Bot, Context
 from lavalink.models import BasePlayer
 from pyrebase.pyrebase import Database
 from typing import Dict, List, Optional, Tuple
-from util import MusicEmbed, QueueEmptyError
+from util import RicoEmbed, QueueEmptyError
 from .lavalink import LavalinkVoiceClient
 import json
 
@@ -91,7 +91,7 @@ async def enqueue(bot: Bot, query: QueueItem, ctx: Context) -> bool:
     # Results could be None if Lavalink returns an invalid response (non-JSON/non-200 (OK)).
     # Alternatively, results['tracks'] could be an empty array if the query yielded no tracks.
     if not results or not results['tracks']:
-        embed = MusicEmbed(
+        embed = RicoEmbed(
             color=Color.red(),
             title=':x:｜Nothing found for search query',
             description=query

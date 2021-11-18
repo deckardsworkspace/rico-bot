@@ -5,7 +5,7 @@ from nextcord.ext.commands import BucketType, command, Context, cooldown
 from typing import Dict
 from util import (
     check_url, check_spotify_url, create_progress_bar, get_var, human_readable_time,
-    parse_spotify_url, MusicEmbed, SpotifyInvalidURLError
+    parse_spotify_url, RicoEmbed, SpotifyInvalidURLError
 )
 from .player_helpers import *
 from .queue_helpers import (
@@ -45,7 +45,7 @@ async def loop(self, ctx: Context, *, arg: str = None):
         message = ':stop_button:｜Not currently playing'
     
     # Send reply
-    reply = MusicEmbed(title=message)
+    reply = RicoEmbed(title=message)
     return await reply.send(ctx, as_reply=True)
 
 
@@ -121,7 +121,7 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
             embed_desc.append(progress)
         if player.repeat:
             embed_desc.append('\n:repeat: **On repeat**\nUse the `loop` command to disable.')
-        embed = MusicEmbed(
+        embed = RicoEmbed(
             color=Color.teal(),
             header='Paused' if player.paused else f'Now {current_action}',
             header_icon_url=requester.display_avatar.url,
@@ -131,7 +131,7 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
     else:
         # Not playing
         prefix = get_var('BOT_PREFIX')
-        embed = MusicEmbed(
+        embed = RicoEmbed(
             color=Color.yellow(),
             title='Not playing',
             description=[
@@ -158,7 +158,7 @@ async def pause(self, ctx: Context):
         message = 'Already paused.'
     
     # Send reply
-    reply = MusicEmbed(title=f':pause_button:｜{message}', color=Color.dark_orange())
+    reply = RicoEmbed(title=f':pause_button:｜{message}', color=Color.dark_orange())
     return await reply.send(ctx, as_reply=True)
 
 
@@ -180,7 +180,7 @@ async def play(self, ctx: Context, *, query: str = None):
                     return await ctx.invoke(cmd)
                 else:
                     # An active player already exists for this guild
-                    embed = MusicEmbed(
+                    embed = RicoEmbed(
                         color=Color.red(),
                         title=':x:｜Already playing',
                         description='Use `play <query/URL>` to add to the queue, or use `unpause` to resume playback if paused.'
@@ -191,7 +191,7 @@ async def play(self, ctx: Context, *, query: str = None):
             old_np = get_queue_index(self.db, str(ctx.guild.id))
             if isinstance(old_np, int):
                 # Send resuming queue embed
-                embed = MusicEmbed(color=Color.purple(), title=':hourglass:｜Resuming interrupted queue')
+                embed = RicoEmbed(color=Color.purple(), title=':hourglass:｜Resuming interrupted queue')
                 await embed.send(ctx, as_reply=True)
 
                 # Play at index
@@ -199,7 +199,7 @@ async def play(self, ctx: Context, *, query: str = None):
                 return await enqueue(self.bot, track, ctx=ctx)
             
             # Old queue does not exist
-            embed = MusicEmbed(color=Color.red(), title=':x:｜Specify something to play.')
+            embed = RicoEmbed(color=Color.red(), title=':x:｜Specify something to play.')
             return await embed.send(ctx, as_reply=True)
         else:
             # Clear previous queue if not currently playing
@@ -216,7 +216,7 @@ async def play(self, ctx: Context, *, query: str = None):
             try:
                 sp_type, sp_id = parse_spotify_url(query, valid_types=['track', 'album', 'playlist'])
             except SpotifyInvalidURLError:
-                embed = MusicEmbed(
+                embed = RicoEmbed(
                     color=Color.red(),
                     title=':x:｜Can only play tracks, albums, and playlists from Spotify.'
                 )
@@ -239,7 +239,7 @@ async def play(self, ctx: Context, *, query: str = None):
                 track_queue = deque(tracks)
 
                 # Send enqueueing embed
-                embed = MusicEmbed(
+                embed = RicoEmbed(
                     color=Color.green(),
                     header=f'Enqueueing Spotify {sp_type}',
                     title=list_name,
@@ -301,7 +301,7 @@ async def play(self, ctx: Context, *, query: str = None):
             # Send embed
             first = new_tracks[0]
             first_name = f'**{first.title}**\nby {first.artist}' if first.title is not None else query
-            embed = MusicEmbed(
+            embed = RicoEmbed(
                 color=Color.gold(),
                 title=':white_check_mark:｜Added to queue',
                 description=first_name if len(new_tracks) == 1 else f'{len(new_tracks)} item(s)'
@@ -367,7 +367,7 @@ async def unpause(self, ctx: Context):
         message = 'Already unpaused.'
     
     # Send reply
-    reply = MusicEmbed(title=f':arrow_forward:｜{message}', color=Color.dark_green())
+    reply = RicoEmbed(title=f':arrow_forward:｜{message}', color=Color.dark_green())
     return await reply.send(ctx, as_reply=True)
 
 
@@ -379,7 +379,7 @@ async def volume(self, ctx: Context, *, vol: str = None):
     if vol is None:
         if player is not None:
             # Return current player volume
-            embed = MusicEmbed(
+            embed = RicoEmbed(
                 color=Color.dark_grey(),
                 title=f':loud_sound:｜Volume is currently at {player.volume}',
                 description=f'To set, use `{get_var("BOT_PREFIX")}{ctx.invoked_with} <int>`.'
@@ -392,7 +392,7 @@ async def volume(self, ctx: Context, *, vol: str = None):
             if new_vol < 0 or new_vol > 1000:
                 raise ValueError
         except ValueError:
-            embed = MusicEmbed(
+            embed = RicoEmbed(
                 color=Color.red(),
                 title=f':x:｜Invalid volume `{vol}`',
                 description='Please specify an integer between 0 and 1000, inclusive.'
@@ -400,14 +400,14 @@ async def volume(self, ctx: Context, *, vol: str = None):
             return await embed.send(ctx)
 
         await player.set_volume(new_vol)
-        embed = MusicEmbed(
+        embed = RicoEmbed(
             color=Color.dark_grey(),
             title=f':white_check_mark:｜Volume set to {new_vol}',
         )
         return await embed.send(ctx)
     
     # Not playing
-    embed = MusicEmbed(
+    embed = RicoEmbed(
         color=Color.red(),
         title=':x:｜Player is not playing or is paused',
     )

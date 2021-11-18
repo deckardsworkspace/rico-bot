@@ -2,7 +2,7 @@ from collections import deque
 from nextcord import Color, Message
 from nextcord.ext.commands import command, Context
 from typing import Optional
-from util import list_chunks, MusicEmbed, Paginator
+from util import list_chunks, RicoEmbed, Paginator
 from .queue_helpers import (
     get_loop_all, get_queue_index, get_queue_db, get_shuffle_indices,
     set_queue_db, set_queue_index, set_shuffle_indices
@@ -15,7 +15,7 @@ async def send_invalid_arg(ctx: Context, err: str, e: Optional[Exception] = None
     if e is not None:
         err_desc.append(f'`{e}`')
 
-    embed = MusicEmbed(
+    embed = RicoEmbed(
         color=Color.red(),
         title=f':x:｜Invalid arguments',
         description=err_desc
@@ -67,7 +67,7 @@ async def move(self, ctx: Context, *, positions: str = None):
 
         # Success!
         set_queue_db(self.db, str(ctx.guild.id), db_queue)
-        embed = MusicEmbed(
+        embed = RicoEmbed(
             color=Color.orange(),
             title=f':white_check_mark:｜Moved track',
             description=[
@@ -84,7 +84,7 @@ async def queue(self, ctx: Context, *, query: str = None):
     # Catch users trying to add to queue using this command
     if query is not None:
         # Give them a tip
-        embed = MusicEmbed(
+        embed = RicoEmbed(
             title=':information_source:｜Tip',
             description=[
                 'You can use the `play`/`p` command to play tracks!',
@@ -124,7 +124,7 @@ async def queue(self, ctx: Context, *, query: str = None):
     # Display queue
     db_queue = get_queue_db(self.db, str(ctx.guild.id))
     if not len(db_queue):
-        embed = MusicEmbed(
+        embed = RicoEmbed(
             color=Color.dark_grey(),
             title=f':information_source:｜Queue is empty'
         )
@@ -172,7 +172,7 @@ async def queue(self, ctx: Context, *, query: str = None):
                 fields.append([title, artist])
                 count += 1
 
-            embed = MusicEmbed(
+            embed = RicoEmbed(
                 title=embed_title,
                 description=embed_desc,
                 thumbnail_url=ctx.guild.icon.url,
@@ -250,7 +250,7 @@ async def remove_from_queue(self, ctx: Context, *, query: str):
                     set_shuffle_indices(self.db, str(ctx.guild.id), shuffle_indices)
 
             # Update user
-            embed = MusicEmbed(
+            embed = RicoEmbed(
                 color=Color.orange(),
                 title=f':white_check_mark:｜Removed from queue',
                 description=f'{len(dequeued)} track(s)'
@@ -263,7 +263,7 @@ async def shuffle(self, ctx: Context):
     async with ctx.typing():
         db_queue = get_queue_db(self.db, str(ctx.guild.id))
         if not len(db_queue):
-            embed = MusicEmbed(
+            embed = RicoEmbed(
                 color=Color.red(),
                 title=':x:｜Queue is empty',
                 description='There is nothing to shuffle!'
@@ -286,7 +286,7 @@ async def shuffle(self, ctx: Context):
         set_shuffle_indices(self.db, str(ctx.guild.id), indices)
 
         # Send reply
-        embed = MusicEmbed(
+        embed = RicoEmbed(
             color=Color.gold(),
             title=f':twisted_rightwards_arrows:｜{action} the queue',
             description=f'{len(db_queue)} tracks shuffled. To unshuffle, use the `unshuffle` command.'
@@ -300,7 +300,7 @@ async def unshuffle(self, ctx: Context):
         # Are we even shuffling?
         shuffling = len(get_shuffle_indices(self.db, str(ctx.guild.id))) > 0
         if not shuffling:
-            embed = MusicEmbed(
+            embed = RicoEmbed(
                 color=Color.red(),
                 title=':x:｜Queue is not shuffled'
             )
@@ -310,7 +310,7 @@ async def unshuffle(self, ctx: Context):
         set_shuffle_indices(self.db, str(ctx.guild.id), [])
 
         # Send reply
-        embed = MusicEmbed(
+        embed = RicoEmbed(
             color=Color.gold(),
             title=':twisted_rightwards_arrows:｜Queue is no longer shuffled'
         )
