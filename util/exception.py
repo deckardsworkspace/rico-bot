@@ -26,3 +26,9 @@ class YouTubeInvalidURLError(Exception):
     def __init__(self, url):
         self.message = "Invalid YouTube video link: {}".format(url)
         super().__init__(self.message)
+
+
+class YouTubeInvalidPlaylistError(Exception):
+    def __init__(self, url):
+        self.message = "Invalid YouTube playlist link: {}".format(url)
+        super().__init__(self.message)

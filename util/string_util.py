@@ -62,8 +62,11 @@ def ellipsis_truncate(string: str, length: int = 200) -> str:
     return string[:length - 4] + "..."
 
 
-def get_ytid_from_url(url):
+def get_ytid_from_url(url, id_type: str = 'v') -> str:
     # https://gist.github.com/kmonsoor/2a1afba4ee127cce50a0
+    if not check_youtube_url(url):
+        raise YouTubeInvalidURLError(url)
+
     if url.startswith(('youtu', 'www')):
         url = 'http://' + url
 
@@ -71,15 +74,28 @@ def get_ytid_from_url(url):
     if 'youtube' in query.hostname:
         if re.match(r"^/watch", query.path):
             if len(query.query):
-                return parse_qs(query.query)['v'][0]
-            else:
-                return query.path.split("/")[2]
+                return parse_qs(query.query)[id_type][0]
+            return query.path.split("/")[2]
         elif query.path.startswith(('/embed/', '/v/')):
             return query.path.split('/')[2]
     elif 'youtu.be' in query.hostname:
         return query.path[1:]
-    else:
-        raise YouTubeInvalidURLError(url)
+    
+    raise YouTubeInvalidURLError(url)
+
+
+def get_ytlistid_from_url(url: str) -> str:
+    if not check_youtube_url(url):
+        raise YouTubeInvalidPlaylistError(url)
+
+    if url.startswith(('youtu', 'www')):
+        url = 'http://' + url
+
+    query = urlparse(url)
+    if 'youtube' in query.hostname and len(query.query):
+        return parse_qs(query.query)['list'][0]
+    
+    raise YouTubeInvalidPlaylistError(url)
 
 
 def human_readable_size(size_bytes: int) -> str:

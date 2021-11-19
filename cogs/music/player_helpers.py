@@ -6,10 +6,13 @@ from nextcord.ext.commands import Context
 from pyrebase.pyrebase import Database
 from typing import List
 from util import (
-    check_url, check_spotify_url, get_youtube_matches, human_readable_time,
-    parse_spotify_url, RicoEmbed, Spotify, SpotifyInvalidURLError
+    check_url, check_spotify_url, check_youtube_url,
+    get_youtube_matches, get_youtube_playlist_info, get_youtube_playlist_tracks,
+    get_youtube_video, get_ytid_from_url, get_ytlistid_from_url,
+    human_readable_time, parse_spotify_url, RicoEmbed, Spotify,
+    SpotifyInvalidURLError, YouTubeInvalidPlaylistError, YouTubeInvalidURLError
 )
-from .queue_helpers import QueueItem, enqueue, dequeue_db, set_queue_index
+from .queue_helpers import enqueue, dequeue_db, QueueItem, set_queue_index
 
 
 async def parse_query(ctx: Context, spotify: Spotify, query: str) -> List[QueueItem]:
@@ -66,6 +69,39 @@ async def parse_query_url(ctx: Context, spotify: Spotify, query: str) -> List[Qu
         # Query is a Spotify URL.
         return await parse_spotify_query(ctx, spotify, query)
 
+    if check_youtube_url(query):
+        # Query is a YouTube URL.
+        # Is it a playlist?
+        try:
+            playlist_id = get_ytlistid_from_url(query)
+        except YouTubeInvalidPlaylistError:
+            pass
+        else:
+            # It is a playlist!
+            # Let us get the playlist's tracks.
+            return await parse_youtube_playlist(ctx, playlist_id)
+
+        # Is it a video?
+        try:
+            video_id = get_ytid_from_url(query)
+        except YouTubeInvalidURLError:
+            embed = RicoEmbed(
+                color=Color.red(),
+                title=':x:｜YouTube URL is invalid',
+                description=f'Only YouTube video and playlist URLs are supported.'
+            )
+            return await embed.send(ctx)
+        else:
+            # It is a video!
+            # Let us get the video's details.
+            video = get_youtube_video(video_id)
+            return [QueueItem(
+                title=video.title,
+                artist=video.author,
+                requester=ctx.author.id,
+                url=video.url
+            )]
+
     # Query is a non-Spotify URL.
     return [QueueItem(
         requester=ctx.author.id,
@@ -95,36 +131,69 @@ async def parse_spotify_query(ctx: Context, spotify: Spotify, query: str) -> Lis
         track_queue = deque(tracks)
 
     if len(track_queue) < 1:
-        # No tracks
+        # No tracks.
         return await ctx.reply(f'Spotify {sp_type} is empty.')
-    else:
-        # At least one track.
-        # Send embed if the list is longer than 1 track.
-        if len(track_queue) > 1:
-            embed = RicoEmbed(
-                color=Color.green(),
-                header=f'Enqueueing Spotify {sp_type}',
-                title=list_name,
-                description=[
-                    f'by [{list_author}]({query})',
-                    f'{len(tracks)} track(s)'
-                ],
-                footer='This might take a while, please wait...'
-            )
-            await embed.send(ctx)
 
-        for track in track_queue:
-            track_name, track_artist, track_id, track_duration = track
+    # At least one track.
+    # Send embed if the list is longer than 1 track.
+    if len(track_queue) > 1:
+        embed = RicoEmbed(
+            color=Color.green(),
+            header=f'Enqueueing Spotify {sp_type}',
+            title=list_name,
+            description=[
+                f'by [{list_author}]({query})',
+                f'{len(tracks)} track(s)'
+            ],
+            footer='This might take a while, please wait...'
+        )
+        await embed.send(ctx)
 
-            # Add to database queue
-            new_tracks.append(QueueItem(
-                requester=ctx.author.id,
-                title=track_name,
-                artist=track_artist,
-                spotify_id=track_id,
-                duration=track_duration
-            ))
+    for track in track_queue:
+        track_name, track_artist, track_id, track_duration = track
+        new_tracks.append(QueueItem(
+            requester=ctx.author.id,
+            title=track_name,
+            artist=track_artist,
+            spotify_id=track_id,
+            duration=track_duration
+        ))
     
+    return new_tracks
+
+
+async def parse_youtube_playlist(ctx: Context, playlist_id: str) -> List[QueueItem]:
+    # Get playlist tracks from YouTube
+    new_tracks = []
+    playlist_name, playlist_author, num_tracks = get_youtube_playlist_info(playlist_id)
+    if num_tracks < 1:
+        # No tracks.
+        return await ctx.reply(f'YouTube playlist is empty.')
+
+    # At least one track.
+    # Send embed if the list is longer than 1 track.
+    if num_tracks > 1:
+        embed = RicoEmbed(
+            color=Color.dark_red(),
+            header=f'Enqueueing YouTube playlist',
+            title=playlist_name,
+            description=[
+                f'by [{playlist_author}](http://youtube.com/playlist?list={playlist_id})',
+                f'{num_tracks} track(s)'
+            ],
+            footer='This might take a while, please wait...'
+        )
+        await embed.send(ctx)
+
+    tracks = get_youtube_playlist_tracks(playlist_id)
+    for track in tracks:
+        new_tracks.append(QueueItem(
+            requester=ctx.author.id,
+            title=track.title,
+            artist=track.author,
+            url=track.url
+        ))
+
     return new_tracks
 
 
