@@ -137,9 +137,9 @@ class Spotify:
             list_name = album_info['name']
             list_author = album_info['artists'][0]['name']
         elif list_type == 'playlist':
-            playlist_info = self.client.playlist(list_id, fields='name,owner.id')
+            playlist_info = self.client.playlist(list_id, fields='name,owner.display_name')
             list_name = playlist_info['name']
-            list_author = playlist_info['owner']['id']
+            list_author = playlist_info['owner']['display_name']
         else:
             raise SpotifyInvalidURLError(f'spotify:{list_type}:{list_id}')
 
