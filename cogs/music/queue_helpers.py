@@ -63,7 +63,7 @@ def queue_item_from_dict(d: Dict[str, str]) -> QueueItem:
         d['url'],
         d['title'],
         d['artist'],
-        d['duration_ms']
+        d['duration']
     )
 
 

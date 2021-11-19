@@ -1,6 +1,5 @@
 from asyncio import TimeoutError
 from collections import deque
-from dataclasses import dataclass
 from lavalink.models import BasePlayer
 from nextcord import Color, Member, Reaction
 from nextcord.ext.commands import Context
