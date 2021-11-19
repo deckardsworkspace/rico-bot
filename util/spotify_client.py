@@ -27,7 +27,7 @@ def extract_track_info(track_obj) -> tuple[str, str]:
         track_obj['name'],
         track_obj['artists'][0]['name'],
         track_obj['id'],
-        track_obj['duration_ms']
+        int(track_obj['duration_ms'])
     )
 
 

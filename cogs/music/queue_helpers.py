@@ -4,9 +4,10 @@ from lavalink.models import AudioTrack, DefaultPlayer
 from nextcord import Color
 from nextcord.ext.commands import Bot, Context
 from lavalink.models import BasePlayer
+from nextcord.ext.commands.flags import F
 from pyrebase.pyrebase import Database
 from typing import Dict, List, Optional, Tuple
-from util import RicoEmbed, QueueEmptyError
+from util import get_youtube_matches, RicoEmbed, QueueEmptyError
 from .lavalink import LavalinkVoiceClient
 import json
 
@@ -21,19 +22,16 @@ class QueueItem:
     # Who requested the track (required)
     requester: int
 
-    # The Spotify ID for the track
-    # If this is not None, title and artist are guaranteed not None too.
+    # The Spotify ID for the track, if any
     spotify_id: Optional[str] = None
 
-    # Direct track URL (priority 1)
+    # Direct track URL
     url: Optional[str] = None
 
-    # Track details (priority 2)
+    # Track details
     title: Optional[str] = None
     artist: Optional[str] = None
-
-    # Prefixed search query (priority 3)
-    query: Optional[str] = None
+    duration: Optional[int] = 0
 
     # Get title and artist
     def get_details(self) -> Tuple[str, str]:
@@ -54,7 +52,7 @@ class QueueItem:
 
 # Reconstruct QueueItem from dict
 def queue_item_from_dict(d: Dict[str, str]) -> QueueItem:
-    required_fields = ['requester', 'spotify_id', 'url', 'title', 'artist', 'query']
+    required_fields = ['requester', 'spotify_id', 'url', 'title', 'artist', 'duration']
     for field in required_fields:
         if field not in d.keys():
             raise ValueError(f'Supplied dict does not have required field {field}')
@@ -65,7 +63,7 @@ def queue_item_from_dict(d: Dict[str, str]) -> QueueItem:
         d['url'],
         d['title'],
         d['artist'],
-        d['query']
+        d['duration_ms']
     )
 
 
@@ -192,17 +190,16 @@ def set_shuffle_indices(db: Database, guild_id: str, indices: List[int]):
 async def search(player: DefaultPlayer, queue_item: QueueItem):
     if queue_item.url is not None:
         # Tell Lavalink to play the URL directly
-        query = queue_item.url
-    elif queue_item.title is not None:
-        # Tell Lavalink to look for the track on YouTube
-        query = f'ytsearch:{queue_item.title} {queue_item.artist} audio'
-    elif queue_item.query is not None:
-        # Tell Lavalink to process the prefixed search query
-        query = queue_item.query
+        return await player.node.get_tracks(queue_item.url)
+
+    if queue_item.title is not None:
+        # If the duration is specified, use it to find the track
+        if queue_item.duration > 0:
+            results = get_youtube_matches(f'{queue_item.title} {queue_item.artist}', desired_duration_ms=queue_item.duration)
+            return await player.node.get_tracks(results[0].url)
+        return await player.node.get_tracks(f'ytsearch:{queue_item.title} {queue_item.artist} audio')
     else:
         raise RuntimeError(f'Cannot process incomplete queue item {asdict(queue_item)}')
-
-    return await player.node.get_tracks(query)
 
 
 def set_queue_db(db: Database, guild_id: str, queue: List[QueueItem]):

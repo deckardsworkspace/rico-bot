@@ -1,5 +1,4 @@
 from asyncio import TimeoutError
-from asyncio.queues import Queue
 from collections import deque
 from dataclasses import dataclass
 from lavalink.models import BasePlayer
@@ -8,41 +7,10 @@ from nextcord.ext.commands import Context
 from pyrebase.pyrebase import Database
 from typing import List
 from util import (
-    check_url, check_spotify_url, human_readable_time,
-    machine_readable_time, parse_spotify_url, RicoEmbed,
-    Spotify, SpotifyInvalidURLError
+    check_url, check_spotify_url, get_youtube_matches, human_readable_time,
+    parse_spotify_url, RicoEmbed, Spotify, SpotifyInvalidURLError
 )
-from youtubesearchpython import VideosSearch
 from .queue_helpers import QueueItem, enqueue, dequeue_db, set_queue_index
-
-
-@dataclass
-class YouTubeResult:
-    title: str
-    author: str
-    duration_ms: int
-    url: str
-
-
-def get_youtube_matches(query: str, desired_duration_ms: int = 0, num_results: int = 10) -> List[YouTubeResult]:
-    results = []
-
-    search = VideosSearch(query, limit=num_results)
-    search_results = search.result()
-    if 'result' in search_results.keys():
-        for result in search_results['result']:
-            duration = machine_readable_time(result['duration']) if result['duration'] is not None else 0
-            results.append(YouTubeResult(
-                title=result['title'],
-                author=result['channel']['name'],
-                duration_ms=duration,
-                url=result['link']
-            ))
-    
-    if desired_duration_ms > 0:
-        # Sort results by distance to desired duration
-        results.sort(key=lambda x: abs(x.duration_ms - desired_duration_ms))
-    return results
 
 
 async def parse_query(ctx: Context, spotify: Spotify, query: str) -> List[QueueItem]:
@@ -149,16 +117,13 @@ async def parse_spotify_query(ctx: Context, spotify: Spotify, query: str) -> Lis
         for track in track_queue:
             track_name, track_artist, track_id, track_duration = track
 
-            # Get first search result
-            youtube_match = get_youtube_matches(f'{track_name} {track_artist}', desired_duration_ms=track_duration)[0]
-
             # Add to database queue
             new_tracks.append(QueueItem(
                 requester=ctx.author.id,
-                url=youtube_match.url,
                 title=track_name,
                 artist=track_artist,
-                spotify_id=track_id
+                spotify_id=track_id,
+                duration=track_duration
             ))
     
     return new_tracks
