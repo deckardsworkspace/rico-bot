@@ -19,11 +19,14 @@ def get_youtube_matches(query: str, desired_duration_ms: int = 0, num_results: i
     search_results = search.result()
     if 'result' in search_results.keys():
         for result in search_results['result']:
-            duration = machine_readable_time(result['duration']) if result['duration'] is not None else 0
+            if result['duration'] is None:
+                # Can't play a track with no duration
+                continue
+
             results.append(YouTubeResult(
                 title=result['title'],
                 author=result['channel']['name'],
-                duration_ms=duration,
+                duration_ms=machine_readable_time(result['duration']),
                 url=result['link']
             ))
     
