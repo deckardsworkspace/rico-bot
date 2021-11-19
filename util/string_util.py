@@ -107,6 +107,15 @@ def is_int(string: str) -> bool:
         return False
 
 
+def machine_readable_time(colon_delimited_time: str) -> int:
+    # Parse colon delimited time (e.g. "1:30:00") into milliseconds
+    time_segments = colon_delimited_time.split(':')
+    s = int(time_segments[-1])
+    m = int(time_segments[-2])
+    h = int(time_segments[0]) if len(time_segments) == 3 else 0
+    return h * 3600000 + m * 60000 + s * 1000
+
+
 def num_to_emoji(num: int, unicode: bool = False):
     suffix = '\U0000fe0f\U000020e3'
     if num == 1:

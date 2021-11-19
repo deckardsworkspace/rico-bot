@@ -1,17 +1,13 @@
-from collections import deque
 from lavalink.models import AudioTrack
 from nextcord import Color
 from nextcord.ext.commands import BucketType, command, Context, cooldown
 from typing import Dict
-from util import (
-    check_url, check_spotify_url, create_progress_bar, get_var, human_readable_time,
-    parse_spotify_url, RicoEmbed, SpotifyInvalidURLError
-)
-from .player_helpers import *
+from util import create_progress_bar, get_var, human_readable_time, RicoEmbed
+from .player_helpers import parse_query, send_loop_embed, try_enqueue
 from .queue_helpers import (
     dequeue_db, enqueue, enqueue_db, set_queue_db,
     get_queue_size, get_queue_index, set_queue_index,
-    get_loop_all, set_loop_all, get_shuffle_indices, QueueItem, set_shuffle_indices
+    get_loop_all, set_loop_all, get_shuffle_indices, set_shuffle_indices
 )
 
 
@@ -210,90 +206,7 @@ async def play(self, ctx: Context, *, query: str = None):
         # Remove leading and trailing <>.
         # <> may be used to suppress embedding links in Discord.
         query = query.strip('<>')
-        new_tracks = []
-        if check_spotify_url(query):
-            # Query is a Spotify URL.
-            try:
-                sp_type, sp_id = parse_spotify_url(query, valid_types=['track', 'album', 'playlist'])
-            except SpotifyInvalidURLError:
-                embed = RicoEmbed(
-                    color=Color.red(),
-                    title=':x:｜Can only play tracks, albums, and playlists from Spotify.'
-                )
-                return await embed.send(ctx, as_reply=True)
-
-            if sp_type == 'track':
-                # Get track details from Spotify
-                track_name, track_artist, track_id = self.spotify.get_track(sp_id)
-
-                # Add to database queue
-                new_tracks.append(QueueItem(
-                    requester=ctx.author.id,
-                    title=track_name,
-                    artist=track_artist,
-                    spotify_id=track_id
-                ))
-            else:
-                # Get playlist or album tracks from Spotify
-                list_name, list_author, tracks = self.spotify.get_tracks(sp_type, sp_id)
-                track_queue = deque(tracks)
-
-                # Send enqueueing embed
-                embed = RicoEmbed(
-                    color=Color.green(),
-                    header=f'Enqueueing Spotify {sp_type}',
-                    title=list_name,
-                    description=[
-                        f'by [{list_author}]({query})',
-                        f'{len(tracks)} track(s)'
-                    ],
-                    footer='This might take a while, please wait...'
-                )
-                await embed.send(ctx)
-
-                if len(tracks) < 1:
-                    # No tracks
-                    return await ctx.reply(f'Spotify {sp_type} is empty.')
-                elif len(tracks) == 1:
-                    # Single track
-                    track_name, track_artist, track_id = tracks[0]
-                    new_tracks.append(QueueItem(
-                        requester=ctx.author.id,
-                        title=track_name,
-                        artist=track_artist,
-                        spotify_id=track_id
-                    ))
-                else:
-                    # Multiple tracks
-                    for track in track_queue:
-                        track_name, track_artist, track_id = track
-                        new_tracks.append(QueueItem(
-                            requester=ctx.author.id,
-                            title=track_name,
-                            artist=track_artist,
-                            spotify_id=track_id
-                        ))
-        elif check_url(query):
-            # Query is a non-Spotify URL.
-            new_tracks.append(QueueItem(
-                requester=ctx.author.id,
-                url=query
-            ))
-        else:
-            # Query is not a URL.
-            if query.startswith('ytsearch:') or query.startswith('scsearch:'):
-                # Query begins with the search modifiers 'ytsearch' or 'scsearch'
-                new_tracks.append(QueueItem(
-                    requester=ctx.author.id,
-                    query=query
-                ))
-            else:
-                # Have Lavalink do a YouTube search for the query
-                new_tracks.append(QueueItem(
-                    requester=ctx.author.id,
-                    query=f'ytsearch:{query}'
-                ))
-
+        new_tracks = await parse_query(ctx, self.spotify, query)
         if len(new_tracks):
             # Add new tracks to queue
             enqueue_db(self.db, str(ctx.guild.id), new_tracks)
@@ -312,6 +225,14 @@ async def play(self, ctx: Context, *, query: str = None):
             if not is_playing:
                 set_queue_index(self.db, str(ctx.guild.id), 0)
                 await enqueue(self.bot, new_tracks[0], ctx)
+        else:
+            # No tracks found
+            embed = RicoEmbed(
+                color=Color.red(),
+                title=':x:｜No matching results found',
+                description=query
+            )
+            await embed.send(ctx, as_reply=True)
 
 
 @command(aliases=['next'])

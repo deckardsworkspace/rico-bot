@@ -23,7 +23,12 @@ def extract_track_info(track_obj) -> tuple[str, str]:
     if 'track' in track_obj:
         # Nested track (playlist track object)
         track_obj = track_obj['track']
-    return track_obj['name'], track_obj['artists'][0]['name'], track_obj['id']
+    return (
+        track_obj['name'],
+        track_obj['artists'][0]['name'],
+        track_obj['id'],
+        track_obj['duration_ms']
+    )
 
 
 class Spotify:
@@ -122,7 +127,7 @@ class Spotify:
     def get_track(self, track_id: str) -> tuple[str, str]:
         return extract_track_info(self.client.track(track_id))
 
-    def get_tracks(self, list_type: str, list_id: str) -> tuple[str, str, list[tuple[str, str]]]:
+    def get_tracks(self, list_type: str, list_id: str) -> tuple[str, str, list[tuple[str, str, str, int]]]:
         offset = 0
         tracks = []
 
