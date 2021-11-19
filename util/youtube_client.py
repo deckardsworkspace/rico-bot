@@ -41,9 +41,9 @@ def get_youtube_video(video_id: str) -> YouTubeResult:
     return parse_result(video)
 
 
-def get_youtube_matches(query: str, desired_duration_ms: int = 0, num_results: int = 10) -> List[YouTubeResult]:
+def get_youtube_matches(query: str, desired_duration_ms: int = 0, num_results: int = 10, automatic: bool = True) -> List[YouTubeResult]:
     results = []
-
+    blacklist = ('karaoke', 'live', 'instrumental', 'piano', 'cover', 'minus one', 'reverb', 'slowed', 'remix', 'mashup')
     search = VideosSearch(query, limit=num_results)
     search_results = search.result()
     if 'result' in search_results.keys():
@@ -51,8 +51,19 @@ def get_youtube_matches(query: str, desired_duration_ms: int = 0, num_results: i
             if 'duration' not in result.keys() or result['duration'] is None:
                 # Can't play a track with no duration
                 continue
-            results.append(parse_result(result))
-    
+
+            # Skip karaoke, live, instrumental etc versions
+            # if the original query did not ask for it
+            valid = True
+            if automatic:
+                for word in blacklist:
+                    if word in result['title'].lower() and not word in query.lower():
+                        valid = False
+                        break
+
+            if valid:
+                results.append(parse_result(result))
+
     if desired_duration_ms > 0:
         # Sort results by distance to desired duration
         results.sort(key=lambda x: abs(x.duration_ms - desired_duration_ms))

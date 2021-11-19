@@ -21,7 +21,7 @@ async def parse_query(ctx: Context, spotify: Spotify, query: str) -> List[QueueI
 
     # Query is not a URL. Do a YouTube search for the query and allow user to choose.
     result_emojis = ('1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟')
-    results = get_youtube_matches(query)
+    results = get_youtube_matches(query, automatic=False)
     result_fields = []
     for i, result in enumerate(results):
         h, m, s = human_readable_time(result.duration_ms)
