@@ -74,7 +74,7 @@ async def parse_query_url(ctx: Context, spotify: Spotify, query: str) -> List[Qu
         # Is it a playlist?
         try:
             playlist_id = get_ytlistid_from_url(query)
-        except YouTubeInvalidPlaylistError:
+        except:
             pass
         else:
             # It is a playlist!
@@ -84,7 +84,7 @@ async def parse_query_url(ctx: Context, spotify: Spotify, query: str) -> List[Qu
         # Is it a video?
         try:
             video_id = get_ytid_from_url(query)
-        except YouTubeInvalidURLError:
+        except:
             embed = RicoEmbed(
                 color=Color.red(),
                 title=':x:｜YouTube URL is invalid',
