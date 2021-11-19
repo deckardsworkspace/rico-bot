@@ -5,10 +5,39 @@ from typing import Dict
 from util import create_progress_bar, get_var, human_readable_time, RicoEmbed
 from .player_helpers import parse_query, send_loop_embed, try_enqueue
 from .queue_helpers import (
-    dequeue_db, enqueue, enqueue_db, set_queue_db,
+    dequeue_db, enqueue, enqueue_db, get_queue_db, set_queue_db,
     get_queue_size, get_queue_index, set_queue_index,
     get_loop_all, set_loop_all, get_shuffle_indices, set_shuffle_indices
 )
+
+@command(name='jump', aliases=['j'])
+async def jump_to(self, ctx: Context, *, query: str = None):
+    # Jump to a specific track in the queue
+    async with ctx.typing():
+        # Get the player for this guild from cache.
+        player = self.get_player(ctx.guild.id)
+        if not player or (not player.is_playing and not player.paused):
+            reply = RicoEmbed(title=':stop_button:｜Not currently playing')
+            return await reply.send(ctx, as_reply=True)
+
+        # Parse index
+        if not query:
+            reply = RicoEmbed(title=':x:｜Please specify a track number to jump to.')
+            return await reply.send(ctx, as_reply=True)
+        try:
+            index = int(query) - 1
+        except ValueError:
+            reply = RicoEmbed(title=':x:｜Please specify a valid track number.')
+            return await reply.send(ctx, as_reply=True)
+        
+        # Get the queue
+        if index < 0 or index >= get_queue_size(self.db, str(ctx.guild.id)):
+            reply = RicoEmbed(title=f':x:｜Track number {query} is out of range.')
+            return await reply.send(ctx, as_reply=True)
+
+        # Play new track
+        shuffle_indices = get_shuffle_indices(self.db, ctx.guild.id)
+        return await try_enqueue(ctx, self.db, player, shuffle_indices[index] if len(shuffle_indices) > 0 else index, False)
 
 
 @command()
