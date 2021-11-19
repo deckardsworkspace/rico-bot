@@ -148,7 +148,7 @@ class Spotify:
             if list_type == 'album':
                 response = self.client.album_tracks(list_id, offset=offset)
             else:
-                fields = 'items.track.name,items.track.artists,items.track.id'
+                fields = 'items.track.name,items.track.artists,items.track.id,items.track.duration_ms'
                 response = self.client.playlist_items(list_id, offset=offset,
                                                       fields=fields,
                                                       additional_types=['track'])
