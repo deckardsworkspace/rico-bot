@@ -58,10 +58,10 @@ async def ensure_voice(bot: Bot, ctx: Context):
 @Cog.listener()
 async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
     # Stop playing if we're left alone
-    if (after.channel is None and len(before.channel.members) == 1 and
-        before.channel.members[0].id == self.bot.user.id and not member.id == self.bot.user.id):
+    voice_client = member.guild.voice_client
+    if voice_client is not None and len(voice_client.channel.members) == 1:
         # Get the player for this guild from cache
-        guild_id = before.channel.guild.id
+        guild_id = voice_client.guild.id
         player = self.bot.lavalink.player_manager.get(guild_id)
         ctx = player.fetch('context')
         return await self.disconnect(ctx, reason='You left me alone :(')
@@ -87,7 +87,6 @@ async def on_voice_state_update(self, member: Member, before: VoiceState, after:
             if player is not None:
                 if player.is_playing and not player.paused:
                     time = 0
-                # TODO: Turn this into an environment variable
                 if time == inactive_sec:
                     await self.disconnect(ctx, reason=f'Inactive for {inactive_h}{inactive_m}{inactive_s}')
                 if not player.is_connected:
