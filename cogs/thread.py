@@ -97,7 +97,8 @@ class ThreadManager(Cog):
         excluded_threads = self.db.child('thread_manager').child('exclude').child(guild_id).get().val()
         if excluded_threads is None or thread_id not in excluded_threads.keys() or not excluded_threads[thread_id]:
             # Unarchive thread if not excluded from monitoring
-            await thread.edit(archived=False)
+            if thread.archived:
+                await thread.edit(archived=False)
     
     async def unarchive_threads(self):
         """Keep threads unarchived for monitored guilds"""
