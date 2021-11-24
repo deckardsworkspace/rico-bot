@@ -59,7 +59,7 @@ async def ensure_voice(bot: Bot, ctx: Context):
 async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
     # Stop playing if we're left alone
     voice_client = member.guild.voice_client
-    if voice_client is not None and len(voice_client.channel.members) == 1:
+    if voice_client is not None and len(voice_client.channel.members) == 1 and after.channel is None:
         # Get the player for this guild from cache
         guild_id = voice_client.guild.id
         player = self.bot.lavalink.player_manager.get(guild_id)
