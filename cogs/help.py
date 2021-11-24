@@ -58,7 +58,9 @@ help_list = {
         'title': 'Thread management commands (admin only)',
         'commands': {
             '{0}tte': 'Toggle exclusion for a thread. If excluded, the thread will be archived automatically after inactivity.',
-            '{0}ttm': 'Toggle thread monitoring for this server. If monitored, all threads will be kept unarchived.'
+            '{0}ttm': 'Toggle thread monitoring for this server. If monitored, all threads will be kept unarchived.',
+            '{0}ua': 'Force unarchive all unexcluded threads in this server.',
+            '{0}uaa': 'Force unarchive all unexcluded threads in *all* servers. **Bot owner only.**'
         }
     },
     'debug': {

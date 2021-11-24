@@ -1,7 +1,7 @@
 from math import floor
 from nextcord import Guild, Thread
 from nextcord.ext import tasks
-from nextcord.ext.commands import Bot, Cog, command, Context
+from nextcord.ext.commands import Bot, Cog, command, Context, is_owner
 from pyrebase.pyrebase import Database
 
 
@@ -36,6 +36,24 @@ class ThreadManager(Cog):
     async def before_main(self):
         """Wait until client is ready before housekeeping."""
         await self.bot.wait_until_ready()
+    
+    @is_owner()
+    @command(name='uaa')
+    async def unarchive_all(self, ctx: Context):
+        """Unarchive all threads in all monitored guilds"""
+        for guild in self.bot.guilds:
+            for thread in guild.threads:
+                await self.unarchive_thread(str(guild.id), thread)
+        return await ctx.reply(':white_check_mark: Unarchived all unexcluded threads in all servers')
+
+    @command(name='ua')
+    async def unarchive_guild(self, ctx: Context):
+        """Unarchive all unexcluded threads in this guild"""
+        if not ctx.author.guild_permissions.administrator:
+            return await ctx.reply('This command can only be used by an administrator.')
+        for thread in ctx.guild.threads:
+            await self.unarchive_thread(str(ctx.guild.id), thread)
+        return await ctx.reply(':white_check_mark: Unarchived all unexcluded threads in this server')
 
     async def unarchive_thread(self, guild_id: str, thread: Thread):
         """Unarchive a thread if not excluded from monitoring."""
