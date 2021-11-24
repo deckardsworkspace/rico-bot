@@ -46,28 +46,37 @@ async def move(self, ctx: Context, *, positions: str = None):
 
             if src == dest:
                 return await send_invalid_arg(ctx, 'Cannot move item to the same spot.')
-            if dest + 1 < 0 or dest + 1 >= len(db_queue):
+            if dest + 1 < 0 or dest + 1 > len(db_queue):
                 return await send_invalid_arg(ctx, f'Destination `{positions[1]}` is out of range (1 to {len(db_queue)}).')
         except ValueError as e:
             return await send_invalid_arg(ctx, 'This command only accepts integers.', e)
-        
-        # Check if we need to adjust current position
-        current_i = get_queue_index(self.db, str(ctx.guild.id))
-        if isinstance(current_i, int) and dest <= current_i:
-            # Track will be moved to before the current track.
-            # Increment the current position.
-            set_queue_index(self.db, str(ctx.guild.id), current_i + 1)
 
         # Move track
-        # Remove track at index first...
-        src_item = db_queue[src]
-        title, artist = src_item.get_details()
-        del db_queue[src]
-        # ...then insert at destination
-        db_queue.insert(dest, src_item)
+        shuffle_indices = get_shuffle_indices(self.db, str(ctx.guild.id))
+        if len(shuffle_indices) > 0:
+            # Shuffling does not touch the original queue,
+            # so we can simply reorder the indices.
+            src_item = db_queue[shuffle_indices[src]]
+            shuffle_indices.insert(dest, shuffle_indices.pop(src))
+            set_shuffle_indices(self.db, str(ctx.guild.id), shuffle_indices)
+        else:
+            # Check if we need to adjust current position
+            current_i = get_queue_index(self.db, str(ctx.guild.id))
+            if isinstance(current_i, int) and dest <= current_i:
+                # Track will be moved to before the current track.
+                # Increment the current position.
+                set_queue_index(self.db, str(ctx.guild.id), current_i + 1)
+
+            # Remove track at source first...
+            src_item = db_queue[src]
+            del db_queue[src]
+
+            # ...then insert at destination
+            db_queue.insert(dest, src_item)
+            set_queue_db(self.db, str(ctx.guild.id), db_queue)
 
         # Success!
-        set_queue_db(self.db, str(ctx.guild.id), db_queue)
+        title, artist = src_item.get_details()
         embed = RicoEmbed(
             color=Color.orange(),
             title=f':white_check_mark:｜Moved track',
