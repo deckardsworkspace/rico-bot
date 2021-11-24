@@ -74,24 +74,25 @@ async def parse_query_url(ctx: Context, spotify: Spotify, query: str) -> List[Qu
         # Is it a playlist?
         try:
             playlist_id = get_ytlistid_from_url(query)
-        except:
-            pass
-        else:
+
             # It is a playlist!
             # Let us get the playlist's tracks.
             return await parse_youtube_playlist(ctx, playlist_id)
+        except YouTubeInvalidPlaylistError as e:
+            # No tracks found
+            embed = RicoEmbed(
+                color=Color.red(),
+                title=':x:｜Error enqueueing YouTube playlist',
+                description=e.message
+            )
+            await embed.send(ctx, as_reply=True)
+        except:
+            pass
 
         # Is it a video?
         try:
             video_id = get_ytid_from_url(query)
-        except:
-            embed = RicoEmbed(
-                color=Color.red(),
-                title=':x:｜YouTube URL is invalid',
-                description=f'Only YouTube video and playlist URLs are supported.'
-            )
-            return await embed.send(ctx)
-        else:
+
             # It is a video!
             # Let us get the video's details.
             video = get_youtube_video(video_id)
@@ -101,6 +102,22 @@ async def parse_query_url(ctx: Context, spotify: Spotify, query: str) -> List[Qu
                 requester=ctx.author.id,
                 url=video.url
             )]
+        except YouTubeInvalidURLError:
+            embed = RicoEmbed(
+                color=Color.red(),
+                title=':x:｜Error enqueueing YouTube video',
+                description='The video has either been deleted, or made private, or never existed.'
+            )
+            await embed.send(ctx, as_reply=True)
+        except:
+            embed = RicoEmbed(
+                color=Color.red(),
+                title=':x:｜YouTube URL is invalid',
+                description=f'Only YouTube video and playlist URLs are supported.'
+            )
+            await embed.send(ctx)
+        finally:
+            return []
 
     # Query is a non-Spotify URL.
     return [QueueItem(
@@ -168,7 +185,7 @@ async def parse_youtube_playlist(ctx: Context, playlist_id: str) -> List[QueueIt
     playlist_name, playlist_author, num_tracks = get_youtube_playlist_info(playlist_id)
     if num_tracks < 1:
         # No tracks.
-        return await ctx.reply(f'YouTube playlist is empty.')
+        raise YouTubeInvalidPlaylistError(f'Playlist {playlist_id} is empty.')
 
     # At least one track.
     # Send embed if the list is longer than 1 track.

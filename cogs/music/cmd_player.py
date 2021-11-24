@@ -254,14 +254,6 @@ async def play(self, ctx: Context, *, query: str = None):
             if not is_playing:
                 set_queue_index(self.db, str(ctx.guild.id), 0)
                 await enqueue(self.bot, new_tracks[0], ctx)
-        else:
-            # No tracks found
-            embed = RicoEmbed(
-                color=Color.red(),
-                title=':x:｜No matching results found',
-                description=query
-            )
-            await embed.send(ctx, as_reply=True)
 
 
 @command(aliases=['next'])

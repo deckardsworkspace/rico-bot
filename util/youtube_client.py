@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 from youtubesearchpython import Playlist, Video, VideosSearch
+from .exception import YouTubeInvalidURLError
 from .string_util import machine_readable_time
 
 
@@ -37,8 +38,12 @@ def get_youtube_playlist_tracks(playlist_id: str) -> Tuple[List[YouTubeResult]]:
 
 
 def get_youtube_video(video_id: str) -> YouTubeResult:
-    video = Video.get(video_id)
-    return parse_result(video)
+    try:
+        video = Video.get(video_id)
+    except:
+        raise YouTubeInvalidURLError(video_id)
+    else:
+        return parse_result(video)
 
 
 def get_youtube_matches(query: str, desired_duration_ms: int = 0, num_results: int = 10, automatic: bool = True) -> List[YouTubeResult]:
