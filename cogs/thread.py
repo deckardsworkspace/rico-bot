@@ -68,8 +68,7 @@ class ThreadManager(Cog):
     async def unarchive_all(self, ctx: Context):
         """Unarchive all threads in all monitored guilds"""
         for guild in self.bot.guilds:
-            for thread in guild.threads:
-                await self.unarchive_thread(str(guild.id), thread)
+            await self.unarchive_threads_guild(guild)
         return await send_success_embed(ctx, 'Unarchived all unexcluded threads in all monitored servers')
 
     @command(name='ua')
@@ -80,8 +79,7 @@ class ThreadManager(Cog):
         if not self.is_monitored(str(ctx.guild.id)):
             return await send_error_embed(ctx, 'Thread unarchiving is not enabled on this server. Enable it using the `ttm` command.')
 
-        for thread in ctx.guild.threads:
-            await self.unarchive_thread(str(ctx.guild.id), thread)
+        await self.unarchive_threads_guild(ctx.guild)
         return await send_success_embed(ctx, 'Unarchived all unexcluded threads in this server')
 
     async def unarchive_thread(self, guild_id: str, thread: Thread):
