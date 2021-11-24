@@ -4,7 +4,6 @@ import os
 import platform
 import psutil
 import subprocess
-from datetime import datetime
 from nextcord import Color
 from nextcord.ext.commands import Bot, Cog, command, is_owner, Context
 from time import time
