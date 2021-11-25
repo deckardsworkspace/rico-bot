@@ -45,7 +45,7 @@ async def parse_query(ctx: Context, spotify: Spotify, query: str) -> List[QueueI
 
     # Wait for user to react
     def check(r: Reaction, u: Member):
-        return u == ctx.author and str(r.emoji) in result_emojis
+        return u == ctx.author and str(r.emoji) in result_emojis and r.message.id == message.id
     try:
         r, _ = await ctx.bot.wait_for('reaction_add', check=check, timeout=60.0)
     except TimeoutError:

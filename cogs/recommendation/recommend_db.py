@@ -52,7 +52,7 @@ async def create_remove_dialog(client: Bot, ctx: Context,
     # Wait for user reaction
     try:
         def check(r, u):
-            return str(r.emoji) in [up, down] and u == ctx.author
+            return str(r.emoji) in [up, down] and u == ctx.author and r.message.id == dialog.id
         reaction, _ = await client.wait_for("reaction_add", timeout=10.0, check=check)
 
         if str(reaction.emoji) == up:

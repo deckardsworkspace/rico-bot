@@ -28,7 +28,7 @@ async def create_match_reacts(ctx: Context, db: Database, spotify: Spotify, sear
     # Wait for user reaction
     try:
         def check(r, u):
-            return str(r.emoji) in num_reacts and u == ctx.author
+            return str(r.emoji) in num_reacts and u == ctx.author and r.message.id == message.id
         reaction, _ = await ctx.bot.wait_for("reaction_add", timeout=30.0, check=check)
 
         match_type = match_types[messages.index(reaction.message.id)]

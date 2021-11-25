@@ -173,7 +173,7 @@ class ThreadManager(Cog):
         # Wait for user to react
         archive_now = False
         def check(r: Reaction, u: Member):
-            return u == ctx.author and str(r.emoji) == '🗑️'
+            return u == ctx.author and str(r.emoji) == '🗑️' and r.message.id == message.id
         try:
             r, u = await ctx.bot.wait_for('reaction_add', check=check, timeout=60.0)
         except TimeoutError:
