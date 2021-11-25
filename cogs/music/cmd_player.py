@@ -22,17 +22,17 @@ async def jump_to(self, ctx: Context, *, query: str = None):
 
         # Parse index
         if not query:
-            reply = RicoEmbed(title=':x:｜Please specify a track number to jump to.')
+            reply = RicoEmbed(title=':x:｜Please specify a track number to jump to')
             return await reply.send(ctx, as_reply=True)
         try:
             index = int(query) - 1
         except ValueError:
-            reply = RicoEmbed(title=':x:｜Please specify a valid track number.')
+            reply = RicoEmbed(title=':x:｜Please specify a valid track number')
             return await reply.send(ctx, as_reply=True)
         
         # Get the queue
         if index < 0 or index >= get_queue_size(self.db, str(ctx.guild.id)):
-            reply = RicoEmbed(title=f':x:｜Track number {query} is out of range.')
+            reply = RicoEmbed(title=f':x:｜Track number {query} is out of range')
             return await reply.send(ctx, as_reply=True)
 
         # Play new track
@@ -178,9 +178,9 @@ async def pause(self, ctx: Context):
     # Pause the player
     if not player.paused:
         await player.set_pause(pause=True)
-        message = 'Paused the player.'
+        message = 'Paused the player'
     else:
-        message = 'Already paused.'
+        message = 'Already paused'
     
     # Send reply
     reply = RicoEmbed(title=f':pause_button:｜{message}', color=Color.dark_orange())
@@ -318,9 +318,9 @@ async def unpause(self, ctx: Context):
     # Unpause the player.
     if player.paused:
         await player.set_pause(pause=False)
-        message = 'Unpaused the player.'
+        message = 'Unpaused the player'
     else:
-        message = 'Already unpaused.'
+        message = 'Already unpaused'
     
     # Send reply
     reply = RicoEmbed(title=f':arrow_forward:｜{message}', color=Color.dark_green())
