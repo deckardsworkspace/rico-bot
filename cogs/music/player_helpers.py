@@ -51,6 +51,15 @@ async def parse_query(ctx: Context, spotify: Spotify, query: str) -> List[QueueI
     except TimeoutError:
         # Remove all reactions to the message
         await message.clear_reactions()
+        embed = RicoEmbed(
+            color=Color.red(),
+            title=':x:｜Error processing play request',
+            description=[
+                'You took too long in choosing a track.',
+                'If you want to skip choosing, try playing a direct URL..'
+            ]
+        )
+        await embed.send(ctx, as_reply=True)
         return []
     else:
         # Delete message
