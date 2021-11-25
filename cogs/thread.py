@@ -167,25 +167,29 @@ class ThreadManager(Cog):
             ]
         )
         message = await embed.send(ctx, as_reply=True)
+        embed = message.embeds[0]
         await message.add_reaction('🗑️')
 
         # Wait for user to react
+        archive_now = False
         def check(r: Reaction, u: Member):
             return u == ctx.author and str(r.emoji) == '🗑️'
         try:
             r, u = await ctx.bot.wait_for('reaction_add', check=check, timeout=60.0)
         except TimeoutError:
-            # Remove all reactions to the message
-            await message.clear_reactions()
-
             # Remove prompt from message
             embed.description = archival_msg
-            await message.edit(embed=embed.get())
         else:
             # Archive the thread now
             embed.description = f'Thread **{ctx.channel.name}** is now archived'
-            await message.edit(embed=embed.get())
-            await ctx.channel.edit(archived=True)
+            archive_now = True
+        finally:
+            # Remove all reactions to the message
+            await message.clear_reactions()
+            await message.edit(embed=embed)
+            if archive_now:
+                await ctx.channel.edit(archived=True)
+
 
     @command(name='ttm')
     async def toggle_monitoring(self, ctx: Context):
