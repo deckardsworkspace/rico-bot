@@ -190,6 +190,9 @@ async def queue(self, ctx: Context, *, query: str = None):
                 fields=fields
             )
             embeds.append(embed.get())
+        
+        # Delete invoker message
+        await ctx.message.delete()
 
         # Save this message
         def save_msg(msg_id: int):

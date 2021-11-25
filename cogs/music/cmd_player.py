@@ -288,6 +288,9 @@ async def skip(self, ctx: Context, queue_end: bool = False):
 
                 # Try playing the track
                 if await try_enqueue(ctx, self.db, player, shuffle_indices[next_i] if is_shuffling else next_i, queue_end):
+                    # Delete invoker message
+                    if not queue_end:
+                        await ctx.message.delete()
                     return
 
         # Remove player data from DB
