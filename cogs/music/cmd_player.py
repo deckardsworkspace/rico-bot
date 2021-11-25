@@ -238,6 +238,7 @@ async def play(self, ctx: Context, *, query: str = None):
         new_tracks = await parse_query(ctx, self.spotify, query)
         if len(new_tracks):
             # Add new tracks to queue
+            old_size = get_queue_size(self.db, str(ctx.guild.id))
             enqueue_db(self.db, str(ctx.guild.id), new_tracks)
 
             # Send embed
@@ -250,10 +251,20 @@ async def play(self, ctx: Context, *, query: str = None):
             )
             await embed.send(ctx, as_reply=True)
 
-            # Play the first track
+            # Are we beginning a new queue?
             if not is_playing:
+                # We are! Play the first track.
                 set_queue_index(self.db, str(ctx.guild.id), 0)
                 await enqueue(self.bot, new_tracks[0], ctx)
+            else:
+                # We are already playing from a queue.
+                # Update shuffle indices if applicable.
+                shuffle_indices = get_shuffle_indices(self.db, str(ctx.guild.id))
+                if len(shuffle_indices) > 0:
+                    # Append new indices to the end of the list
+                    new_indices = [old_size + i for i in range(len(new_tracks))]
+                    shuffle_indices.extend(new_indices)
+                    set_shuffle_indices(self.db, str(ctx.guild.id), shuffle_indices)
 
 
 @command(aliases=['next'])
