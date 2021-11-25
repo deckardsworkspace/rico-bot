@@ -1,8 +1,9 @@
 from math import floor
-from nextcord import Color, Guild, Message, Thread
+from nextcord import Color, Guild, Member, Message, Reaction, Thread
 from nextcord.ext import tasks
 from nextcord.ext.commands import Bot, Cog, command, Context, is_owner
 from pyrebase.pyrebase import Database
+from typing import List, Union
 from util import RicoEmbed
 
 
@@ -20,7 +21,7 @@ def min_to_dh(mins: int) -> str:
     return f'{hours:02d} hour{hours_plural}'
 
 
-async def send_error_embed(ctx: Context, message: str) -> Message:
+async def send_error_embed(ctx: Context, message: Union[str, List[str]]) -> Message:
     embed = RicoEmbed(
         color=Color.red(),
         title=':x:｜Error',
@@ -29,7 +30,7 @@ async def send_error_embed(ctx: Context, message: str) -> Message:
     return await embed.send(ctx, as_reply=True)
 
 
-async def send_success_embed(ctx: Context, message: str) -> Message:
+async def send_success_embed(ctx: Context, message: Union[str, List[str]]) -> Message:
     embed = RicoEmbed(
         color=Color.green(),
         title=':white_check_mark:｜Success',
@@ -152,7 +153,39 @@ class ThreadManager(Cog):
         self.db.child('thread_manager').child('exclude').child(str(ctx.guild.id)).update({f'{invoked_thread}': new_state})
         if not new_state:
             return await send_success_embed(ctx, f'Thread **{ctx.channel.name}** will be kept unarchived')
-        return await send_success_embed(ctx, f'Thread **{ctx.channel.name}** will be archived after {min_to_dh(ctx.channel.auto_archive_duration)}')
+        
+        # If thread is now set to auto archive,
+        # offer the user the option to archive the thread now
+        archive_duration = min_to_dh(ctx.channel.auto_archive_duration)
+        archival_msg = f'Thread **{ctx.channel.name}** will be archived after {archive_duration}'
+        embed = RicoEmbed(
+            color=Color.green(),
+            title=':white_check_mark:｜Excluded thread from persistence',
+            description=[
+                archival_msg,
+                'To archive this thread now, react 🗑️ below.'
+            ]
+        )
+        message = await embed.send(ctx, as_reply=True)
+        await message.add_reaction('🗑️')
+
+        # Wait for user to react
+        def check(r: Reaction, u: Member):
+            return u == ctx.author and str(r.emoji) == '🗑️'
+        try:
+            r, u = await ctx.bot.wait_for('reaction_add', check=check, timeout=60.0)
+        except TimeoutError:
+            # Remove all reactions to the message
+            await message.clear_reactions()
+
+            # Remove prompt from message
+            embed.description = archival_msg
+            await message.edit(embed=embed.get())
+        else:
+            # Archive the thread now
+            embed.description = f'Thread **{ctx.channel.name}** is now archived'
+            await message.edit(embed=embed.get())
+            await ctx.channel.edit(archived=True)
 
     @command(name='ttm')
     async def toggle_monitoring(self, ctx: Context):
