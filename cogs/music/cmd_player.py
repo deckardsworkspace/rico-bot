@@ -201,7 +201,7 @@ async def play(self, ctx: Context, *, query: str = None):
             if player.is_connected and is_playing:
                 if player.paused:
                     # Unpause the player
-                    cmd = self.bot.get_command('pause')
+                    cmd = self.bot.get_command('unpause')
                     return await ctx.invoke(cmd)
                 else:
                     # An active player already exists for this guild
