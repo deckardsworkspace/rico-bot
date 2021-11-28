@@ -5,7 +5,7 @@ import platform
 import psutil
 import subprocess
 from nextcord import Color
-from nextcord.ext.commands import Bot, Cog, command, is_owner, Context
+from nextcord.ext.commands import Bot, BucketType, Cog, command, Context, cooldown, is_owner
 from time import time
 from util import human_readable_size, human_readable_time, RicoEmbed
 
@@ -39,7 +39,7 @@ class Debug(Cog):
         print('Loaded debug cog')
     
     @command(aliases=['i'])
-    @is_owner()
+    @cooldown(1, 2, BucketType.default)
     async def info(self, ctx: Context):
         info = []
 
