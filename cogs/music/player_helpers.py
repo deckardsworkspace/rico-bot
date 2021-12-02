@@ -118,6 +118,7 @@ async def parse_query_url(ctx: Context, spotify: Spotify, query: str) -> List[Qu
                 description='The video has either been deleted, or made private, or never existed.'
             )
             await embed.send(ctx, as_reply=True)
+            return []
         except:
             embed = RicoEmbed(
                 color=Color.red(),
@@ -125,7 +126,6 @@ async def parse_query_url(ctx: Context, spotify: Spotify, query: str) -> List[Qu
                 description=f'Only YouTube video and playlist URLs are supported.'
             )
             await embed.send(ctx)
-        finally:
             return []
 
     # Query is a non-Spotify URL.
