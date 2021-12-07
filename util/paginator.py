@@ -41,7 +41,7 @@ class Paginator:
         
         # Handle reactions
         def check(r: Reaction, u: Member):
-            return u == self.ctx.author and str(r.emoji) in control_emojis and r.message.id == msg.id
+            return u == self.ctx.author and str(r.emoji) in control_emojis
         while True:
             # Wait for reaction add until timeout runs out
             try:
