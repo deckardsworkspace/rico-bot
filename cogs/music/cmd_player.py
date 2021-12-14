@@ -211,17 +211,6 @@ async def play(self, ctx: Context, *, query: str = None):
                         description='Use `play <query/URL>` to add to the queue, or use `unpause` to resume playback if paused.'
                     )
                     return await embed.send(ctx, as_reply=True)
-
-            # Try to resume an old queue if it exists
-            old_np = get_queue_index(self.db, str(ctx.guild.id))
-            if isinstance(old_np, int):
-                # Send resuming queue embed
-                embed = RicoEmbed(color=Color.purple(), title=':hourglass:｜Resuming interrupted queue')
-                await embed.send(ctx, as_reply=True)
-
-                # Play at index
-                track = dequeue_db(self.db, str(ctx.guild.id), old_np)
-                return await enqueue(self.bot, track, ctx=ctx)
             
             # Old queue does not exist
             embed = RicoEmbed(color=Color.red(), title=':x:｜Specify something to play.')
