@@ -1,4 +1,4 @@
-aiohttp==3.6.3
+aiohttp==3.7.4.post0
 anyio==3.3.4
 async-timeout==3.0.1
 attrs==21.2.0
@@ -24,7 +24,7 @@ idna==2.10
 itsdangerous==2.0.1
 Jinja2==3.0.2
 jwcrypto==0.9.1
-lavalink==3.1.4
+lavalink @ git+https://github.com/jareddantis/Lavalink.py@ddcfe1bd50d743103e00f3f784a8c23d558ac0a7
 MarkupSafe==2.0.1
 multidict==4.7.6
 nextcord==2.0.0a2
