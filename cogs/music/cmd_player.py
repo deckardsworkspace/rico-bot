@@ -93,10 +93,13 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
     if player.is_playing or player.paused:
         automatic = track_info is not None
 
-        # Try to recover track info
+        # Try to recover track in
+        current_index = 0
+        total_tracks = 0
         rec_hint = None
         if not automatic:
-            # Invoked by command
+            # Invoked by command.
+            # Recover track info from player data storage.
             current_id = player.current.identifier
             stored_info = player.fetch(current_id)
             if stored_info and 'title' in stored_info:
@@ -104,6 +107,12 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
                     rec_hint = f'**Like this song?** Save it to your list using `{prefix}rn @mention`.'
 
                 track_info = stored_info
+            
+            # Get track position   
+            current_index = get_queue_index(self.db, str(ctx.guild.id)) + 1
+            total_tracks = get_queue_size(self.db, str(ctx.guild.id))
+
+        # If not in storage, recover track info from current track metadata.
         if track_info is None or isinstance(track_info, AudioTrack):
             track_info = {
                 'title': player.current.title,
@@ -141,10 +150,6 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
         # Show requester info and avatar
         requester = await self.bot.fetch_user(player.current.requester)
         current_action = 'streaming' if track_info['isStream'] else 'playing'
-
-        # Get track position
-        current_index = get_queue_index(self.db, str(ctx.guild.id)) + 1
-        total_tracks = get_queue_size(self.db, str(ctx.guild.id))
 
         # Build embed
         embed_desc = [
