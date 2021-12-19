@@ -1,4 +1,3 @@
-from collections import deque
 from nextcord import Color, Message
 from nextcord.ext.commands import command, Context
 from typing import Optional

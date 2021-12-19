@@ -4,7 +4,6 @@ from lavalink.models import AudioTrack, DefaultPlayer
 from nextcord import Color
 from nextcord.ext.commands import Bot, Context
 from lavalink.models import BasePlayer
-from nextcord.ext.commands.flags import F
 from pyrebase.pyrebase import Database
 from typing import Dict, List, Optional, Tuple
 from util import get_youtube_matches, RicoEmbed, QueueEmptyError
