@@ -1,5 +1,4 @@
-from asyncio import run, sleep
-from lavalink import PlayerManager
+from asyncio import sleep
 from lavalink.errors import NodeError
 from nextcord import Member, VoiceState
 from nextcord.ext.commands import Bot, Cog, Context
@@ -19,12 +18,7 @@ async def cog_before_invoke(self, ctx: Context):
 
 
 def cog_unload(self):
-    """ Cog unload handler. """
-    # Iterate through every guild and destroy its corresponding player
-    for guild in self.bot.guilds:
-        run(self.bot.lavalink.player_manager.destroy(guild.id))
-
-    # Clear event handlers
+    """ Cog unload handler. This removes any event hooks that were registered. """
     if hasattr(self.bot, 'lavalink'):
         self.bot.lavalink._event_hooks.clear()
 
