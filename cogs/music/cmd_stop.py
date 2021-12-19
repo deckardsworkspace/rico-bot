@@ -17,13 +17,16 @@ async def disconnect(self, ctx: Context, reason: str = None):
     self.db.child('player').child(str(ctx.guild.id)).remove()
     player.queue.clear()
 
-    # Stop the current track and destroy the player.
+    # Stop the current track
     await player.stop()
-    await self.bot.lavalink.player_manager.destroy(ctx.guild.id)
 
-    # Disconnect from the voice channel.
+    # Disconnect from the voice channel
     if hasattr(ctx.voice_client, 'disconnect'):
         await ctx.voice_client.disconnect(force=True)
+    
+    # Destroy the player
+    await self.bot.lavalink.player_manager.destroy(ctx.guild.id)
+
     embed = RicoEmbed(
         color=Color.blurple(),
         title=':wave:｜Disconnected from voice',
