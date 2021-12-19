@@ -116,12 +116,12 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
             # Build progress info
             if automatic:
                 h, m, s = human_readable_time(total_ms)
-                progress = f'\n{m} min, {s} sec'
+                progress = f'{m} min, {s} sec'
                 if h:
-                    progress = f'\n{h} hr, {m} min, {s} sec'
+                    progress = f'{h} hr, {m} min, {s} sec'
             else:
                 elapsed_ms = player.position
-                progress = f'\n**{create_progress_bar(elapsed_ms, total_ms)}**'
+                progress = f'**{create_progress_bar(elapsed_ms, total_ms)}**'
 
         # Show rich track info
         track_name = track_info['title']
@@ -140,10 +140,10 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
         embed_desc = [
             f'**[{track_name}]({track_uri})**',
             f'by **{track_artist}**',
-            f'requested by {requester.mention}'
+            progress,
+            f'\nrequested by {requester.mention}',
+            f'**Like this song?** Save it to your list using `{get_var("BOT_PREFIX")}rn @mention`.'
         ]
-        if progress is not None:
-            embed_desc.append(progress)
         if player.repeat:
             embed_desc.append('\n:repeat: **On repeat**\nUse the `loop` command to disable.')
         embed = RicoEmbed(
