@@ -76,6 +76,8 @@ async def loop(self, ctx: Context, *, arg: str = None):
 
 @command(name='nowplaying', aliases=['np'])
 async def now_playing(self, ctx: Context, track_info: Dict = None):
+    prefix = get_var('BOT_PREFIX')
+
     # Delete the previous now playing message
     try:
         old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('npmessage').get().val()
@@ -99,7 +101,7 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
             stored_info = player.fetch(current_id)
             if stored_info and 'title' in stored_info:
                 if 'spotify' in track_info:
-                    rec_hint = f'**Like this song?** Save it to your list using `{get_var("BOT_PREFIX")}rn @mention`.'
+                    rec_hint = f'**Like this song?** Save it to your list using `{prefix}rn @mention`.'
 
                 track_info = stored_info
         if track_info is None or isinstance(track_info, AudioTrack):
@@ -164,7 +166,6 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
         )
     else:
         # Not playing
-        prefix = get_var('BOT_PREFIX')
         embed = RicoEmbed(
             color=Color.yellow(),
             title='Not playing',
