@@ -4,7 +4,7 @@ from nextcord.ext.commands import command, Context
 from typing import Optional
 from util import list_chunks, RicoEmbed, Paginator
 from .queue_helpers import (
-    get_loop_all, get_queue_index, get_queue_db, get_shuffle_indices,
+    dequeue_db, get_loop_all, get_queue_index, get_queue_db, get_shuffle_indices,
     set_queue_db, set_queue_index, set_shuffle_indices
 )
 import random
@@ -25,9 +25,24 @@ async def send_invalid_arg(ctx: Context, err: str, e: Optional[Exception] = None
 
 @command(name='clearqueue', aliases=['cq'])
 async def clear_queue(self, ctx: Context):
-    # Empty queue in DB
-    set_queue_db(self.db, str(ctx.guild.id), [])
-    set_shuffle_indices(self.db, str(ctx.guild.id), [])
+    # Get player
+    player = self.get_player(ctx.guild.id)
+
+    # Is anything playing right now?
+    is_playing = player is not None and (player.is_playing or player.paused)
+    if is_playing:
+        # Something is playing, so only clear the rest, leaving the current track in place.
+        current_index = get_queue_index(self.db, str(ctx.guild.id))
+        current_track = dequeue_db(self.db, str(ctx.guild.id), current_index)
+        set_queue_index(self.db, str(ctx.guild.id), 0)
+        set_queue_db(self.db, str(ctx.guild.id), [current_track])
+        set_shuffle_indices(self.db, str(ctx.guild.id), [0])
+    else:
+        # Empty queue in DB
+        self.db.child('player').child(str(ctx.guild.id)).child('queue_index').remove()
+        set_queue_db(self.db, str(ctx.guild.id), [])
+        set_shuffle_indices(self.db, str(ctx.guild.id), [])
+
     return await ctx.reply(f'**:wastebasket:｜Cleared the queue for {ctx.guild.name}**')
 
 
