@@ -93,7 +93,7 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
     if player.is_playing or player.paused:
         automatic = track_info is not None
 
-        # Try to recover track in
+        # Try to recover track info
         current_index = 0
         total_tracks = 0
         rec_hint = None
