@@ -25,6 +25,10 @@ def cog_unload(self):
 
 async def ensure_voice(bot: Bot, ctx: Context):
     """ This check ensures that the bot and command author are in the same voice channel. """
+    # Allow player state resets to occur unconditionally
+    if ctx.command.name in ('resetplayer', 'rp'):
+        return
+
     # Ensure a player exists for this guild
     try:
         player = bot.lavalink.player_manager.create(ctx.guild.id, endpoint=str(ctx.guild.region))
@@ -38,7 +42,7 @@ async def ensure_voice(bot: Bot, ctx: Context):
     vc = ctx.author.voice.channel
     if not player.is_connected:
         # Bot needs to already be in voice channel to pause, unpause, skip etc.
-        if ctx.command.name not in ('play', 'p', 'resetplayer', 'rp'):
+        if ctx.command.name not in ('play', 'p'):
             raise VoiceCommandError('I\'m not connected to voice.')
 
         permissions = vc.permissions_for(ctx.me)
