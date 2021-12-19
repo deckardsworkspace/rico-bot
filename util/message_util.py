@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from nextcord import Color, Embed, Message
+from nextcord.embeds import EmptyEmbed
 from nextcord.ext.commands import Context
 from typing import List, Union
 
@@ -8,28 +9,28 @@ from typing import List, Union
 @dataclass
 class RicoEmbed:
     # All optional
-    title: str = Embed.Empty
+    title: str = EmptyEmbed
     color: Color = Color.og_blurple()
-    description: Union[str, List[str]] = Embed.Empty
+    description: Union[str, List[str]] = EmptyEmbed
     fields: List[List[str]] = field(default_factory=list)
     inline_fields: bool = False
-    thumbnail_url: str = Embed.Empty
-    image_url: str = Embed.Empty
+    thumbnail_url: str = EmptyEmbed
+    image_url: str = EmptyEmbed
 
     # Header and footer
-    header: str = Embed.Empty
-    header_url: str = Embed.Empty
-    header_icon_url: str = Embed.Empty
-    footer: str = Embed.Empty
-    footer_icon_url: str = Embed.Empty
+    header: str = EmptyEmbed
+    header_url: str = EmptyEmbed
+    header_icon_url: str = EmptyEmbed
+    footer: str = EmptyEmbed
+    footer_icon_url: str = EmptyEmbed
     timestamp_now: bool = False
 
     # Create embed
     def __post_init__(self):
         # Can't specify header/footer icons without header/footer names
-        if self.header is Embed.Empty and self.header_icon_url is not Embed.Empty:
+        if self.header is EmptyEmbed and self.header_icon_url is not EmptyEmbed:
             raise ValueError("Can't specify header icon without header text.")
-        if self.footer is Embed.Empty and self.footer_icon_url is not Embed.Empty:
+        if self.footer is EmptyEmbed and self.footer_icon_url is not EmptyEmbed:
             raise ValueError("Can't specify footer icon without footer text.")
 
         # Create embed object
@@ -39,15 +40,15 @@ class RicoEmbed:
         embed = Embed(title=self.title, description=description, color=self.color)
         
         # Set embed parts
-        if self.header is not Embed.Empty:
+        if self.header is not EmptyEmbed:
             embed.set_author(name=self.header)
-        if self.thumbnail_url is not Embed.Empty:
+        if self.thumbnail_url is not EmptyEmbed:
             embed.set_thumbnail(url=self.thumbnail_url)
-        if self.image_url is not Embed.Empty:
+        if self.image_url is not EmptyEmbed:
             embed.set_image(url=self.image_url)
-        if self.header is not Embed.Empty:
+        if self.header is not EmptyEmbed:
             embed.set_author(name=self.header, url=self.header_url, icon_url=self.header_icon_url)
-        if self.footer is not Embed.Empty:
+        if self.footer is not EmptyEmbed:
             embed.set_footer(text=self.footer, icon_url=self.footer_icon_url)
         if len(self.fields):
             for field in self.fields:
