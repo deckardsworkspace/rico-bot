@@ -17,8 +17,9 @@ async def disconnect(self, ctx: Context, reason: str = None):
     self.db.child('player').child(str(ctx.guild.id)).remove()
     player.queue.clear()
 
-    # Stop the current track so Lavalink consumes less resources.
+    # Stop the current track and destroy the player.
     await player.stop()
+    await self.bot.lavalink.player_manager.destroy(ctx.guild.id)
 
     # Disconnect from the voice channel.
     if hasattr(ctx.voice_client, 'disconnect'):
