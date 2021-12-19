@@ -136,6 +136,10 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
         requester = await self.bot.fetch_user(player.current.requester)
         current_action = 'streaming' if track_info['isStream'] else 'playing'
 
+        # Get track position
+        current_index = get_queue_index(self.db, str(ctx.guild.id)) + 1
+        total_tracks = get_queue_size(self.db, str(ctx.guild.id))
+
         # Build embed
         embed_desc = [
             f'**[{track_name}]({track_uri})**',
@@ -151,6 +155,7 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
             header='Paused' if player.paused else f'Now {current_action}',
             header_icon_url=requester.display_avatar.url,
             description=embed_desc,
+            footer=f'Track {current_index} of {total_tracks}',
             timestamp_now=True
         )
     else:
