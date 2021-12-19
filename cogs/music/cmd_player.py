@@ -161,7 +161,7 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
             header='Paused' if player.paused else f'Now {current_action}',
             header_icon_url=requester.display_avatar.url,
             description=embed_desc,
-            footer=f'Track {current_index} of {total_tracks}',
+            footer=f'Track {current_index} of {total_tracks}' if not automatic else '',
             timestamp_now=True
         )
     else:
