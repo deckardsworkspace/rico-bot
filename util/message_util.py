@@ -35,7 +35,7 @@ class RicoEmbed:
         # Create embed object
         description = self.description
         if isinstance(self.description, list):
-            description = '\n'.join(self.description)
+            description = '\n'.join(list(filter(None, self.description)))
         embed = Embed(title=self.title, description=description, color=self.color)
         
         # Set embed parts
