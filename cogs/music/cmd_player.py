@@ -92,11 +92,15 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
         automatic = track_info is not None
 
         # Try to recover track info
+        rec_hint = None
         if not automatic:
             # Invoked by command
             current_id = player.current.identifier
             stored_info = player.fetch(current_id)
             if stored_info and 'title' in stored_info:
+                if 'spotify' in track_info:
+                    rec_hint = f'**Like this song?** Save it to your list using `{get_var("BOT_PREFIX")}rn @mention`.'
+
                 track_info = stored_info
         if track_info is None or isinstance(track_info, AudioTrack):
             track_info = {
@@ -145,8 +149,8 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
             f'**[{track_name}]({track_uri})**',
             f'by **{track_artist}**',
             progress,
-            f'\nrequested by {requester.mention}',
-            f'**Like this song?** Save it to your list using `{get_var("BOT_PREFIX")}rn @mention`.'
+            f'\nRequested by {requester.mention}',
+            rec_hint
         ]
         if player.repeat:
             embed_desc.append('\n:repeat: **On repeat**\nUse the `loop` command to disable.')
