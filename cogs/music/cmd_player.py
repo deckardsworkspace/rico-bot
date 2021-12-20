@@ -103,7 +103,7 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
             current_id = player.current.identifier
             stored_info = player.fetch(current_id)
             if stored_info and 'title' in stored_info:
-                if 'spotify' in track_info:
+                if 'spotify' in stored_info:
                     rec_hint = f'**Like this song?** Save it to your list using `{prefix}rn @mention`.'
 
                 track_info = stored_info
