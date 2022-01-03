@@ -12,10 +12,11 @@ async def disconnect(self, ctx: Context, reason: str = None):
     # Don't loop future queues by default
     set_loop_all(self.db, str(ctx.guild.id), False)
 
-    # Clear the queue to ensure old tracks don't start playing
-    # when someone else queues something.
-    self.db.child('player').child(str(ctx.guild.id)).remove()
-    player.queue.clear()
+    if reason is None:
+        # Clear the queue to ensure old tracks don't start playing
+        # when someone else queues something.
+        self.db.child('player').child(str(ctx.guild.id)).remove()
+        player.queue.clear()
 
     # Stop the current track
     await player.stop()

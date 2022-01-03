@@ -5,7 +5,7 @@ from typing import Dict
 from util import create_progress_bar, get_var, human_readable_time, RicoEmbed
 from .player_helpers import parse_query, send_loop_embed, try_enqueue
 from .queue_helpers import (
-    enqueue, enqueue_db, set_queue_db,
+    dequeue_db, enqueue, enqueue_db, set_queue_db,
     get_queue_size, get_queue_index, set_queue_index,
     get_loop_all, set_loop_all, get_shuffle_indices, set_shuffle_indices
 )
@@ -226,6 +226,17 @@ async def play(self, ctx: Context, *, query: str = None):
                         description='Use `play <query/URL>` to add to the queue, or use `unpause` to resume playback if paused.'
                     )
                     return await embed.send(ctx, as_reply=True)
+
+            # Try to resume an old queue if it exists
+            old_np = get_queue_index(self.db, str(ctx.guild.id))
+            if isinstance(old_np, int):
+                # Send resuming queue embed
+                embed = RicoEmbed(color=Color.purple(), title=':hourglass:｜Resuming interrupted queue')
+                await embed.send(ctx, as_reply=True)
+
+                # Play at index
+                track = dequeue_db(self.db, str(ctx.guild.id), old_np)
+                return await enqueue(self.bot, track, ctx=ctx)
             
             # Old queue does not exist
             embed = RicoEmbed(color=Color.red(), title=':x:｜Specify something to play.')
