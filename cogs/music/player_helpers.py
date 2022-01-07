@@ -149,9 +149,7 @@ async def parse_spotify_query(ctx: Context, spotify: Spotify, query: str) -> Lis
     else:
         # Get artwork for Spotify track/album/playlist
         sp_art = ''
-        if sp_type == 'track':
-            sp_art = spotify.get_track_art(sp_id)
-        elif sp_type == 'album':
+        if sp_type == 'album':
             sp_art = spotify.get_album_art(sp_id)
         elif sp_type == 'playlist':
             sp_art = spotify.get_playlist_cover(sp_id)
