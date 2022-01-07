@@ -47,7 +47,7 @@ def get_youtube_video(video_id: str) -> YouTubeResult:
 
 
 def get_youtube_matches(query: str, desired_duration_ms: int = 0, num_results: int = 10, automatic: bool = True) -> List[YouTubeResult]:
-    results = []
+    results: List[YouTubeResult] = []
     blacklist = ('karaoke', 'live', 'instrumental', 'piano', 'cover', 'minus one', 'reverb', 'slowed', 'remix', 'mashup')
     search = VideosSearch(query, limit=num_results)
     search_results = search.result()
@@ -70,6 +70,14 @@ def get_youtube_matches(query: str, desired_duration_ms: int = 0, num_results: i
                 results.append(parse_result(result))
 
     if desired_duration_ms > 0:
-        # Sort results by distance to desired duration
-        results.sort(key=lambda x: abs(x.duration_ms - desired_duration_ms))
+        if abs(results[0].duration_ms - desired_duration_ms) < 3500:
+            # First result is within acceptable range of desired duration,
+            # so we just need to sort the elements after the first one.
+            saved_result = results[0]
+            results = sorted(results[1:], key=lambda x: abs(x.duration_ms - desired_duration_ms))
+            results.insert(0, saved_result)
+        else:
+            # First result is outside acceptable range, so we sort everything
+            # results by distance to desired duration.
+            results.sort(key=lambda x: abs(x.duration_ms - desired_duration_ms))
     return results
