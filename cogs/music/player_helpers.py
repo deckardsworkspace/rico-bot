@@ -175,7 +175,7 @@ async def parse_spotify_query(ctx: Context, spotify: Spotify, query: str) -> Lis
             header=f'Enqueueing Spotify {sp_type}',
             title=list_name,
             description=[
-                f'by [{list_author}]({query})',
+                f'by **[{list_author}]({query})**',
                 f'{len(tracks)} track(s)'
             ],
             footer='This might take a while, please wait...',
