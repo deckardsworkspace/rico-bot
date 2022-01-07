@@ -146,6 +146,15 @@ async def parse_spotify_query(ctx: Context, spotify: Spotify, query: str) -> Lis
             title=':x:｜Can only play tracks, albums, and playlists from Spotify.'
         )
         return await embed.send(ctx, as_reply=True)
+    else:
+        # Get artwork for Spotify track/album/playlist
+        sp_art = ''
+        if sp_type == 'track':
+            sp_art = spotify.get_track_art(sp_id)
+        elif sp_type == 'album':
+            sp_art = spotify.get_album_art(sp_id)
+        elif sp_type == 'playlist':
+            sp_art = spotify.get_playlist_cover(sp_id)
 
     new_tracks = []
     if sp_type == 'track':
@@ -171,7 +180,8 @@ async def parse_spotify_query(ctx: Context, spotify: Spotify, query: str) -> Lis
                 f'by [{list_author}]({query})',
                 f'{len(tracks)} track(s)'
             ],
-            footer='This might take a while, please wait...'
+            footer='This might take a while, please wait...',
+            thumbnail_url=sp_art
         )
         await embed.send(ctx)
 

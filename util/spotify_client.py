@@ -9,6 +9,7 @@ from .config import get_var
 from .exception import SpotifyInvalidURLError
 from ratelimit import limits
 from spotipy.oauth2 import SpotifyClientCredentials
+from typing import Dict, List, Tuple
 
 
 def get_chunks(lst):
@@ -117,17 +118,28 @@ class Spotify:
 
     def get_client(self):
         return self.client
-
-    def get_playlist_cover(self, playlist_id, default=None):
-        cover_img = self.client.playlist_cover_image(playlist_id)
-        if not len(cover_img):
+    
+    def __get_art(self, art: List[Dict[str, str]], default='') -> str:
+        if not len(art):
             return default
-        return cover_img[0]['url']
+        return art[0]['url']
+    
+    def get_album_art(self, album_id: str) -> str:
+        return self.__get_art(self.client.album(album_id)['images'])
+    
+    def get_artist_image(self, artist_id: str) -> str:
+        return self.__get_art(self.client.artist(artist_id)['images'])
+
+    def get_playlist_cover(self, playlist_id: str) -> str:
+        return self.__get_art(self.client.playlist_cover_image(playlist_id))
+    
+    def get_track_art(self, track_id: str) -> str:
+        return self.__get_art(self.client.track(track_id)['album']['images'])
 
     def get_track(self, track_id: str) -> tuple[str, str]:
         return extract_track_info(self.client.track(track_id))
 
-    def get_tracks(self, list_type: str, list_id: str) -> tuple[str, str, list[tuple[str, str, str, int]]]:
+    def get_tracks(self, list_type: str, list_id: str) -> Tuple[str, str, List[Tuple[str, str, str, int]]]:
         offset = 0
         tracks = []
 
