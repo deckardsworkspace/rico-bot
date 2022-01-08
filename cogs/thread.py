@@ -3,7 +3,7 @@ from nextcord import Color, Guild, Member, Message, Reaction, Thread
 from nextcord.ext import tasks
 from nextcord.ext.commands import Bot, Cog, command, Context, is_owner
 from pyrebase.pyrebase import Database
-from ratelimit import limits
+from ratelimit import limits, sleep_and_retry
 from typing import List, Union
 from util import RicoEmbed
 
@@ -84,6 +84,7 @@ class ThreadManager(Cog):
         await self.unarchive_threads_guild(ctx.guild)
         return await send_success_embed(ctx, 'Unarchived all unexcluded threads in this server')
 
+    @sleep_and_retry
     @limits(calls=15, period=5)
     async def unarchive_thread(self, guild_id: str, thread: Thread):
         """Unarchive a thread if not excluded from monitoring."""
