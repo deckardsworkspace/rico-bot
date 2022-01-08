@@ -49,7 +49,7 @@ async def on_command_error(ctx: Context, error):
     await ctx.reply(embed=embed)
 
 
-@loop(seconds=120)
+@loop(seconds=3600)
 async def bot_loop():
     # Change presence
     status = "{0} {1} | {2}help".format(len(client.guilds), "servers", bot_prefix)
