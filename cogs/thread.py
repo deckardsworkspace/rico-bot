@@ -53,9 +53,9 @@ class ThreadManager(Cog):
             return False
         return True
 
-    @tasks.loop(seconds=900)
+    @tasks.loop(seconds=3600)
     async def main(self):
-        """Run housekeeping every 15 min"""
+        """Run housekeeping every hour"""
         if not self.bot.is_closed():
             await self.unarchive_threads()
 
