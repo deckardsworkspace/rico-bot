@@ -161,7 +161,7 @@ async def queue(self, ctx: Context, *, query: str = None, is_interaction: bool =
         paginator = Paginator(ctx)
         home_chunk = 0
         count = 1
-        embeds: List[RicoEmbed] = []
+        embeds: List[Embed] = []
         embed_title = f'Queue for {ctx.guild.name}'
 
         # Show loop status
@@ -210,7 +210,7 @@ async def queue(self, ctx: Context, *, query: str = None, is_interaction: bool =
 
         # Return embed if displaying as interaction response 
         if is_interaction:
-            return embeds[home_chunk].get()
+            return embeds[home_chunk]
         
         # Delete invoker message
         await ctx.message.delete()
