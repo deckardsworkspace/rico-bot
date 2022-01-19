@@ -10,18 +10,18 @@ class NowPlayingView(View):
         self.ctx = ctx
         self.player = player
     
-    @button(label='📃', style=ButtonStyle.grey)
+    @button(label='Queue', style=ButtonStyle.grey)
     async def show_queue(self, _: Button, interaction: Interaction):
         cmd = self.ctx.bot.get_command('queue')
         embed = await self.ctx.invoke(cmd, is_interaction=True)
         return await interaction.response.send_message(embed=embed, ephemeral=True)
     
-    @button(label='⏮️', style=ButtonStyle.grey)
+    @button(label='Prev', style=ButtonStyle.grey)
     async def skip_backward(self, _: Button, interaction: Interaction):
         cmd = self.ctx.bot.get_command('previous')
         return await self.ctx.invoke(cmd, is_interaction=True)
 
-    @button(label='⏯️', style=ButtonStyle.blurple)
+    @button(label='Play/Pause', style=ButtonStyle.blurple)
     async def toggle_pause(self, _: Button, interaction: Interaction):
         if self.player.paused:
             cmd = self.ctx.bot.get_command('unpause')
@@ -29,12 +29,12 @@ class NowPlayingView(View):
             cmd = self.ctx.bot.get_command('pause')
         return await self.ctx.invoke(cmd, is_interaction=True)
 
-    @button(label='⏭️', style=ButtonStyle.grey)
+    @button(label='Next', style=ButtonStyle.grey)
     async def skip_forward(self, _: Button, interaction: Interaction):
         cmd = self.ctx.bot.get_command('skip')
         return await self.ctx.invoke(cmd, is_interaction=True)
     
-    @button(label='⏹️', style=ButtonStyle.red)
+    @button(label='Stop', style=ButtonStyle.red)
     async def stop(self, _: Button, interaction: Interaction):
         cmd = self.ctx.bot.get_command('stop')
         return await self.ctx.invoke(cmd)
