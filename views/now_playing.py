@@ -12,7 +12,8 @@ class NowPlayingView(View):
     
     @button(label='📃', style=ButtonStyle.grey)
     async def show_queue(self, _: Button, interaction: Interaction):
-        pass
+        cmd = self.ctx.bot.get_command('queue')
+        return await self.ctx.invoke(cmd, is_interaction=True)
     
     @button(label='⏮️', style=ButtonStyle.grey)
     async def skip_backward(self, _: Button, interaction: Interaction):
