@@ -3,6 +3,7 @@ from nextcord import Color
 from nextcord.ext.commands import BucketType, command, Context, cooldown
 from typing import Dict
 from util import create_progress_bar, get_var, human_readable_time, RicoEmbed
+from views import NowPlayingView
 from .player_helpers import parse_query, send_loop_embed, try_enqueue
 from .queue_helpers import (
     dequeue_db, enqueue, enqueue_db, set_queue_db,
@@ -179,9 +180,15 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
                 f'Try `{prefix}help` for more.'
             ]
         )
+    
+    if automatic:
+        message = embed.send(ctx)
+    else:
+        # Send embed with view
+        embed = embed.get()
+        message = await ctx.send(embed=embed, view=NowPlayingView(ctx, player))
 
     # Save this message
-    message = await embed.send(ctx)
     self.db.child('player').child(str(ctx.guild.id)).child('npmessage').set(str(message.id))
 
 
