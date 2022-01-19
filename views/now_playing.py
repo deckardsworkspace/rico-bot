@@ -19,7 +19,7 @@ class NowPlayingView(View):
     @button(label='⏮️', style=ButtonStyle.grey)
     async def skip_backward(self, _: Button, interaction: Interaction):
         cmd = self.ctx.bot.get_command('previous')
-        return await self.ctx.invoke(cmd)
+        return await self.ctx.invoke(cmd, is_interaction=True)
 
     @button(label='⏯️', style=ButtonStyle.blurple)
     async def toggle_pause(self, _: Button, interaction: Interaction):
@@ -32,7 +32,7 @@ class NowPlayingView(View):
     @button(label='⏭️', style=ButtonStyle.grey)
     async def skip_forward(self, _: Button, interaction: Interaction):
         cmd = self.ctx.bot.get_command('skip')
-        return await self.ctx.invoke(cmd)
+        return await self.ctx.invoke(cmd, is_interaction=True)
     
     @button(label='⏹️', style=ButtonStyle.red)
     async def stop(self, _: Button, interaction: Interaction):
