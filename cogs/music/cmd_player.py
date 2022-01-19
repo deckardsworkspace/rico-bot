@@ -282,8 +282,15 @@ async def play(self, ctx: Context, *, query: str = None):
                     set_shuffle_indices(self.db, str(ctx.guild.id), shuffle_indices)
 
 
+@command(aliases=['prev'])
+async def previous(self, ctx: Context):
+    """ Plays the previous track in the queue. """
+    cmd = self.bot.get_command('skip')
+    return await ctx.invoke(cmd, queue_end=False, forward=False)
+
+
 @command(aliases=['next'])
-async def skip(self, ctx: Context, queue_end: bool = False):
+async def skip(self, ctx: Context, queue_end: bool = False, forward: bool = True):
     async with ctx.typing():
         # Get the player for this guild from cache.
         player = self.get_player(ctx.guild.id)
@@ -310,7 +317,10 @@ async def skip(self, ctx: Context, queue_end: bool = False):
                         # We are not looping
                         break
                 else:
-                    next_i += 1
+                    if forward:
+                        next_i += 1
+                    else:
+                        next_i -= 1
 
                 # Try playing the track
                 if await try_enqueue(ctx, self.db, player, shuffle_indices[next_i] if is_shuffling else next_i, queue_end):
@@ -322,7 +332,14 @@ async def skip(self, ctx: Context, queue_end: bool = False):
         # Remove player data from DB
         if not queue_end:
             self.db.child('player').child(str(ctx.guild.id)).remove()
-            return await self.disconnect(ctx, reason='Reached the end of the queue')
+            if forward:
+                return await self.disconnect(ctx, reason='Reached the end of the queue')
+            else:
+                embed = RicoEmbed(
+                    color=Color.red(),
+                    title=':x:｜Already at the start of the queue'
+                )
+                return await embed.send(ctx, as_reply=True)
 
 
 @command()
