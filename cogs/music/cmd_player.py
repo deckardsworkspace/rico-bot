@@ -1,7 +1,7 @@
 from lavalink.models import AudioTrack
-from nextcord import Color
+from nextcord import Color, Embed
 from nextcord.ext.commands import BucketType, command, Context, cooldown
-from typing import Dict
+from typing import Dict, Optional
 from util import create_progress_bar, get_var, human_readable_time, RicoEmbed
 from views import NowPlayingView
 from .player_helpers import parse_query, send_loop_embed, try_enqueue
@@ -190,7 +190,7 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
 
 
 @command()
-async def pause(self, ctx: Context):
+async def pause(self, ctx: Context, is_interaction: bool = False) -> Optional[Embed]:
     # Get the player for this guild from cache
     player = self.get_player(ctx.guild.id)
 
@@ -203,6 +203,8 @@ async def pause(self, ctx: Context):
     
     # Send reply
     reply = RicoEmbed(title=f':pause_button:｜{message}', color=Color.dark_orange())
+    if is_interaction:
+        return reply.get()
     return await reply.send(ctx, as_reply=True)
 
 
@@ -347,7 +349,7 @@ async def skip(self, ctx: Context, queue_end: bool = False, forward: bool = True
 
 
 @command()
-async def unpause(self, ctx: Context):
+async def unpause(self, ctx: Context, is_interaction: bool = False) -> Optional[Embed]:
     # Get the player for this guild from cache.
     player = self.get_player(ctx.guild.id)
 
@@ -360,6 +362,8 @@ async def unpause(self, ctx: Context):
     
     # Send reply
     reply = RicoEmbed(title=f':arrow_forward:｜{message}', color=Color.dark_green())
+    if is_interaction:
+        return reply.get()
     return await reply.send(ctx, as_reply=True)
 
 

@@ -27,7 +27,8 @@ class NowPlayingView(View):
             cmd = self.ctx.bot.get_command('unpause')
         else:
             cmd = self.ctx.bot.get_command('pause')
-        return await self.ctx.invoke(cmd, is_interaction=True)
+        embed = await self.ctx.invoke(cmd, is_interaction=True)
+        return await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @button(label='Next', style=ButtonStyle.grey)
     async def skip_forward(self, _: Button, interaction: Interaction):
