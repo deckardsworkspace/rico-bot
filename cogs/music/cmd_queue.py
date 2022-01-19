@@ -1,6 +1,6 @@
-from nextcord import Color, Message
+from nextcord import Color, Embed, Message
 from nextcord.ext.commands import command, Context
-from typing import Optional
+from typing import List, Optional
 from util import list_chunks, RicoEmbed, Paginator
 from .queue_helpers import (
     dequeue_db, get_loop_all, get_queue_index, get_queue_db, get_shuffle_indices,
@@ -104,7 +104,7 @@ async def move(self, ctx: Context, *, positions: str = None):
 
 
 @command(aliases=['q'])
-async def queue(self, ctx: Context, *, query: str = None):
+async def queue(self, ctx: Context, *, query: str = None, is_interaction: bool = False) -> Optional[Embed]:
     # Catch users trying to add to queue using this command
     if query is not None:
         # Give them a tip
@@ -124,13 +124,14 @@ async def queue(self, ctx: Context, *, query: str = None):
 
     # Get queue from DB
     # Delete the previous now playing message
-    try:
-        old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('qmessage').get().val()
-        if old_message_id:
-            old_message = await ctx.fetch_message(int(old_message_id))
-            await old_message.delete()
-    except:
-        pass
+    if not is_interaction:
+        try:
+            old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('qmessage').get().val()
+            if old_message_id:
+                old_message = await ctx.fetch_message(int(old_message_id))
+                await old_message.delete()
+        except:
+            pass
 
     # Get now playing index
     current_i = -1
@@ -152,13 +153,15 @@ async def queue(self, ctx: Context, *, query: str = None):
             color=Color.dark_grey(),
             title=f':information_source:｜Queue is empty'
         )
+        if is_interaction:
+            return embed.get()
         return await embed.send(ctx, as_reply=True)
     else:
         # Create paginated embeds
         paginator = Paginator(ctx)
         home_chunk = 0
         count = 1
-        embeds = []
+        embeds: List[RicoEmbed] = []
         embed_title = f'Queue for {ctx.guild.name}'
 
         # Show loop status
@@ -204,6 +207,10 @@ async def queue(self, ctx: Context, *, query: str = None):
                 fields=fields
             )
             embeds.append(embed.get())
+
+        # Return embed if displaying as interaction response 
+        if is_interaction:
+            return embeds[home_chunk].get()
         
         # Delete invoker message
         await ctx.message.delete()
