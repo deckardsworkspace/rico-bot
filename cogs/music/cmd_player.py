@@ -180,13 +180,10 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
                 f'Try `{prefix}help` for more.'
             ]
         )
-    
-    if automatic:
-        message = embed.send(ctx)
-    else:
-        # Send embed with view
-        embed = embed.get()
-        message = await ctx.send(embed=embed, view=NowPlayingView(ctx, player))
+
+    # Send embed with view
+    embed = embed.get()
+    message = await ctx.send(embed=embed, view=NowPlayingView(ctx, player))
 
     # Save this message
     self.db.child('player').child(str(ctx.guild.id)).child('npmessage').set(str(message.id))
