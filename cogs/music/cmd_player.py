@@ -287,14 +287,14 @@ async def play(self, ctx: Context, *, query: str = None):
 
 
 @command(aliases=['prev'])
-async def previous(self, ctx: Context):
+async def previous(self, ctx: Context, is_interaction: bool = False):
     """ Plays the previous track in the queue. """
     cmd = self.bot.get_command('skip')
-    return await ctx.invoke(cmd, queue_end=False, forward=False)
+    return await ctx.invoke(cmd, queue_end=False, forward=False, is_interaction=is_interaction)
 
 
 @command(aliases=['next'])
-async def skip(self, ctx: Context, queue_end: bool = False, forward: bool = True):
+async def skip(self, ctx: Context, queue_end: bool = False, forward: bool = True, is_interaction: bool = False):
     async with ctx.typing():
         # Get the player for this guild from cache.
         player = self.get_player(ctx.guild.id)
@@ -329,7 +329,7 @@ async def skip(self, ctx: Context, queue_end: bool = False, forward: bool = True
                 # Try playing the track
                 if await try_enqueue(ctx, self.db, player, shuffle_indices[next_i] if is_shuffling else next_i, queue_end):
                     # Delete invoker message
-                    if not queue_end:
+                    if not queue_end and not is_interaction:
                         await ctx.message.delete()
                     return
 
