@@ -13,7 +13,8 @@ class NowPlayingView(View):
     @button(label='📃', style=ButtonStyle.grey)
     async def show_queue(self, _: Button, interaction: Interaction):
         cmd = self.ctx.bot.get_command('queue')
-        return await self.ctx.invoke(cmd, is_interaction=True)
+        embed = await self.ctx.invoke(cmd, is_interaction=True)
+        return await interaction.response.send_message(embed=embed)
     
     @button(label='⏮️', style=ButtonStyle.grey)
     async def skip_backward(self, _: Button, interaction: Interaction):
@@ -26,7 +27,7 @@ class NowPlayingView(View):
             cmd = self.ctx.bot.get_command('unpause')
         else:
             cmd = self.ctx.bot.get_command('pause')
-        return await self.ctx.invoke(cmd)
+        return await self.ctx.invoke(cmd, is_interaction=True)
 
     @button(label='⏭️', style=ButtonStyle.grey)
     async def skip_forward(self, _: Button, interaction: Interaction):
