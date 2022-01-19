@@ -35,4 +35,5 @@ class NowPlayingView(View):
     
     @button(label='⏹️', style=ButtonStyle.red)
     async def stop(self, _: Button, interaction: Interaction):
-        pass
+        cmd = self.ctx.bot.get_command('stop')
+        return await self.ctx.invoke(cmd)
