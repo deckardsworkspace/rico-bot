@@ -6,7 +6,7 @@ from nextcord.ui import button, Button, View
 
 class NowPlayingView(View):
     def __init__(self, ctx: Context, player: BasePlayer):
-        super().__init__()
+        super().__init__(timeout=None)
         self.ctx = ctx
         self.player = player
     
