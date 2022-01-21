@@ -28,6 +28,15 @@ async def disconnect(self, ctx: Context, reason: str = None):
     # Destroy the player
     await self.bot.lavalink.player_manager.destroy(ctx.guild.id)
 
+    # Remove controls from the previous now playing message
+    try:
+        old_message_id = self.db.child('player').child(str(ctx.guild.id)).child('npmessage').get().val()
+        if old_message_id:
+            old_message = await ctx.fetch_message(int(old_message_id))
+            await old_message.edit(view=None)
+    except:
+        pass
+
     embed = RicoEmbed(
         color=Color.blurple(),
         title=':wave:｜Disconnected from voice',
