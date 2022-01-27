@@ -130,8 +130,8 @@ class Spotify:
     def get_artist_image(self, artist_id: str) -> str:
         return self.__get_art(self.client.artist(artist_id)['images'])
 
-    def get_playlist_cover(self, playlist_id: str) -> str:
-        return self.__get_art(self.client.playlist_cover_image(playlist_id))
+    def get_playlist_cover(self, playlist_id: str, default: str) -> str:
+        return self.__get_art(self.client.playlist_cover_image(playlist_id), default=default)
     
     def get_track_art(self, track_id: str) -> str:
         return self.__get_art(self.client.track(track_id)['album']['images'])
