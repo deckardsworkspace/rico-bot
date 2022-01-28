@@ -33,7 +33,7 @@ async def ensure_voice(bot: Bot, ctx: Context):
     try:
         player = bot.lavalink.player_manager.create(ctx.guild.id, endpoint=str(ctx.guild.region))
     except NodeError:
-        if ctx.command.name in ('play', 'p'):
+        if ctx.command.name in ('play', 'p', 'ap', 'autoplay'):
             raise VoiceCommandError('No audio servers currently available. Please try again later.')
 
     if not ctx.author.voice or not ctx.author.voice.channel:
@@ -42,7 +42,7 @@ async def ensure_voice(bot: Bot, ctx: Context):
     vc = ctx.author.voice.channel
     if not player.is_connected:
         # Bot needs to already be in voice channel to pause, unpause, skip etc.
-        if ctx.command.name not in ('play', 'p'):
+        if ctx.command.name not in ('play', 'p', 'ap', 'autoplay'):
             raise VoiceCommandError('I\'m not connected to voice.')
 
         permissions = vc.permissions_for(ctx.me)
