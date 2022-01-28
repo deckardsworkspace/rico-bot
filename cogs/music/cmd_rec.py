@@ -38,6 +38,7 @@ async def autoplay(self, ctx: Context, *, query: str = None):
         # Get recommendations
         token_data = self.db.child('spotify_auth').child(str(ctx.author.id)).get().val()
         access_token, expires_in, refresh_token, recs = self.spotify.get_recommendations(sp_id, token_data)
+        personalized = token_data is not None and 'access_token' in token_data
 
         # Append tracks to database
         new_tracks = []
@@ -63,7 +64,7 @@ async def autoplay(self, ctx: Context, *, query: str = None):
                 set_shuffle_indices(self.db, str(ctx.guild.id), shuffle_indices)
         
         # Update auth data
-        if token_data is not None and 'access_token' in token_data and access_token != token_data['access_token']:
+        if personalized and access_token != token_data['access_token']:
             self.db.child('spotify_auth').child(str(ctx.author.id)).set({
                 'access_token': access_token,
                 'expires_in': expires_in,
@@ -71,15 +72,14 @@ async def autoplay(self, ctx: Context, *, query: str = None):
             })
         
         # Send embed
-        track_name, track_artist, _, track_duration = self.spotify.get_track(sp_id)
-        _, m, s = human_readable_time(track_duration)
+        track_name, track_artist, _, _ = self.spotify.get_track(sp_id)
         embed = RicoEmbed(
             color=Color.green(),
             title=':white_check_mark:｜Recommendations added to queue',
             description=[
                 f'based on **{track_name}**',
                 f'by **{track_artist}**',
-                f'{m} min, {s} sec'
+                f'curated for {ctx.author.mention}' if personalized else ''
             ]
         )
         return await embed.send(ctx)
