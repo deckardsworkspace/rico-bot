@@ -61,6 +61,7 @@ class Spotify:
                 'playlist-modify-private',
                 'playlist-read-private',
                 'playlist-read-collaborative'
+                'user-read-recently-played'
             ])
         }
         url = "{}?{}".format(base_url, urllib.parse.urlencode(url_params))
