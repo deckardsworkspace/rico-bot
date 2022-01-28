@@ -171,6 +171,9 @@ class Spotify:
         seed_artists = [track_artist]
         
         # Are the credentials valid?
+        access_token = ''
+        expires_in = 0
+        refresh_token = ''
         if token_data is not None and 'access_token' in token_data:
             # Get auth credentials
             access_token, expires_in, refresh_token = self.check_renew(token_data)

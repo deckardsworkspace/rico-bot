@@ -63,11 +63,11 @@ async def autoplay(self, ctx: Context, *, query: str = None):
                 set_shuffle_indices(self.db, str(ctx.guild.id), shuffle_indices)
         
         # Update auth data
-        if access_token != token_data['access_token']:
-            self.db.child("spotify_auth").child(str(ctx.author.id)).set({
-                "access_token": access_token,
-                "expires_in": expires_in,
-                "refresh_token": refresh_token
+        if 'access_token' in token_data and access_token != token_data['access_token']:
+            self.db.child('spotify_auth').child(str(ctx.author.id)).set({
+                'access_token': access_token,
+                'expires_in': expires_in,
+                'refresh_token': refresh_token
             })
         
         # Send embed
