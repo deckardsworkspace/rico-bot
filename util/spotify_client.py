@@ -179,9 +179,13 @@ class Spotify:
             access_token, expires_in, refresh_token = self.check_renew(token_data)
 
             # Get list of recently played tracks and artists
-            recent_tracks, recent_artists = self.get_top_seeds(access_token)
-            seed_tracks.extend(sample(recent_tracks, 4))
-            seed_artists.extend(sample(recent_artists, 4))
+            try:
+                recent_tracks, recent_artists = self.get_top_seeds(access_token)
+            except:
+                pass
+            else:
+                seed_tracks.extend(sample(recent_tracks, 4))
+                seed_artists.extend(sample(recent_artists, 4))
         
         # Return new auth data and list of recommendations
         recommendations = self.client.recommendations(seed_tracks=seed_tracks, seed_artists=seed_artists, limit=30)
