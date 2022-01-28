@@ -6,7 +6,8 @@ import time
 import urllib.parse
 import uuid
 from .config import get_var
-from .exception import SpotifyInvalidURLError
+from .exception import SpotifyInsufficientAccessError, SpotifyInvalidURLError
+from random import sample
 from ratelimit import limits
 from spotipy.oauth2 import SpotifyClientCredentials
 from typing import Dict, List, Tuple
@@ -20,7 +21,7 @@ def get_chunks(lst):
         yield lst[i:i + 100]
 
 
-def extract_track_info(track_obj) -> tuple[str, str]:
+def extract_track_info(track_obj) -> Tuple[str, str, str, int]:
     if 'track' in track_obj:
         # Nested track (playlist track object)
         track_obj = track_obj['track']
@@ -39,6 +40,16 @@ class Spotify:
         client_secret = get_var("SPOTIFY_SECRET")
         auth_manager = SpotifyClientCredentials(client_id=self.client_id, client_secret=client_secret)
         self.client = spotipy.Spotify(auth_manager=auth_manager)
+    
+    def check_renew(self, token_data: Dict[str, str]) -> Tuple[str, str, str]:
+        # Check if the token is almost expired (within 15 sec)
+        access_token = token_data['access_token']
+        refresh_token = token_data['refresh_token']
+        expires_in = int(token_data['expires_in'])
+        if int(time.time()) + 15 >= expires_in:
+            # Request new token
+            access_token, expires_in, refresh_token = self.request_token(refresh_token=refresh_token)
+        return access_token, expires_in, refresh_token
 
     def create_auth_url(self):
         # Create code challenge and verifier
@@ -61,7 +72,7 @@ class Spotify:
                 'playlist-modify-private',
                 'playlist-read-private',
                 'playlist-read-collaborative',
-                'user-read-recently-played'
+                'user-top-read'
             ])
         }
         url = "{}?{}".format(base_url, urllib.parse.urlencode(url_params))
@@ -70,13 +81,8 @@ class Spotify:
 
     @limits(calls=10, period=5)
     def create_playlist(self, token_data, username, tracks):
-        # Check if the token is almost expired (within 15 sec)
-        access_token = token_data['access_token']
-        refresh_token = token_data['refresh_token']
-        expires_in = int(token_data['expires_in'])
-        if int(time.time()) + 15 >= expires_in:
-            # Request new token
-            access_token, expires_in, refresh_token = self.request_token(refresh_token=refresh_token)
+        # Get auth credentials
+        access_token, expires_in, refresh_token = self.check_renew(token_data)
 
         # Who are we?
         profile_req = requests.get("https://api.spotify.com/v1/me", headers={
@@ -134,10 +140,54 @@ class Spotify:
     def get_playlist_cover(self, playlist_id: str, default: str) -> str:
         return self.__get_art(self.client.playlist_cover_image(playlist_id), default=default)
     
+    def get_top_seeds(self, access_token: str) -> Tuple[List[str], List[str]]:
+        # Get list of top artists and tracks
+        artist_items = []
+        track_items = []
+        for entity in ('artists', 'tracks'):
+            req = requests.get(f'https://api.spotify.com/v1/me/top/{entity}', headers={
+                'Authorization': 'Bearer {}'.format(access_token),
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            })
+            if req.status_code != 200:
+                if req.json()['error']['message'] == 'Insufficient client scope':
+                    raise SpotifyInsufficientAccessError()
+                req.raise_for_status()
+            if entity == 'artists':
+                artist_items = req.json()['items']
+            elif entity == 'tracks':
+                track_items = req.json()['items']
+
+        # Extract track and artist IDs
+        recent_tracks = [track['id'] for track in track_items]
+        recent_artists = [artist['id'] for artist in artist_items]
+        return recent_tracks, recent_artists
+    
+    def get_recommendations(self, track_id: str, token_data: Dict[str, str]) -> Tuple[str, str, str, Tuple[str, str, str, int]]:
+        # Get initial seeds
+        track_artist = self.client.track(track_id)['artists'][0]['id']
+        seed_tracks = [track_id]
+        seed_artists = [track_artist]
+        
+        # Are the credentials valid?
+        if token_data is not None and 'access_token' in token_data:
+            # Get auth credentials
+            access_token, expires_in, refresh_token = self.check_renew(token_data)
+
+            # Get list of recently played tracks and artists
+            recent_tracks, recent_artists = self.get_top_seeds(access_token)
+            seed_tracks.extend(sample(recent_tracks, 4))
+            seed_artists.extend(sample(recent_artists, 4))
+        
+        # Return new auth data and list of recommendations
+        recommendations = self.client.recommendations(seed_tracks=seed_tracks, seed_artists=seed_artists, limit=30)
+        return access_token, expires_in, refresh_token, [extract_track_info(track) for track in recommendations['tracks']]
+    
     def get_track_art(self, track_id: str) -> str:
         return self.__get_art(self.client.track(track_id)['album']['images'])
 
-    def get_track(self, track_id: str) -> tuple[str, str]:
+    def get_track(self, track_id: str) -> Tuple[str, str]:
         return extract_track_info(self.client.track(track_id))
 
     def get_tracks(self, list_type: str, list_id: str) -> Tuple[str, str, List[Tuple[str, str, str, int]]]:

@@ -1,3 +1,8 @@
+class SpotifyInsufficientAccessError(Exception):
+    def __init__(self):
+        self.message = "Insufficient access to Spotify data. Try authenticating again."
+        super().__init__(self.message)
+
 class SpotifyInvalidURLError(Exception):
     def __init__(self, url):
         self.message = "Invalid Spotify link or URI: {}".format(url)

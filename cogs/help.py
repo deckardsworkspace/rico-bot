@@ -33,6 +33,7 @@ help_list = {
     'music': {
         'title': 'Music player commands (beta)',
         'commands': {
+            '{0}autoplay, {0}ap': 'Play a Spotify track along with tracks recommended based on that and your top artists/tracks, if any.',
             '{0}clearqueue, {0}cq': 'Clear the playback queue for the server.',
             '{0}disconnect, {0}dc': 'Stop playback, clear the queue, and disconnect from voice.',
             '{0}jump <index>, {0}j': 'Jump to a track in the queue.',
