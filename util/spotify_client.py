@@ -184,8 +184,8 @@ class Spotify:
             except:
                 pass
             else:
-                seed_tracks.extend(sample(recent_tracks, 4))
-                seed_artists.extend(sample(recent_artists, 4))
+                seed_tracks.extend(sample(recent_tracks, 2))
+                seed_artists.extend(sample(recent_artists, 1))
         
         # Return new auth data and list of recommendations
         recommendations = self.client.recommendations(seed_tracks=seed_tracks, seed_artists=seed_artists, limit=30)
