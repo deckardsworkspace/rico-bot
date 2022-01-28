@@ -37,7 +37,7 @@ async def autoplay(self, ctx: Context, *, query: str = None):
 
         # Get recommendations
         token_data = self.db.child('spotify_auth').child(str(ctx.author.id)).get().val()
-        access_token, expires_in, refresh_token, recs = await self.spotify.get_recommendations(sp_id, token_data)
+        access_token, expires_in, refresh_token, recs = self.spotify.get_recommendations(sp_id, token_data)
 
         # Append tracks to database
         new_tracks = []
@@ -63,7 +63,7 @@ async def autoplay(self, ctx: Context, *, query: str = None):
                 set_shuffle_indices(self.db, str(ctx.guild.id), shuffle_indices)
         
         # Update auth data
-        if 'access_token' in token_data and access_token != token_data['access_token']:
+        if token_data is not None and 'access_token' in token_data and access_token != token_data['access_token']:
             self.db.child('spotify_auth').child(str(ctx.author.id)).set({
                 'access_token': access_token,
                 'expires_in': expires_in,
