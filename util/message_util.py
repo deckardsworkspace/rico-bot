@@ -42,7 +42,7 @@ class RicoEmbed:
         # Set embed parts
         if self.header is not EmptyEmbed:
             embed.set_author(name=self.header)
-        if self.thumbnail_url is not EmptyEmbed:
+        if self.thumbnail_url is not EmptyEmbed and self.thumbnail_url != '':
             embed.set_thumbnail(url=self.thumbnail_url)
         if self.image_url is not EmptyEmbed:
             embed.set_image(url=self.image_url)

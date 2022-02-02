@@ -152,7 +152,7 @@ async def parse_spotify_query(ctx: Context, spotify: Spotify, query: str) -> Lis
         if sp_type == 'album':
             sp_art = spotify.get_album_art(sp_id)
         elif sp_type == 'playlist':
-            sp_art = spotify.get_playlist_cover(sp_id)
+            sp_art = spotify.get_playlist_cover(sp_id, default='')
 
     new_tracks = []
     if sp_type == 'track':
