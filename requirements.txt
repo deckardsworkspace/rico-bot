@@ -1,6 +1,7 @@
-aiohttp==3.7.4.post0
+aiohttp==3.8.1
+aiosignal==1.2.0
 anyio==3.3.4
-async-timeout==3.0.1
+async-timeout==4.0.2
 attrs==21.2.0
 certifi==2021.5.30
 cffi==1.14.5
@@ -14,6 +15,7 @@ Deprecated==1.2.12
 discord.py==1.7.3
 distro==1.6.0
 Flask==2.0.2
+frozenlist==1.3.0
 gcloud==0.18.3
 googleapis-common-protos==1.53.0
 h11==0.12.0
@@ -27,7 +29,7 @@ jwcrypto==0.9.1
 lavalink @ git+https://github.com/jareddantis/Lavalink.py@ddcfe1bd50d743103e00f3f784a8c23d558ac0a7
 MarkupSafe==2.0.1
 multidict==4.7.6
-nextcord @ git+https://github.com/nextcord/nextcord.git@f241196e3ff981bad33748203c52b7519c53ecbb
+nextcord==2.0.0a8
 oauth2client==4.1.3
 pendulum==2.1.2
 pipdeptree==2.1.0
