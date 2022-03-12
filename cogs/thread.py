@@ -138,10 +138,15 @@ class ThreadManager(Cog):
 
     @command(name='tte')
     async def toggle_exclusion(self, ctx: Context):
-        if not ctx.author.guild_permissions.administrator:
-            return await send_error_embed(ctx, 'This command can only be used by an administrator.')
+        # Only allow command from within threads
         if not isinstance(ctx.channel, Thread):
             return await send_error_embed(ctx, 'This command can only be used in a thread.')
+        
+        # Only allow commands from admins and thread owners
+        is_administrator = ctx.author.guild_permissions.administrator
+        is_thread_owner = ctx.author.id == ctx.channel.owner_id
+        if not is_administrator and not is_thread_owner:
+            return await send_error_embed(ctx, 'This command can only be used by an administrator or this thread\'s owner.')
 
         # Get list of excluded thread IDs
         invoked_thread = str(ctx.channel.id)
