@@ -1,7 +1,7 @@
 from math import floor
 from nextcord import Color, Guild, Member, Message, Reaction, Thread
 from nextcord.ext import tasks
-from nextcord.ext.commands import Bot, Cog, command, Context, is_owner
+from nextcord.ext.commands import Bot, Cog, command, CommandInvokeError, Context, is_owner
 from pyrebase.pyrebase import Database
 from ratelimit import limits, sleep_and_retry
 from typing import List, Union
@@ -184,7 +184,7 @@ class ThreadManager(Cog):
             return u == ctx.author and str(r.emoji) == '🗑️'
         try:
             r, u = await ctx.bot.wait_for('reaction_add', check=check, timeout=60.0)
-        except TimeoutError:
+        except CommandInvokeError:
             # Remove prompt from message
             embed.description = archival_msg
         else:
