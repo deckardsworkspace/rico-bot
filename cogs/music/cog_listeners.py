@@ -1,5 +1,5 @@
 from asyncio import sleep
-from lavalink.errors import NodeError
+from lavalink.exceptions import NodeException
 from nextcord import Member, VoiceState
 from nextcord.ext.commands import Bot, Cog, Context
 from util import get_var, human_readable_time, VoiceCommandError
@@ -32,7 +32,7 @@ async def ensure_voice(bot: Bot, ctx: Context):
     # Ensure a player exists for this guild
     try:
         player = bot.lavalink.player_manager.create(ctx.guild.id, endpoint=str(ctx.guild.region))
-    except NodeError:
+    except NodeException:
         if ctx.command.name in ('play', 'p', 'ap', 'autoplay'):
             raise VoiceCommandError('No audio servers currently available. Please try again later.')
 
