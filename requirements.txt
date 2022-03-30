@@ -25,7 +25,7 @@ idna==2.10
 itsdangerous==2.0.1
 Jinja2==3.0.2
 jwcrypto==0.9.1
-lavalink==3.1.5
+lavalink @ git+https://github.com/Devoxin/Lavalink.py@6c777cf4003bde805035b00250a872344354daa9
 MarkupSafe==2.0.1
 multidict==4.7.6
 nextcord==2.0.0a9
