@@ -16,9 +16,16 @@ def init_lavalink(id: int) -> lavalink.Client:
     # Add nodes from env
     nodes = get_lavalink_nodes()
     for node in nodes:
+        is_secure = 'secure' in node and node['secure']
         client.add_node(
-            node['host'], node['port'], node['password'],
-            node['region'], node['id'], inactivity_timeout, node['id']
+            host=node['host'],
+            port=node['port'],
+            password=node['password'],
+            region=node['region'],
+            resume_key=node['id'],
+            resume_timeout=inactivity_timeout,
+            name=node['id'],
+            ssl=is_secure
         )
     
     return client

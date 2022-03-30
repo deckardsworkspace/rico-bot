@@ -146,12 +146,16 @@ nodes = [
 
         # Lavalink server URL.
         # This must match the format `hostname:port`.
-        # for example: `lava.link:80`
+        # for example: `lava.link:80` (do not add 'http://' or 'https://'!)
         'server': 'example.com:2333',
 
         # Lavalink server password.
         # Must match the password in Lavalink's `application.yml` file.
-        'password': 'password'
+        'password': 'password',
+
+        # Lavalink server security.
+        # Enable if your Lavalink server is accessible over HTTPS.
+        'secure': False
     }#, {...}   You can specify more than one node for redundancy.
 ]
 
