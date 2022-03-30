@@ -155,7 +155,7 @@ nodes = [
 
         # Lavalink server security.
         # Enable if your Lavalink server is accessible over HTTPS.
-        'secure': False
+        'secure': true
     }#, {...}   You can specify more than one node for redundancy.
 ]
 
