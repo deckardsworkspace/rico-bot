@@ -50,6 +50,7 @@ class Music(Cog):
             # Delete track metadata from player storage
             if hasattr(event.track, 'identifier'):
                 event.player.delete(event.track.identifier)
+                event.player.delete(f'{event.track.identifier}-spotify')
         elif isinstance(event, QueueEndEvent):
             # Queue up the next (valid) track from DB, if any
             await self.skip(ctx, queue_end=True)

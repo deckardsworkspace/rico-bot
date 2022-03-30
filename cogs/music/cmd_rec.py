@@ -97,10 +97,11 @@ async def recommend_now_playing(self, ctx: Context):
     if player.current is not None:
         # Recover track info
         current_id = player.current.identifier
-        track_info = player.fetch(current_id)
-        if track_info and hasattr(track_info, 'title'):
-            if hasattr(track_info, 'spotify'):
-                return await ctx.invoke(cmd, f'spotify:track:{track_info["spotify"]["id"]}')
+        track_info = player.fetch(current_id, None)
+        if track_info is not None and hasattr(track_info, 'identifier'):
+            spotify_info = player.fetch(f'{track_info.identifier}-spotify', None)
+            if spotify_info is not None:
+                return await ctx.invoke(cmd, f'spotify:track:{spotify_info["id"]}')
             else:
                 track_name = sanitize_youtube_name(track_info['title'])
                 return await ctx.invoke(cmd, track_name)

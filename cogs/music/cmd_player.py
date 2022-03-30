@@ -115,12 +115,15 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
 
         # If not in storage, recover track info from current track metadata.
         if track_info is None or isinstance(track_info, AudioTrack):
+            if track_info is not None and hasattr(track_info, 'identifier'):
+                identifier = track_info.identifier
             track_info = {
                 'title': player.current.title,
                 'author': player.current.author,
                 'uri': player.current.uri,
                 'isStream': player.current.stream,
-                'length': player.current.duration
+                'length': player.current.duration,
+                'identifier': identifier
             }
             
         # Don't create progress info for streams
@@ -143,10 +146,13 @@ async def now_playing(self, ctx: Context, track_info: Dict = None):
         track_name = track_info['title']
         track_artist = track_info['author']
         track_uri = track_info['uri']
-        if hasattr(track_info, 'spotify'):
-            track_name = track_info['spotify']['name']
-            track_artist = track_info['spotify']['artist']
-            track_uri = f'https://open.spotify.com/track/{track_info["spotify"]["id"]}'
+        if 'identifier' in track_info:
+            # Try to get Spotify track info from cache
+            spotify_info = player.fetch(f'{track_info["identifier"]}-spotify', None)
+            if spotify_info is not None:
+                track_name = spotify_info['name']
+                track_artist = spotify_info['artist']
+                track_uri = f'https://open.spotify.com/track/{spotify_info["id"]}'
 
         # Show requester info and avatar
         requester = await self.bot.fetch_user(player.current.requester)
