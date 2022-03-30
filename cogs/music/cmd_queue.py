@@ -142,7 +142,7 @@ async def queue(self, ctx: Context, *, query: str = None, is_interaction: bool =
 
         # Get now playing info
         stored_info = player.fetch(player.current.identifier)
-        if stored_info is not None and 'title' in stored_info:
+        if stored_info is not None and hasattr(stored_info, 'title'):
             # Spotify info available for current track
             current_info = (stored_info['title'], stored_info['author'])
 

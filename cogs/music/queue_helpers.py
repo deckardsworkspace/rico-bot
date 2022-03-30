@@ -110,15 +110,15 @@ async def enqueue(bot: Bot, query: QueueItem, ctx: Context) -> bool:
 
         # Add Spotify data to track metadata
         if query.spotify_id is not None:
-            track['info']['spotify'] = {
+            track['spotify'] = {
                 'name': query.title,
                 'artist': query.artist,
                 'id': query.spotify_id
             }
 
         # Save track metadata to player storage
-        if 'identifier' in track['info']:
-            player.store(track['info']['identifier'], track['info'])
+        if hasattr(track, 'identifier'):
+            player.store(track['identifier'], track)
 
         # Add track directly to Lavalink queue
         track = AudioTrack(track, query.requester)

@@ -40,7 +40,7 @@ class Music(Cog):
             if hasattr(track_info, 'identifier'):
                 # Get info currently playing track
                 stored_info = event.player.fetch(track_info['identifier'])
-                if stored_info and 'title' in stored_info:
+                if stored_info and hasattr(stored_info, 'title'):
                     track_info = stored_info
             await self.now_playing(ctx, track_info=track_info)
 
