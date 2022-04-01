@@ -151,11 +151,7 @@ nodes = [
 
         # Lavalink server password.
         # Must match the password in Lavalink's `application.yml` file.
-        'password': 'password',
-
-        # Lavalink server security.
-        # Enable if your Lavalink server is accessible over HTTPS.
-        'secure': true
+        'password': 'password'
     }#, {...}   You can specify more than one node for redundancy.
 ]
 

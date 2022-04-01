@@ -24,8 +24,8 @@ def init_lavalink(id: int) -> lavalink.Client:
             region=node['region'],
             resume_key=node['id'],
             resume_timeout=inactivity_timeout,
-            name=node['id'],
-            ssl=is_secure
+            name=node['id']#,
+            # ssl=is_secure
         )
     
     return client
