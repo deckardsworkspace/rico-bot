@@ -1,12 +1,17 @@
-from nextcord import Activity, ActivityType, Embed, Color, Message
+from nextcord import Activity, ActivityType, Color, Embed, Intents, Message
 from nextcord.ext.commands import Bot, CommandNotFound, Context, errors
 from nextcord.ext.tasks import loop
 from util import get_var, VoiceCommandError
 
 
+# Opt in to message content reading
+intents = Intents.default()
+intents.message_content = True
+
+
 # Create Discord client
 bot_prefix = get_var('BOT_PREFIX')
-client = Bot(command_prefix=bot_prefix)
+client = Bot(command_prefix=bot_prefix, intents=intents)
 client.remove_command('help')
 
 
