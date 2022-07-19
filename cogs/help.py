@@ -30,32 +30,6 @@ help_list = {
             '{0}dump': 'Export all your recommended Spotify tracks to a new Spotify playlist in your library. Does not include artists, albums, or playlists.',
         }
     },
-    'music': {
-        'title': 'Music player commands (beta)',
-        'commands': {
-            '{0}autoplay, {0}ap': 'Play a Spotify track along with tracks recommended based on that and your top artists/tracks, if any.',
-            '{0}clearqueue, {0}cq': 'Clear the playback queue for the server.',
-            '{0}disconnect, {0}dc': 'Stop playback, clear the queue, and disconnect from voice.',
-            '{0}jump <index>, {0}j': 'Jump to a track in the queue.',
-            '{0}loop': 'Loop the current track. Use this command again to disable looping.',
-            '{0}loop all': 'Loop the whole queue. Use this command again to disable looping.',
-            '{0}move <src> <dest>, {0}m': 'Move a queue item from <src> to <dest>.',
-            '{0}nowplaying, {0}np': 'Show the currently playing track.',
-            '{0}play <URL/search term>, {0}p': 'Play a song, album, or playlist. Supports YouTube, Spotify, and Twitch URLs.',
-            '{0}pause': 'Pause playback.',
-            '{0}queue, {0}q': 'Show the current playback queue.',
-            '{0}recnow, {0}rn': 'Recommend the currently playing track to the server.',
-            '{0}recnow @mention': 'Recommend the currently playing track to someone or yourself.',
-            '{0}removequeue <num/nums>, {0}rmq': 'Remove the specified songs from the queue, i.e. `{0}rmq 2 3` to dequeue songs 2 and 3.',
-            '{0}resetplayer, {0}rp': 'Reset the player state for the server.',
-            '{0}shuffle, {0}shuf': 'Shuffle the current playback queue. If already shuffled, this command will shuffle it again.',
-            '{0}unshuffle, {0}unshuf': 'Unshuffle the current playback queue.',
-            '{0}previous, {0}prev': 'Play the previous track.',
-            '{0}skip, {0}next': 'Skip currently playing track.',
-            '{0}unpause': 'Resume playback.',
-            '{0}volume, {0}v, {0}vol': 'Adjust player volume.'
-        }
-    },
     'thread': {
         'title': 'Thread management commands (admin only)',
         'commands': {
