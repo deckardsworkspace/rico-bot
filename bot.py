@@ -1,7 +1,7 @@
 from nextcord import Activity, ActivityType, Color, Embed, Intents, Message
 from nextcord.ext.commands import Bot, CommandNotFound, Context, errors
 from nextcord.ext.tasks import loop
-from util import get_var, VoiceCommandError
+from util import get_var
 
 
 # Opt in to message content reading
@@ -30,7 +30,7 @@ async def on_message(message: Message):
     
     try:
         await client.process_commands(message)
-    except VoiceCommandError as e:
+    except Exception as e:
         embed = Embed(color=Color.red(), title=f'Error while processing command', description=e.message)
         await message.reply(embed=embed)
 
