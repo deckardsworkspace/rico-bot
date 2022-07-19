@@ -60,3 +60,4 @@ waitress==2.0.0
 Werkzeug==2.0.2
 wrapt==1.12.1
 yarl==1.5.1
+youtube-search-python==1.4.9
