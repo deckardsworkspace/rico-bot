@@ -1,7 +1,6 @@
 from .recommendation import Recommendation
 from .export import Export
 from .help import Help
-from .music import Music
 from .debug import Debug
 from .thread import ThreadManager
 from nextcord.ext.commands import Bot
@@ -26,5 +25,3 @@ def setup(bot: Bot):
     # Conditional cogs
     if get_var('ENABLE_THREADMGR') == '1':
         bot.add_cog(ThreadManager(bot, db))
-    if get_var('ENABLE_MUSIC') == '1':
-        bot.add_cog(Music(bot, db, spotify))

@@ -15,18 +15,6 @@ class SpotifyNotFoundError(Exception):
         super().__init__(self.message)
 
 
-class QueueEmptyError(Exception):
-    def __init__(self):
-        self.message = "Queue is empty."
-        super().__init__(self.message)
-
-
-class VoiceCommandError(Exception):
-    def __init__(self, reason):
-        self.message = reason
-        super().__init__(self.message)
-
-
 class YouTubeInvalidURLError(Exception):
     def __init__(self, url, reason=None):
         self.message = f'Invalid YouTube video: {url}. Reason: {reason}'
