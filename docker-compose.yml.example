@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:alpine
+    container_name: rico-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=rico
+    volumes:
+      ./pgdata:/var/lib/postgresql/data
+  bot:
+    image: jareddantis/rico-bot:latest
+    depends_on:
+      - db
+    container_name: rico-bot
+    volumes:
+      - ./config.yml:/opt/app/config.yml

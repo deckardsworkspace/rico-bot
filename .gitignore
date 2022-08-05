@@ -7,3 +7,4 @@
 .env
 .cache
 .python-version
+**/*.yml
