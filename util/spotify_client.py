@@ -6,7 +6,7 @@ import time
 import urllib.parse
 import uuid
 from .config import get_var
-from .exception import SpotifyInsufficientAccessError, SpotifyInvalidURLError
+from .exceptions import SpotifyInsufficientAccessError, SpotifyInvalidURLError
 from random import sample
 from ratelimit import limits
 from spotipy.oauth2 import SpotifyClientCredentials

@@ -3,7 +3,7 @@ import validators
 import re
 from math import ceil, floor, log, pow
 from urllib.parse import urlparse, parse_qs
-from .exception import *
+from .exceptions import *
 
 
 def check_ip_addr(url: str) -> bool:

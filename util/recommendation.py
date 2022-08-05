@@ -3,7 +3,7 @@ from typing import Dict
 from youtubesearchpython import *
 from .spotify_client import Spotify
 from .string_util import ellipsis_truncate, get_ytid_from_url, parse_spotify_url
-from .exception import *
+from .exceptions import *
 
 @dataclass
 class Recommendation:

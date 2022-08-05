@@ -1,5 +1,5 @@
 from .config import *
-from .exception import *
+from .exceptions import *
 from .list_util import *
 from .message_util import *
 from .paginator import Paginator
