@@ -3,10 +3,9 @@ from math import floor
 from nextcord import Color, Guild, Member, Message, Reaction, Thread
 from nextcord.ext import tasks
 from nextcord.ext.commands import Bot, Cog, command, Context, is_owner
-from pyrebase.pyrebase import Database
 from ratelimit import limits, sleep_and_retry
 from typing import List, Union
-from util import RicoEmbed
+from dataclass.custom_embed import CustomEmbed
 
 
 def min_to_dh(mins: int) -> str:
@@ -24,7 +23,7 @@ def min_to_dh(mins: int) -> str:
 
 
 async def send_error_embed(ctx: Context, message: Union[str, List[str]]) -> Message:
-    embed = RicoEmbed(
+    embed = CustomEmbed(
         color=Color.red(),
         title=':x:｜Error',
         description=message
@@ -33,7 +32,7 @@ async def send_error_embed(ctx: Context, message: Union[str, List[str]]) -> Mess
 
 
 async def send_success_embed(ctx: Context, message: Union[str, List[str]]) -> Message:
-    embed = RicoEmbed(
+    embed = CustomEmbed(
         color=Color.green(),
         title=':white_check_mark:｜Success',
         description=message
@@ -42,9 +41,8 @@ async def send_success_embed(ctx: Context, message: Union[str, List[str]]) -> Me
 
 
 class ThreadManager(Cog):
-    def __init__(self, bot: Bot, db: Database):
+    def __init__(self, bot: Bot):
         self.bot = bot
-        self.db = db
         self.main.start()
         print('Loaded cog: ThreadManager')
     
@@ -167,7 +165,7 @@ class ThreadManager(Cog):
         # offer the user the option to archive the thread now
         archive_duration = min_to_dh(ctx.channel.auto_archive_duration)
         archival_msg = f'Thread **{ctx.channel.name}** will be archived after {archive_duration}'
-        embed = RicoEmbed(
+        embed = CustomEmbed(
             color=Color.green(),
             title=':white_check_mark:｜Excluded thread from persistence',
             description=[
