@@ -1,9 +1,9 @@
+from math import floor, log, pow
 from typing import Tuple, Union
-import validators
-import re
-from math import ceil, floor, log, pow
 from urllib.parse import urlparse, parse_qs
 from .exceptions import *
+import validators
+import re
 
 
 def check_ip_addr(url: str) -> bool:
@@ -122,7 +122,7 @@ def parse_spotify_url(url: str, valid_types: list[str] = ["track", "album", "art
 def reconstruct_url(rec_type: str, rec_id: str) -> str:
     if "spotify" in rec_type:
         # Spotify url
-        split = rec_type.split('-')
+        split = rec_type.split(':')
         return 'https://open.spotify.com/{0}/{1}'.format(split[1], rec_id)
     elif rec_type == "youtube-video":
         return 'https://www.youtube.com/watch?v={}'.format(rec_id)
