@@ -47,10 +47,17 @@ class RicoBot(Bot):
         print('IPC ready!')
 
     async def on_application_command_error(self, itx: Interaction, error: Exception):
-        await itx.channel.send(embed=create_error_embed(
+        error_embed = create_error_embed(
             title='Error processing command',
             body=error
-        ))
+        )
+        try:
+            if itx.response.is_done():
+                await itx.followup.send(embed=error_embed)
+            else:
+                await itx.response.send_message(embed=error_embed)
+        except:
+            await itx.channel.send(embed=error_embed)
 
     async def on_ipc_error(self, endpoint: str, error: Exception):
         print(f'IPC error: {endpoint}: {error}')
