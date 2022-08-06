@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 class RecommendationCog(Cog):
     def __init__(self, bot: 'RicoBot'):
         self._bot = bot
+        print(f'Loaded cog: {self.__class__.__name__}')
     
     def _ensure_records(self, guild: Optional[Guild] = None, user: Optional[User] = None):
         if guild:
