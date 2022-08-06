@@ -1,8 +1,10 @@
+from clients.spotify_client import Spotify
 from dataclass.custom_embed import create_error_embed
 from nextcord import Interaction
 from nextcord.ext import ipc
 from nextcord.ext.commands import Bot
 from yaml import safe_load
+from .database import Database
 
 
 class RicoBot(Bot):
@@ -15,6 +17,18 @@ class RicoBot(Bot):
                 self.config = safe_load(f)
             except Exception as e:
                 raise ValueError(f'Error parsing config.yml: {e}')
+        
+        # Create database connection
+        self._db = Database(self.config)
+
+        # Create Spotify client
+        try:
+            spotify_client_id = self.config['bot']['spotify']['client_id']
+            spotify_client_secret = self.config['bot']['spotify']['client_secret']
+        except KeyError:
+            raise ValueError('Missing Spotify client ID or secret')
+        else:
+            self._spotify = Spotify(spotify_client_id, spotify_client_secret)
 
         # Start IPC server
         self.ipc = ipc.server.Server(
@@ -40,3 +54,11 @@ class RicoBot(Bot):
 
     async def on_ipc_error(self, endpoint: str, error: Exception):
         print(f'IPC error: {endpoint}: {error}')
+    
+    @property
+    def db(self) -> Database:
+        return self._db
+    
+    @property
+    def spotify(self) -> Spotify:
+        return self._spotify
