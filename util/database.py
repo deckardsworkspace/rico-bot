@@ -1,6 +1,5 @@
 from dataclass.recommendation import Recommendation
 from typing import Any, Dict, List
-from uuid6 import uuid7
 import psycopg2
 
 
