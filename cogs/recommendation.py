@@ -77,7 +77,7 @@ class RecommendationCog(Cog):
         """
         Display your list of recommendations.
         """
-        await itx.response.defer(ephemeral=True)
+        await itx.response.defer(ephemeral=not list_server)
 
         # Get recommendations
         recommendations = []
