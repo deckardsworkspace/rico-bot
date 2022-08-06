@@ -133,6 +133,26 @@ class Database:
             return [Recommendation(*row) for row in self._cur.fetchall()]
         except Exception as e:
             raise RuntimeError(f'Error getting user recommendations: {e}')
+    
+    def remove_user_recommendation(self, user_id: str, recommendation_id: str):
+        try:
+            self._cur.execute('''
+                DELETE FROM user_recs WHERE recommendee = %s AND id = %s
+            ''', (user_id, recommendation_id))
+        except Exception as e:
+            raise RuntimeError(f'Error removing user recommendation: {e}')
+        else:
+            self._con.commit()
+    
+    def remove_all_user_recommendations(self, user_id: int):
+        try:
+            self._cur.execute('''
+                DELETE FROM user_recs WHERE recommendee = %s
+            ''', (user_id,))
+        except Exception as e:
+            raise RuntimeError(f'Error removing user recommendations: {e}')
+        else:
+            self._con.commit()
 
     def add_guild_recommendation(self, guild_id: int, recommendation: Recommendation):
         try:
@@ -161,3 +181,23 @@ class Database:
             return [Recommendation(*row) for row in self._cur.fetchall()]
         except Exception as e:
             raise RuntimeError(f'Error getting guild recommendations: {e}')
+    
+    def remove_guild_recommendation(self, guild_id: str, recommendation_id: str):
+        try:
+            self._cur.execute('''
+                DELETE FROM guild_recs WHERE recommendee = %s AND id = %s
+            ''', (guild_id, recommendation_id))
+        except Exception as e:
+            raise RuntimeError(f'Error removing guild recommendation: {e}')
+        else:
+            self._con.commit()
+    
+    def remove_all_guild_recommendations(self, guild_id: int):
+        try:
+            self._cur.execute('''
+                DELETE FROM guild_recs WHERE recommendee = %s
+            ''', (guild_id,))
+        except Exception as e:
+            raise RuntimeError(f'Error removing guild recommendations: {e}')
+        else:
+            self._con.commit()
