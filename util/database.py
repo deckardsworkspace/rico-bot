@@ -200,3 +200,69 @@ class Database:
             raise RuntimeError(f'Error removing guild recommendations: {e}')
         else:
             self._con.commit()
+    
+    def add_excluded_thread(self, guild_id: int, thread_id: int):
+        try:
+            self._cur.execute('''
+                UPDATE guilds SET excluded_threads = excluded_threads || %s WHERE id = %s
+            ''', (thread_id, guild_id))
+        except Exception as e:
+            raise RuntimeError(f'Error excluding thread: {e}')
+        else:
+            self._con.commit()
+    
+    def check_excluded_thread(self, guild_id: int, thread_id: int) -> bool:
+        try:
+            self._cur.execute('''
+                SELECT * FROM guilds WHERE id = %s AND %s = ANY(excluded_threads)
+            ''', (guild_id, thread_id))
+            return self._cur.fetchone() is not None
+        except Exception as e:
+            raise RuntimeError(f'Error checking excluded thread: {e}')
+
+    def get_excluded_threads(self, guild_id: int) -> List[int]:
+        try:
+            self._cur.execute('''
+                SELECT excluded_threads FROM guilds WHERE id = %s
+            ''', (guild_id,))
+            return self._cur.fetchone()[0]
+        except Exception as e:
+            raise RuntimeError(f'Error getting excluded threads: {e}')
+    
+    def remove_excluded_thread(self, guild_id: int, thread_id: int):
+        try:
+            self._cur.execute('''
+                UPDATE guilds SET excluded_threads = excluded_threads - %s WHERE id = %s
+            ''', (thread_id, guild_id))
+        except Exception as e:
+            raise RuntimeError(f'Error removing excluded thread: {e}')
+        else:
+            self._con.commit()
+    
+    def get_thread_manage_status(self, guild_id: int) -> bool:
+        try:
+            self._cur.execute('''
+                SELECT manage_threads FROM guilds WHERE id = %s
+            ''', (guild_id,))
+            return self._cur.fetchone()[0]
+        except Exception as e:
+            raise RuntimeError(f'Error checking if threads are managed for server: {e}')
+
+    def set_thread_manage_status(self, guild_id: int, status: bool):
+        try:
+            self._cur.execute('''
+                UPDATE guilds SET manage_threads = %s WHERE id = %s
+            ''', (status, guild_id))
+        except Exception as e:
+            raise RuntimeError(f'Error setting thread manage status: {e}')
+        else:
+            self._con.commit()
+    
+    def get_thread_managed_guilds(self) -> List[int]:
+        try:
+            self._cur.execute('''
+                SELECT id FROM guilds WHERE manage_threads = TRUE
+            ''')
+            return [row[0] for row in self._cur.fetchall()]
+        except Exception as e:
+            raise RuntimeError(f'Error getting thread-managed guilds: {e}')
