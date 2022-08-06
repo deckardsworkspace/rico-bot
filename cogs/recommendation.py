@@ -99,9 +99,9 @@ class RecommendationCog(Cog):
                 fields.append((
                     item.title,
                     '\n'.join([x for x in [
-                        item.type,
                         item.url,
-                        f'added by <@{item.recommender}> on <t:{int(item.timestamp.timestamp())}:R>'
+                        f'added by <@{item.recommender}> on <t:{int(item.timestamp.timestamp())}:R>',
+                        f'ID `{item.id}`'
                     ] if x])
                 ))
             
