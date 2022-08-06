@@ -7,6 +7,7 @@ class RecommendationType(Enum):
     SPOTIFY_PLAYLIST = 'spotify:playlist'
     SPOTIFY_TRACK = 'spotify:track'
     TEXT = 'text'
+    URL = 'url'
     YOUTUBE = 'youtube'
 
 

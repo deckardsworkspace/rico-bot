@@ -1,6 +1,7 @@
 from dataclass.recommendation import Recommendation
 from datetime import datetime
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 from uuid6 import uuid7
 from .enums import RecommendationType, SpotifyEntityType
 from .string_util import check_spotify_url, check_url, parse_spotify_url, reconstruct_url
@@ -51,3 +52,26 @@ def parse_recommendation(spotify: 'Spotify', recommendation: str, from_user: int
         # Is it a Spotify URL?
         if check_spotify_url(recommendation):
             return create_spotify_recommendation(spotify.client, recommendation, from_user, to_user)
+        else:
+            # Generic URL
+            parsed_url = urlparse(recommendation)
+            return Recommendation(
+                id=str(uuid7()),
+                timestamp=datetime.now(),
+                recommendee=to_user,
+                recommender=from_user,
+                type=RecommendationType.URL,
+                title=f'Bookmark at {parsed_url.netloc}',
+                url=recommendation
+            )
+
+    # Not a URL, add as text recommendation
+    return Recommendation(
+        id=str(uuid7()),
+        timestamp=datetime.now(),
+        recommendee=to_user,
+        recommender=from_user,
+        type=RecommendationType.TEXT,
+        title=f'"{recommendation}"',
+        url=''
+    )
