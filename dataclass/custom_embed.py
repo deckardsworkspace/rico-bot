@@ -3,7 +3,7 @@ from datetime import datetime
 from nextcord import Color, Embed, Message
 from nextcord.embeds import EmptyEmbed
 from nextcord.ext.commands import Context
-from typing import List, Union
+from typing import List, Optional, Union
 
 
 @dataclass
@@ -78,7 +78,7 @@ class CustomEmbed:
         return await ctx.send(embed=self.embed)
 
 
-def create_error_embed(title: str, body: str) -> Embed:
+def create_error_embed(title: Optional[str] = None, body: Optional[str] = None) -> Embed:
     embed = CustomEmbed(
         color=Color.red(),
         title=f':x:｜{title}' if title else ':x:｜Error processing command',
@@ -87,7 +87,7 @@ def create_error_embed(title: str, body: str) -> Embed:
     return embed.get()
 
 
-def create_success_embed(title: str, body: str) -> Embed:
+def create_success_embed(title: Optional[str] = None, body: Optional[str] = None) -> Embed:
     embed = CustomEmbed(
         color=Color.green(),
         title=f':white_check_mark:｜{title}' if title else ':white_check_mark:｜Success',
