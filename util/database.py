@@ -80,25 +80,6 @@ class Database:
         else:
             self._con.commit()
     
-    def add_user_recommendation(self, user_id: int, recommendation: Recommendation):
-        try:
-            self._cur.execute('''
-                INSERT INTO user_recs (id, timestamp, recommendee, recommender, type, title, url)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ''', (
-                recommendation.id,
-                recommendation.timestamp,
-                user_id,
-                recommendation.recommender,
-                recommendation.type.value,
-                recommendation.title,
-                recommendation.url
-            ))
-        except Exception as e:
-            raise RuntimeError(f'Error adding user recommendation: {e}')
-        else:
-            self._con.commit()
-    
     def update_guild(self, guild_id: int, guild_name: str):
         """
         Insert new guild record, or update existing record if guild already exists
@@ -124,13 +105,32 @@ class Database:
             ''', (user_id, username, discriminator))
         except Exception as e:
             raise RuntimeError(f'Error updating user: {e}')
+    
+    def add_user_recommendation(self, user_id: int, recommendation: Recommendation):
+        try:
+            self._cur.execute('''
+                INSERT INTO user_recs (id, timestamp, recommendee, recommender, type, title, url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ''', (
+                recommendation.id,
+                recommendation.timestamp,
+                user_id,
+                recommendation.recommender,
+                recommendation.type.value,
+                recommendation.title,
+                recommendation.url
+            ))
+        except Exception as e:
+            raise RuntimeError(f'Error adding user recommendation: {e}')
+        else:
+            self._con.commit()
 
     def get_user_recommendations(self, user_id: int) -> List[Recommendation]:
         try:
             self._cur.execute('''
                 SELECT * FROM user_recs WHERE recommendee = %s
             ''', (user_id,))
-            return [Recommendation(**row) for row in self._cur.fetchall()]
+            return [Recommendation(*row) for row in self._cur.fetchall()]
         except Exception as e:
             raise RuntimeError(f'Error getting user recommendations: {e}')
 
@@ -158,6 +158,6 @@ class Database:
             self._cur.execute('''
                 SELECT * FROM guild_recs WHERE recommendee = %s
             ''', (guild_id,))
-            return [Recommendation(**row) for row in self._cur.fetchall()]
+            return [Recommendation(*row) for row in self._cur.fetchall()]
         except Exception as e:
             raise RuntimeError(f'Error getting guild recommendations: {e}')
