@@ -98,6 +98,32 @@ class Database:
             raise RuntimeError(f'Error adding user recommendation: {e}')
         else:
             self._con.commit()
+    
+    def update_guild(self, guild_id: int, guild_name: str):
+        """
+        Insert new guild record, or update existing record if guild already exists
+        """
+        try:
+            self._cur.execute('''
+                INSERT INTO guilds (id, name)
+                VALUES (%s, %s)
+                ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
+            ''', (guild_id, guild_name))
+        except Exception as e:
+            raise RuntimeError(f'Error updating guild: {e}')
+    
+    def update_user(self, user_id: int, username: str, discriminator: str):
+        """
+        Insert new user record, or update existing record if user already exists
+        """
+        try:
+            self._cur.execute('''
+                INSERT INTO users (id, username, discriminator)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET username = EXCLUDED.username, discriminator = EXCLUDED.discriminator
+            ''', (user_id, username, discriminator))
+        except Exception as e:
+            raise RuntimeError(f'Error updating user: {e}')
 
     def get_user_recommendations(self, user_id: int) -> List[Recommendation]:
         try:
