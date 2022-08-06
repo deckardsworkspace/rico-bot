@@ -1,12 +1,23 @@
 bot:
   discord_token: 'YOUR_DISCORD_TOKEN'
+  spotify:
+    client_id: 'YOUR_SPOTIFY_CLIENT_ID'
+    client_secret: 'YOUR_SPOTIFY_CLIENT_SECRET'
   debug:
     enabled: false
     guild_ids:
       - 123456789012345678
       - 123456789012345679
+ipc:
+  server_port: 12345
+  secret_key: 'YOUR_IPC_SECRET_KEY'
+dashboard:
+  discord_oauth:
+    client_id: 'YOUR_DISCORD_CLIENT_ID'
+    client_secret: 'YOUR_DISCORD_CLIENT_SECRET'
 db:
   host: db
+  port: 5432
   user: postgres
   password: postgres
   database: rico

@@ -7,12 +7,23 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=rico
+    user: postgres
     volumes:
-      - ./.pgdata:/var/lib/postgresql/data
+      - rico-db:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 1s
+      timeout: 1s
+      retries: 3
+      start_period: 1s
   bot:
     image: jareddantis/rico-bot:latest
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     container_name: rico-bot
     volumes:
       - ./config.yml:/opt/app/config.yml
+volumes:
+  rico-db:
