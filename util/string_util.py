@@ -86,6 +86,20 @@ def machine_readable_time(colon_delimited_time: str) -> int:
     return h * 3600000 + m * 60000 + s * 1000
 
 
+def min_to_dh(mins: int) -> str:
+    days = floor(mins / 1440)
+    extra_min = mins % 1440
+    hours = floor(extra_min / 60)
+    days_plural = 's' if days > 1 else ''
+    hours_plural = 's' if hours > 1 else ''
+
+    if days > 0:
+        if hours > 0:
+            return f'{days:01d} day{days_plural}, {hours:02d} hour{hours_plural}'
+        return f'{days:01d} day{days_plural}'
+    return f'{hours:02d} hour{hours_plural}'
+
+
 def num_to_emoji(num: int, unicode: bool = False):
     suffix = '\U0000fe0f\U000020e3'
     if num == 1:
