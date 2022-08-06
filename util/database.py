@@ -34,8 +34,15 @@ class Database:
                 CREATE TABLE IF NOT EXISTS guilds (
                     id BIGINT PRIMARY KEY NOT NULL,
                     name VARCHAR(255) NOT NULL,
-                    manage_threads BOOLEAN NOT NULL DEFAULT FALSE,
-                    excluded_threads BIGINT[] NOT NULL DEFAULT '{}'::BIGINT[] 
+                    manage_threads BOOLEAN NOT NULL DEFAULT FALSE
+                )
+            ''')
+
+            # Table for excluded threads
+            self._cur.execute('''
+                CREATE TABLE IF NOT EXISTS excluded_threads (
+                    thread_id BIGINT PRIMARY KEY NOT NULL,
+                    guild_id BIGINT NOT NULL REFERENCES guilds(id) ON DELETE CASCADE
                 )
             ''')
 
@@ -57,7 +64,7 @@ class Database:
                 CREATE TABLE IF NOT EXISTS guild_recs (
                     id VARCHAR(255) PRIMARY KEY NOT NULL,
                     timestamp TIMESTAMP NOT NULL,
-                    recommendee BIGINT NOT NULL REFERENCES guilds(id),
+                    recommendee BIGINT NOT NULL REFERENCES guilds(id) ON DELETE CASCADE,
                     recommender BIGINT NOT NULL REFERENCES users(id),
                     type VARCHAR(255) NOT NULL,
                     title VARCHAR(255) NOT NULL,
@@ -204,36 +211,37 @@ class Database:
     def add_excluded_thread(self, guild_id: int, thread_id: int):
         try:
             self._cur.execute('''
-                UPDATE guilds SET excluded_threads = excluded_threads || %s WHERE id = %s
-            ''', (thread_id, guild_id))
+                INSERT INTO excluded_threads (guild_id, thread_id)
+                VALUES (%s, %s)
+            ''', (guild_id, thread_id))
         except Exception as e:
-            raise RuntimeError(f'Error excluding thread: {e}')
+            raise RuntimeError(f'Error adding excluded thread: {e}')
         else:
             self._con.commit()
     
     def check_excluded_thread(self, guild_id: int, thread_id: int) -> bool:
         try:
             self._cur.execute('''
-                SELECT * FROM guilds WHERE id = %s AND %s = ANY(excluded_threads)
+                SELECT * FROM excluded_threads WHERE guild_id = %s AND thread_id = %s
             ''', (guild_id, thread_id))
-            return self._cur.fetchone() is not None
+            return self._cur.rowcount > 0
         except Exception as e:
             raise RuntimeError(f'Error checking excluded thread: {e}')
 
     def get_excluded_threads(self, guild_id: int) -> List[int]:
         try:
             self._cur.execute('''
-                SELECT excluded_threads FROM guilds WHERE id = %s
+                SELECT thread_id FROM excluded_threads WHERE guild_id = %s
             ''', (guild_id,))
-            return self._cur.fetchone()[0]
+            return [row[0] for row in self._cur.fetchall()]
         except Exception as e:
             raise RuntimeError(f'Error getting excluded threads: {e}')
     
     def remove_excluded_thread(self, guild_id: int, thread_id: int):
         try:
             self._cur.execute('''
-                UPDATE guilds SET excluded_threads = excluded_threads - %s WHERE id = %s
-            ''', (thread_id, guild_id))
+                DELETE FROM excluded_threads WHERE guild_id = %s AND thread_id = %s
+            ''', (guild_id, thread_id))
         except Exception as e:
             raise RuntimeError(f'Error removing excluded thread: {e}')
         else:
