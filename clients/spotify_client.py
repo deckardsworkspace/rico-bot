@@ -5,8 +5,7 @@ import spotipy
 import time
 import urllib.parse
 import uuid
-from .config import get_var
-from .exceptions import SpotifyInsufficientAccessError, SpotifyInvalidURLError
+from util.exceptions import SpotifyInsufficientAccessError, SpotifyInvalidURLError
 from random import sample
 from ratelimit import limits
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -34,12 +33,13 @@ def extract_track_info(track_obj) -> Tuple[str, str, str, int]:
 
 
 class Spotify:
-    def __init__(self):
-        self.redirect_uri = "https://rico.dantis.me/spotify_auth"
-        self.client_id = get_var("SPOTIFY_ID")
-        client_secret = get_var("SPOTIFY_SECRET")
+    def __init__(self, client_id: str, client_secret: str):
+        self.redirect_uri = 'https://rico.dantis.me/spotify_auth'
+        self.client_id = client_id
+
+        # Initialize client
         auth_manager = SpotifyClientCredentials(client_id=self.client_id, client_secret=client_secret)
-        self.client = spotipy.Spotify(auth_manager=auth_manager)
+        self._client = spotipy.Spotify(auth_manager=auth_manager)
     
     def check_renew(self, token_data: Dict[str, str]) -> Tuple[str, str, str]:
         # Check if the token is almost expired (within 15 sec)
@@ -123,8 +123,9 @@ class Spotify:
         # Return new tokens and playlist ID
         return access_token, expires_in, refresh_token, playlist_name, playlist_id
 
-    def get_client(self):
-        return self.client
+    @property
+    def client(self) -> spotipy.Spotify:
+        return self._client
     
     def __get_art(self, art: List[Dict[str, str]], default='') -> str:
         if not len(art):
