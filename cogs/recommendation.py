@@ -101,7 +101,7 @@ class RecommendationCog(Cog):
                     '\n'.join([x for x in [
                         item.type,
                         item.url,
-                        f'added by <@{item.recommender}> on <t:{int(item.timestamp.timestamp())}:f>'
+                        f'added by <@{item.recommender}> on <t:{int(item.timestamp.timestamp())}:R>'
                     ] if x])
                 ))
             
