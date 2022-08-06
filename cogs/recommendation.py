@@ -100,7 +100,7 @@ class RecommendationCog(Cog):
                     item.title,
                     '\n'.join([x for x in [
                         item.url,
-                        f'added by <@{item.recommender}> on <t:{int(item.timestamp.timestamp())}:R>',
+                        f'added by <@{item.recommender}> <t:{int(item.timestamp.timestamp())}:R>',
                         f'ID `{item.id}`'
                     ] if x])
                 ))
@@ -115,3 +115,94 @@ class RecommendationCog(Cog):
         # Run paginator
         paginator = Paginator(itx)
         await paginator.run(pages)
+    
+    @slash_command(name='remove', guild_ids=get_debug_guilds())
+    async def remove(
+        self,
+        itx: Interaction,
+        recommendation_id: Optional[str] = SlashOption(
+            name='recommendation_id',
+            description='ID of the recommendation to remove (get with `/list`)',
+            required=False
+        ),
+        remove_all: Optional[bool] = SlashOption(
+            name='remove_all',
+            description='Remove all recommendations. **Warning: irreversible!**',
+            required=False,
+            default=False
+        )
+    ):
+        """
+        Remove a recommendation from your list.
+        """
+        await itx.response.defer()
+
+        # Check if ID is specified when not removing all
+        if not remove_all and recommendation_id is None:
+            return await itx.followup.send(embed=create_error_embed(
+                body='You must specify a recommendation ID. Check IDs with the `/list` command.'
+            ))
+
+        # Remove recommendation
+        if remove_all:
+            try:
+                self._bot.db.remove_all_user_recommendations(itx.user.id)
+            except Exception as e:
+                return await itx.followup.send(embed=create_error_embed(body=str(e)))
+            else:
+                return await itx.followup.send(embed=create_success_embed(body='All recommendations removed.'))
+        else:
+            try:
+                self._bot.db.remove_user_recommendation(itx.user.id, recommendation_id)
+            except Exception as e:
+                return await itx.followup.send(embed=create_error_embed(body=str(e)))
+            else:
+                return await itx.followup.send(embed=create_success_embed(
+                    body=f'Recommendation with ID `{recommendation_id}` removed.'
+                ))
+    
+    @slash_command(name='removefromserver', guild_ids=get_debug_guilds())
+    @application_checks.has_guild_permissions(administrator=True)
+    async def remove_from_server(
+        self,
+        itx: Interaction,
+        recommendation_id: Optional[str] = SlashOption(
+            name='recommendation_id',
+            description='ID of the recommendation to remove (get with `/list`)',
+            required=False
+        ),
+        remove_all: Optional[bool] = SlashOption(
+            name='remove_all',
+            description='Remove all recommendations. **Warning: irreversible!**',
+            required=False,
+            default=False
+        )
+    ):
+        """
+        Remove a recommendation from the server's list.
+        """
+        await itx.response.defer()
+
+        # Check if ID is specified when not removing all
+        if not remove_all and recommendation_id is None:
+            return await itx.followup.send(embed=create_error_embed(
+                body='You must specify a recommendation ID. Check IDs with the `/list` command.'
+            ))
+
+        # Remove recommendation
+        if remove_all:
+            try:
+                self._bot.db.remove_all_guild_recommendations(itx.guild_id)
+            except Exception as e:
+                return await itx.followup.send(embed=create_error_embed(body=str(e)))
+            else:
+                return await itx.followup.send(embed=create_success_embed(body='All recommendations removed.'))
+        else:
+            try:
+                self._bot.db.remove_guild_recommendation(itx.guild_id, recommendation_id)
+            except Exception as e:
+                return await itx.followup.send(embed=create_error_embed(body=str(e)))
+            else:
+                return await itx.followup.send(embed=create_success_embed(
+                    body=f'Recommendation with ID `{recommendation_id}` removed.'
+                ))
