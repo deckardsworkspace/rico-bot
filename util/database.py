@@ -1,5 +1,7 @@
 from dataclass.recommendation import Recommendation
-from typing import Any, Dict, List
+from dataclass.spotify_auth import SpotifyCredentials
+from typing import Any, Dict, List, Tuple
+from .enums import RecommendationType
 import psycopg2
 
 
@@ -87,10 +89,12 @@ class Database:
             # Table for Spotify authentication data
             self._cur.execute('''
                 CREATE TABLE IF NOT EXISTS spotify_auth (
-                    user_id BIGINT NOT NULL REFERENCES users(id),
+                    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     refresh_token VARCHAR(255) NOT NULL,
                     access_token VARCHAR(255) NOT NULL,
-                    expires_at TIMESTAMP NOT NULL
+                    expires_at TIMESTAMP NOT NULL,
+                    verifier VARCHAR(255),
+                    state VARCHAR(255)
                 )
             ''')
         except Exception as e:
@@ -286,3 +290,53 @@ class Database:
             return [row[0] for row in self._cur.fetchall()]
         except Exception as e:
             raise RuntimeError(f'Error getting thread-managed guilds: {e}')
+    
+    def get_user_spotify_creds(self, user_id: int) -> SpotifyCredentials:
+        try:
+            self._cur.execute('''
+                SELECT user_id, refresh_token, access_token, expires_at
+                FROM spotify_auth WHERE user_id = %s
+            ''', (user_id,))
+            return SpotifyCredentials(*self._cur.fetchone())
+        except Exception as e:
+            raise RuntimeError(f'Error getting user Spotify credentials: {e}')
+    
+    def set_user_spotify_creds(self, user_id: int, creds: SpotifyCredentials):
+        try:
+            self._cur.execute('''
+                INSERT INTO spotify_auth (user_id, refresh_token, access_token, expires_at)
+                VALUES (%s, %s, %s, %s)
+            ''', (user_id, creds.refresh_token, creds.access_token, creds.expires_at))
+        except Exception as e:
+            raise RuntimeError(f'Error setting user Spotify credentials: {e}')
+        else:
+            self._con.commit()
+    
+    def remove_user_spotify_creds(self, user_id: int):
+        try:
+            self._cur.execute('''
+                DELETE FROM spotify_auth WHERE user_id = %s
+            ''', (user_id,))
+        except Exception as e:
+            raise RuntimeError(f'Error removing user Spotify credentials: {e}')
+        else:
+            self._con.commit()
+    
+    def get_user_spotify_pkce(self, user_id: int) -> Tuple[str, str]:
+        try:
+            self._cur.execute('''
+                SELECT verifier, state FROM spotify_auth WHERE user_id = %s
+            ''', (user_id,))
+            return self._cur.fetchone()
+        except Exception as e:
+            raise RuntimeError(f'Error getting user Spotify PKCE data: {e}')
+    
+    def set_user_spotify_pkce(self, user_id: int, verifier: str, state: str):
+        try:
+            self._cur.execute('''
+                UPDATE spotify_auth SET verifier = %s, state = %s WHERE user_id = %s
+            ''', (verifier, state, user_id))
+        except Exception as e:
+            raise RuntimeError(f'Error setting user Spotify PKCE data: {e}')
+        else:
+            self._con.commit()
