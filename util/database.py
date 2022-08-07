@@ -3,6 +3,18 @@ from typing import Any, Dict, List
 import psycopg2
 
 
+def rec_enum_from_row(row: Tuple[Any, ...]) -> RecommendationType:
+    return Recommendation(
+        id=row[0],
+        timestamp=row[1],
+        recommendee=row[2],
+        recommender=row[3],
+        type=RecommendationType(row[4]),
+        title=row[5],
+        url=row[6]
+    )
+
+
 class Database:
     def __init__(self, config: Dict[str, Any]):
         # Open connection to database
@@ -136,7 +148,7 @@ class Database:
             self._cur.execute('''
                 SELECT * FROM user_recs WHERE recommendee = %s
             ''', (user_id,))
-            return [Recommendation(*row) for row in self._cur.fetchall()]
+            return [rec_enum_from_row(row) for row in self._cur.fetchall()]
         except Exception as e:
             raise RuntimeError(f'Error getting user recommendations: {e}')
     
@@ -184,7 +196,7 @@ class Database:
             self._cur.execute('''
                 SELECT * FROM guild_recs WHERE recommendee = %s
             ''', (guild_id,))
-            return [Recommendation(*row) for row in self._cur.fetchall()]
+            return [rec_enum_from_row(row) for row in self._cur.fetchall()]
         except Exception as e:
             raise RuntimeError(f'Error getting guild recommendations: {e}')
     
