@@ -71,8 +71,7 @@ class Spotify:
                 'playlist-modify-public',
                 'playlist-modify-private',
                 'playlist-read-private',
-                'playlist-read-collaborative',
-                'user-top-read'
+                'playlist-read-collaborative'
             ])
         }
         url = "{}?{}".format(base_url, urllib.parse.urlencode(url_params))
@@ -164,33 +163,6 @@ class Spotify:
         recent_tracks = [track['id'] for track in track_items]
         recent_artists = [artist['id'] for artist in artist_items]
         return recent_tracks, recent_artists
-    
-    def get_recommendations(self, track_id: str, token_data: Dict[str, str]) -> Tuple[str, str, str, Tuple[str, str, str, int]]:
-        # Get initial seeds
-        track_artist = self.client.track(track_id)['artists'][0]['id']
-        seed_tracks = [track_id]
-        seed_artists = [track_artist]
-        
-        # Are the credentials valid?
-        access_token = ''
-        expires_in = 0
-        refresh_token = ''
-        if token_data is not None and 'access_token' in token_data:
-            # Get auth credentials
-            access_token, expires_in, refresh_token = self.check_renew(token_data)
-
-            # Get list of recently played tracks and artists
-            try:
-                recent_tracks, recent_artists = self.get_top_seeds(access_token)
-            except:
-                pass
-            else:
-                seed_tracks.extend(sample(recent_tracks, 2))
-                seed_artists.extend(sample(recent_artists, 1))
-        
-        # Return new auth data and list of recommendations
-        recommendations = self.client.recommendations(seed_tracks=seed_tracks, seed_artists=seed_artists, limit=30)
-        return access_token, expires_in, refresh_token, [extract_track_info(track) for track in recommendations['tracks']]
     
     def get_track_art(self, track_id: str) -> str:
         return self.__get_art(self.client.track(track_id)['album']['images'])
