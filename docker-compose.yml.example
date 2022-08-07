@@ -1,27 +1,11 @@
 version: '3.8'
 services:
-  db:
-    image: postgres:alpine
-    container_name: rico-db
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=rico
-    user: postgres
-    volumes:
-      - ./.database:/var/lib/postgresql/data
-    restart: always
-    healthcheck:
-      test: ["CMD", "pg_isready"]
-      interval: 1s
-      timeout: 1s
-      retries: 3
-      start_period: 1s
   bot:
     image: jareddantis/rico-bot:latest
-    depends_on:
-      db:
-        condition: service_healthy
     container_name: rico-bot
     volumes:
       - ./config.yml:/opt/app/config.yml
+networks:
+  default:
+    name: rico
+    external: true
