@@ -4,7 +4,7 @@ FROM python:3.10-slim AS dependencies
 RUN apt-get update && apt-get install -y libpq-dev build-essential
 
 # Install pip requirements under virtualenv
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip wheel
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"
 COPY requirements.txt .
