@@ -48,6 +48,7 @@ jobs:
     -
       name: Update Docker Hub readme
       uses: ms-jpq/sync-dockerhub-readme@v1
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -57,6 +58,7 @@ jobs:
     name: Deploy to Oracle Cloud
     runs-on: ubuntu-latest
     needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     steps:
       - name: Invoke deployment hook
         uses: distributhor/workflow-webhook@v2
