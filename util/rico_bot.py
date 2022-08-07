@@ -33,8 +33,8 @@ class RicoBot(Bot):
         # Start IPC server
         self.ipc = ipc.server.Server(
             self,
-            port=self.config['ipc']['server_port'],
-            secret_key=self.config['ipc']['secret_key']
+            port=self.config['ipc']['port'],
+            secret_key=self.config['ipc']['secret']
         )
 
     async def on_ready(self):

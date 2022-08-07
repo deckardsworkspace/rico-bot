@@ -9,8 +9,8 @@ bot:
       - 123456789012345678
       - 123456789012345679
 ipc:
-  server_port: 12345
-  secret_key: 'YOUR_IPC_SECRET_KEY'
+  port: 12345
+  secret: 'YOUR_IPC_SECRET_KEY'
 backend:
   host: backend
   port: 5000
