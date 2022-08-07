@@ -9,7 +9,7 @@ services:
       - POSTGRES_DB=rico
     user: postgres
     volumes:
-      - rico-db:/var/lib/postgresql/data
+      - ./.database:/var/lib/postgresql/data
     restart: always
     healthcheck:
       test: ["CMD", "pg_isready"]
@@ -25,5 +25,3 @@ services:
     container_name: rico-bot
     volumes:
       - ./config.yml:/opt/app/config.yml
-volumes:
-  rico-db:
