@@ -7,5 +7,6 @@
 .env
 .cache
 .python-version
-**/*.yml
+config.yml
+docker-compose.yml
 .database
