@@ -100,21 +100,6 @@ def min_to_dh(mins: int) -> str:
     return f'{hours:02d} hour{hours_plural}'
 
 
-def num_to_emoji(num: int, unicode: bool = False):
-    suffix = '\U0000fe0f\U000020e3'
-    if num == 1:
-        return f'\U00000031{suffix}' if unicode else ':one:'
-    elif num == 2:
-        return f'\U00000032{suffix}' if unicode else ':two:'
-    elif num == 3:
-        return f'\U00000033{suffix}' if unicode else ':three:'
-    elif num == 4:
-        return f'\U00000034{suffix}' if unicode else ':four:'
-    elif num == 5:
-        return f'\U00000035{suffix}' if unicode else ':five:'
-    return ""
-
-
 def parse_spotify_url(url: str, valid_types: list[str] = ["track", "album", "artist", "playlist"]) -> tuple[str, str]:
     if not check_spotify_url(url):
         raise SpotifyInvalidURLError(url)
