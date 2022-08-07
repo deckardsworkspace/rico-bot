@@ -1,161 +1,145 @@
-import base64
-import json
-import requests.exceptions
-from nextcord import Embed
-from nextcord.ext import commands
+from dataclass.custom_embed import create_error_embed, create_success_embed
+from nextcord import Color, Embed, Interaction, slash_command
+from nextcord.ext.commands import Cog
 from ratelimit import RateLimitException
+import requests.exceptions
+from typing import TYPE_CHECKING
+from util.config import get_debug_guilds
+from util.enums import RecommendationType
+from util.string_util import parse_spotify_url
+if TYPE_CHECKING:
+    from clients.spotify_client import Spotify
+    from util.rico_bot import RicoBot
 
 
-class Export(commands.Cog):
-    def __init__(self, client, db, spotify):
-        self.client = client
-        self.db = db
-        self.spotify = spotify
-        print('Loaded cog: Export')
+class ExportCog(Cog):
+    def __init__(self, bot: 'RicoBot'):
+        self._bot = bot
+        print(f'Loaded cog: {self.__class__.__name__}')
 
-    async def __cancel_auth(self, ctx, message):
-        await ctx.reply(message)
-        self.db.child("spotify_auth").child(str(ctx.author.id)).remove()
+    @property
+    def spotify(self) -> 'Spotify':
+        return self._bot.spotify
 
-    @commands.command(name="auth", aliases=["login"])
-    async def authenticate(self, ctx):
+    async def _cancel_auth(self, itx: Interaction, message: str):
+        # Remove user data from auth table
+        self._bot.db.remove_user_spotify_creds(itx.user.id)
+
+        # Send error message
+        embed = create_error_embed(
+            title='Logged out from Spotify',
+            body=message
+        )
+        if itx.response.is_done():
+            await itx.followup.send(embed=embed)
+        else:
+            await itx.response.send_message(embed=embed)
+
+    @slash_command(name='spotifylogin', guild_ids=get_debug_guilds())
+    async def authenticate(self, itx: Interaction):
         """
         Authenticate Rico with your Spotify account, so you can export your recommended songs.
         """
+        await itx.response.defer(ephemeral=True)
+
         # Check if already authenticated
-        auth_data = self.db.child("spotify_auth").child(str(ctx.author.id)).get().val()
-        if auth_data and "refresh_token" in auth_data:
-            await ctx.reply("You're already authenticated with Spotify! To deauthenticate, DM me `rc!deauth`.")
-            return
+        try:
+            _ = self._bot.db.get_user_spotify_creds(itx.user.id)
+        except RuntimeError:
+            pass
+        else:
+            return await itx.followup.send(embed=create_success_embed(
+                title='Already authenticated',
+                body=f'You can use the `/spotifyexport` command to export your Spotify recommendations, '
+                     f'or `/spotifylogout` to log out of Spotify. '
+            ))
 
         # Create auth URL
         auth_url, verifier, state = self.spotify.create_auth_url()
 
         # Store verifier and state in DB for later
-        self.db.child("spotify_auth").child(str(ctx.author.id)).set({
-            "verifier": verifier,
-            "state": state
-        })
+        self._bot.db.set_user_spotify_pkce(itx.user.id, verifier, state)
 
-        # Send direct message to user
-        msg = '\n\n'.join([
-            "Hi! To begin exporting your Spotify recommendations,",
-            "1. Open {} in your browser to authenticate with Spotify.".format(auth_url),
-            "2. You'll be given a random token. Send it here and you're done!"
-        ])
-        await ctx.author.send(msg)
-        await ctx.reply('Sent you a DM!')
+        # Send auth URL to user
+        await itx.followup.send(embed=create_success_embed(
+            title='Login URL generated',
+            body=f'Please open the following URL in your browser to login with Spotify:\n{auth_url}'
+        ))
 
-    @commands.dm_only()
-    @commands.command(name="deauth", aliases=["logout"])
-    async def deauthenticate(self, ctx):
+    @slash_command(name='spotifylogout', guild_ids=get_debug_guilds())
+    async def deauthenticate(self, itx: Interaction):
         """
         Permanently remove your Spotify account authentication data from Rico's database.
         """
-        await self.__cancel_auth(ctx, "Removed Spotify authentication data.")
+        await self._cancel_auth(itx, 'Removed Spotify authentication data.')
 
-    @commands.dm_only()
-    @commands.command(name="finishauth", aliases=["fa"])
-    async def get_token(self, ctx, token):
-        """
-        Finish Spotify authentication using a Spotify-provided authentication code.
-        """
-        # Get verifier and state
-        auth_data = self.db.child("spotify_auth").child(str(ctx.author.id)).get().val()
-        if "verifier" not in auth_data or "state" not in auth_data:
-            await self.__cancel_auth(ctx, "Invalid or no authentication data found. Maybe try `rc!auth` again?")
-            return
-        verifier = auth_data['verifier']
-        state = auth_data['state']
-
-        # Decode token
-        auth_result = json.loads(base64.b64decode(token))
-        if auth_result['state'] != state:
-            await self.__cancel_auth(ctx, "State mismatch. Please try authenticating again.")
-            return
-        if "error" in auth_result:
-            cause = auth_result['error']
-            if cause == "access_denied":
-                await self.__cancel_auth(ctx, "You denied access to your Spotify playlists :pensive:")
-            else:
-                await self.__cancel_auth(ctx, "Error while authenticating: {}. Please try again.".format(cause))
-            return
-
-        # Exchange auth code with access token
-        try:
-            auth_tokens = self.spotify.request_token(code=auth_result['code'], verifier=verifier)
-        except requests.exceptions.HTTPError:
-            await self.__cancel_auth(ctx, "Error while requesting access from Spotify. Please try again.")
-            return
-
-        # Store tokens
-        access_token, expires_in, refresh_token = auth_tokens
-        self.db.child("spotify_auth").child(str(ctx.author.id)).set({
-            "access_token": access_token,
-            "expires_in": expires_in,
-            "refresh_token": refresh_token
-        })
-        await ctx.author.send("Authenticated! :sparkles: You may now use the `rc!dump` command to export tracks.")
-
-    @commands.command(name="dump")
-    async def dump_spotify(self, ctx):
+    @slash_command(name='spotifyexport', guild_ids=get_debug_guilds())
+    async def dump_spotify(self, itx: Interaction):
         """
         Export all your recommended Spotify tracks to a new Spotify playlist.
-        Requires authentication with Spotify first (rc!startauth).
+        Requires authentication with Spotify first (`/spotifylogin`).
         """
-        # Get auth data
-        token_data = self.db.child("spotify_auth").child(str(ctx.author.id)).get().val()
+        await itx.response.defer(ephemeral=True)
 
-        # Exit if not authenticated
-        if not token_data or "access_token" not in token_data:
-            await ctx.reply("You aren't authenticated with Spotify yet. Try `rc!auth`.")
+        # Get auth data
+        try:
+            credentials = self._bot.db.get_user_spotify_creds(itx.user.id)
+        except RuntimeError:
+            return await itx.followup.send(embed=create_error_embed(
+                title='Not authenticated',
+                body='You need to authenticate with Spotify first (`/spotifylogin`).'
+            ))
 
         # Get all Spotify tracks recommended to user
-        recs = self.db.child("recommendations").child("user").child(str(ctx.author.id)).get().val()
+        recs = self._bot.db.get_user_recommendations(itx.user.id)
         tracks = []
         to_remove = []
-        for index, item in recs.items():
-            if "id" in item and item['type'] == "spotify-track":
-                tracks.append("spotify:track:{}".format(item['id']))
-                to_remove.append(index)
+        for item in recs:
+            if item.type == RecommendationType.SPOTIFY_TRACK:
+                _, track_id = parse_spotify_url(item.url)
+                tracks.append(f'spotify:track:{track_id}')
+                to_remove.append(item.id)
 
         # Add to playlist
         if len(tracks):
             try:
-                result = self.spotify.create_playlist(token_data, ctx.author.name, tracks)
-                access_token, expires_in, refresh_token, playlist_name, playlist_id = result
+                result = self.spotify.create_playlist(credentials, itx.user.name, tracks)
+                credentials, playlist_name, playlist_id = result
             except requests.exceptions.HTTPError as e:
-                await ctx.reply("Error communicating with Spotify: `{}`. Please try again later.".format(e))
-                return
+                return await itx.followup.send(embed=create_error_embed(
+                    title='Error communicating with Spotify',
+                    body=f'`{e}`\nPlease try again later.'
+                ))
             except RateLimitException:
-                await ctx.reply(":stop_sign: You are being rate-limited. Please try again later.")
-                return
+                return await itx.followup.send(embed=create_error_embed(
+                    title='Rate limit exceeded',
+                    body='Please try again later.'
+                ))
 
-            # Store new access tokens
-            if access_token != token_data['access_token']:
-                self.db.child("spotify_auth").child(str(ctx.author.id)).set({
-                    "access_token": access_token,
-                    "expires_in": expires_in,
-                    "refresh_token": refresh_token
-                })
+            # Store new access token
+            self._bot.db.set_user_spotify_creds(itx.user.id, credentials)
 
             # Get playlist art
-            icon = self.spotify.get_playlist_cover(playlist_id, default=ctx.author.avatar.url)
+            icon = self.spotify.get_playlist_cover(playlist_id, default=itx.user.avatar.url)
 
-            # Link to new playlist
+            # Delete tracks from rec list
+            for rec_id in to_remove:
+                self._bot.db.remove_user_recommendation(itx.user.id, rec_id)
+
+            # Send link to new playlist
             desc = '\n'.join([
                 "https://open.spotify.com/playlist/{}".format(playlist_id),
                 "Added to your Spotify library"
             ])
-            embed = Embed(title="Playlist created",
-                          description="{} tracks moved from your list to Spotify".format(len(tracks)),
-                          color=0x20ce09)
+            embed = Embed(
+                title='Playlist created',
+                description=f'{len(tracks)} tracks moved from your list to Spotify',
+                color=Color.green()
+            )
             embed.add_field(name=playlist_name, value=desc)
             embed.set_thumbnail(url=icon)
-            await ctx.reply(embed=embed)
-
-            # Delete tracks from rec list
-            for item in to_remove:
-                self.db.child("recommendations").child("user").child(str(ctx.author.id)).child(item).remove()
+            await itx.followup.send(embed=embed)
         else:
-            await ctx.reply("None of your recommendations are Spotify tracks, sorry :pensive:")
+            await itx.followup.send(embed=create_error_embed(
+                body='None of your recommendations are Spotify tracks.'
+            ))

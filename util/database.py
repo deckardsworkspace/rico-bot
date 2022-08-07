@@ -5,7 +5,7 @@ from .enums import RecommendationType
 import psycopg2
 
 
-def rec_enum_from_row(row: Tuple[Any, ...]) -> RecommendationType:
+def rec_enum_from_row(row: Tuple[Any, ...]) -> Recommendation:
     return Recommendation(
         id=row[0],
         timestamp=row[1],
@@ -156,7 +156,7 @@ class Database:
         except Exception as e:
             raise RuntimeError(f'Error getting user recommendations: {e}')
     
-    def remove_user_recommendation(self, user_id: str, recommendation_id: str):
+    def remove_user_recommendation(self, user_id: int, recommendation_id: str):
         try:
             self._cur.execute('''
                 DELETE FROM user_recs WHERE recommendee = %s AND id = %s
