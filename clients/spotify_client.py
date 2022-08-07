@@ -5,19 +5,13 @@ import spotipy
 import time
 import urllib.parse
 import uuid
+from dataclass.spotify_auth import SpotifyCredentials
+from datetime import datetime
 from util.exceptions import SpotifyInsufficientAccessError, SpotifyInvalidURLError
-from random import sample
+from util.list_util import list_chunks
 from ratelimit import limits
 from spotipy.oauth2 import SpotifyClientCredentials
 from typing import Dict, List, Tuple
-
-
-def get_chunks(lst):
-    # Spotify only allows adding up to 100 tracks at once,
-    # so we have to split particularly large playlists into
-    # multiple requests.
-    for i in range(0, len(lst), 100):
-        yield lst[i:i + 100]
 
 
 def extract_track_info(track_obj) -> Tuple[str, str, str, int]:
@@ -41,17 +35,25 @@ class Spotify:
         auth_manager = SpotifyClientCredentials(client_id=self.client_id, client_secret=client_secret)
         self._client = spotipy.Spotify(auth_manager=auth_manager)
     
-    def check_renew(self, token_data: Dict[str, str]) -> Tuple[str, str, str]:
-        # Check if the token is almost expired (within 15 sec)
-        access_token = token_data['access_token']
-        refresh_token = token_data['refresh_token']
-        expires_in = int(token_data['expires_in'])
-        if int(time.time()) + 15 >= expires_in:
-            # Request new token
-            access_token, expires_in, refresh_token = self.request_token(refresh_token=refresh_token)
-        return access_token, expires_in, refresh_token
+    def check_renew(self, token_data: SpotifyCredentials) -> SpotifyCredentials:
+        access_token = token_data.access_token
+        refresh_token = token_data.refresh_token
+        expires_at = token_data.expires_at
 
-    def create_auth_url(self):
+        # Check if the token is almost expired (within 15 sec)
+        if expires_at.timestamp - time.time() <= 15:
+            # Request new token
+            access_token, expires_at_f, refresh_token = self.request_token(refresh_token=refresh_token)
+            expires_at = datetime.fromtimestamp(expires_at_f)
+
+        return SpotifyCredentials(
+            user_id=token_data.user_id,
+            access_token=access_token,
+            expires_at=expires_at,
+            refresh_token=refresh_token
+        )
+
+    def create_auth_url(self) -> Tuple[str, str, str]:
         # Create code challenge and verifier
         verifier, challenge = pkce.generate_pkce_pair(128)
 
@@ -79,13 +81,21 @@ class Spotify:
         return url, verifier, state
 
     @limits(calls=10, period=5)
-    def create_playlist(self, token_data, username, tracks):
+    def create_playlist(self, token_data: SpotifyCredentials, username: str, tracks: List[str]) -> Tuple[SpotifyCredentials, str, str]:
+        """
+        Create playlist out of a list of Spotify URIs.
+
+        :param token_data: SpotifyCredentials object
+        :param username: Discord username (for playlist description)
+        :param tracks: List of Spotify URIs
+        :return: SpotifyCredentials object, playlist name, playlist ID
+        """
         # Get auth credentials
-        access_token, expires_in, refresh_token = self.check_renew(token_data)
+        credentials = self.check_renew(token_data)
 
         # Who are we?
         profile_req = requests.get("https://api.spotify.com/v1/me", headers={
-            "Authorization": "Bearer {}".format(access_token)
+            "Authorization": "Bearer {}".format(credentials.access_token)
         })
         if profile_req.status_code != 200:
             profile_req.raise_for_status()
@@ -93,7 +103,7 @@ class Spotify:
 
         # Create playlist
         playlist_headers = {
-            "Authorization": "Bearer {}".format(access_token),
+            "Authorization": "Bearer {}".format(credentials.access_token),
             "Content-Type": "application/json"
         }
         create_params = {
@@ -111,8 +121,7 @@ class Spotify:
 
         # Add tracks to playlist
         add_url = "https://api.spotify.com/v1/playlists/{}/tracks".format(playlist_id)
-        chunked_tracks = list(get_chunks(tracks))
-        for chunk in chunked_tracks:
+        for chunk in list_chunks(tracks, num_per_chunk=100):
             add_params = {"uris": chunk}
             add_req = requests.post(add_url, json=add_params, headers=playlist_headers)
             if add_req.status_code != 200:
@@ -120,7 +129,7 @@ class Spotify:
             time.sleep(0.25)  # Rate limit
 
         # Return new tokens and playlist ID
-        return access_token, expires_in, refresh_token, playlist_name, playlist_id
+        return credentials, playlist_name, playlist_id
 
     @property
     def client(self) -> spotipy.Spotify:
@@ -204,7 +213,7 @@ class Spotify:
 
         return list_name, list_author, list(map(extract_track_info, tracks))
 
-    def request_token(self, code=None, verifier=None, refresh_token=None):
+    def request_token(self, code=None, verifier=None, refresh_token=None) -> Tuple[str, float, str]:
         # Perform POST request
         if refresh_token is not None:
             req_params = {
@@ -228,8 +237,7 @@ class Spotify:
             req.raise_for_status()
 
         # Return data
-        current_time = int(time.time())
         access_token = req.json()['access_token']
-        expires_in = current_time + req.json()['expires_in']
+        expires_at = time.time() + req.json()['expires_in']
         new_refresh_token = req.json()['refresh_token']
-        return access_token, expires_in, new_refresh_token
+        return access_token, expires_at, new_refresh_token
