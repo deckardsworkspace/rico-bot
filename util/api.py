@@ -1,19 +1,17 @@
 from dataclass.note import Note
 from requests import JSONDecodeError
 from requests.auth import HTTPBasicAuth
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
+from util.config import get_debug_status
 from .note_parser import create_note_from_db
 import requests
 
 
 class APIClient:
     def __init__(self, config: Dict[str, Any]):
-        self._debug = False
+        self._debug = get_debug_status()
 
         try:
-            # Debug mode
-            self._debug = config['bot']['debug']['enabled']
-
             # Build auth header
             auth_username = config['backend']['auth']['username']
             auth_password = config['backend']['auth']['password']
