@@ -14,7 +14,6 @@ nextcord-ext-ipc==2.2.1
 packaging==21.3
 pendulum==2.1.2
 pkce==1.0.3
-psycopg2==2.9.3
 pyparsing==3.0.9
 python-dateutil==2.8.2
 pytzdata==2020.1
