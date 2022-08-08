@@ -10,3 +10,4 @@
 config.yml
 docker-compose.yml
 .database
+**/*.DS_Store
