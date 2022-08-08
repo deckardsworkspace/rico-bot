@@ -118,11 +118,11 @@ def parse_spotify_url(url: str, valid_types: list[str] = ["track", "album", "art
     return parsed_path[0], parsed_path[1]
 
 
-def reconstruct_url(rec_type: str, rec_id: str) -> str:
-    if "spotify" in rec_type:
+def reconstruct_url(note_type: str, note_id: str) -> str:
+    if "spotify" in note_type:
         # Spotify url
-        split = rec_type.split(':')
-        return 'https://open.spotify.com/{0}/{1}'.format(split[1], rec_id)
-    elif rec_type == "youtube-video":
-        return 'https://www.youtube.com/watch?v={}'.format(rec_id)
-    return rec_id
+        split = note_type.split(':')
+        return 'https://open.spotify.com/{0}/{1}'.format(split[1], note_id)
+    elif note_type == "youtube-video":
+        return 'https://www.youtube.com/watch?v={}'.format(note_id)
+    return note_id

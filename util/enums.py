@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class RecommendationType(Enum):
+class NoteType(Enum):
     SPOTIFY_ALBUM = 'spotify:album'
     SPOTIFY_ARTIST = 'spotify:artist'
     SPOTIFY_PLAYLIST = 'spotify:playlist'
