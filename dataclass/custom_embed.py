@@ -3,11 +3,11 @@ from datetime import datetime
 from nextcord import Color, Embed, Message
 from nextcord.embeds import EmptyEmbed
 from nextcord.ext.commands import Context
-from typing import List, Union
+from typing import List, Optional, Union
 
 
 @dataclass
-class RicoEmbed:
+class CustomEmbed:
     # All optional
     title: str = EmptyEmbed
     color: Color = Color.og_blurple()
@@ -59,6 +59,10 @@ class RicoEmbed:
     
     # Get embed object
     def get(self) -> Embed:
+        # Add timestamp to embed
+        if self.timestamp_now:
+            self.embed.timestamp = datetime.now()
+
         return self.embed
         
     # Send embed
@@ -74,10 +78,19 @@ class RicoEmbed:
         return await ctx.send(embed=self.embed)
 
 
-async def remove_multiple_messages(ctx: Context, ids: List[Union[str, int]]):
-    for msg_id in ids:
-        try:
-            msg = await ctx.fetch_message(int(msg_id) if isinstance(msg_id, str) else msg_id)
-            await msg.delete()
-        except Exception as e:
-            print("Error while trying to remove message: {}".format(e))
+def create_error_embed(title: Optional[str] = None, body: Optional[str] = None) -> Embed:
+    embed = CustomEmbed(
+        color=Color.red(),
+        title=f':x:｜{title}' if title else ':x:｜Error processing command',
+        description=body
+    )
+    return embed.get()
+
+
+def create_success_embed(title: Optional[str] = None, body: Optional[str] = None) -> Embed:
+    embed = CustomEmbed(
+        color=Color.green(),
+        title=f':white_check_mark:｜{title}' if title else ':white_check_mark:｜Success',
+        description=body
+    )
+    return embed.get()

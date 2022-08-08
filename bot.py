@@ -1,63 +1,18 @@
-from nextcord import Activity, ActivityType, Color, Embed, Intents, Message
-from nextcord.ext.commands import Bot, CommandNotFound, Context, errors
+from nextcord import Activity, ActivityType, Intents
 from nextcord.ext.tasks import loop
-from util import get_var
-
-
-# Opt in to message content reading
-intents = Intents.default()
-intents.message_content = True
+from util.rico_bot import RicoBot
 
 
 # Create Discord client
-bot_prefix = get_var('BOT_PREFIX')
-client = Bot(command_prefix=bot_prefix, intents=intents)
-client.remove_command('help')
-
-
-@client.event
-async def on_ready():
-    print('Logged on as {0}!'.format(client.user))
-    
-    # Add cogs
-    client.load_extension('cogs')
-
-@client.event
-async def on_message(message: Message):
-    # Ignore messages sent by this bot
-    if message.author == client.user:
-        return
-    
-    try:
-        await client.process_commands(message)
-    except Exception as e:
-        embed = Embed(color=Color.red(), title=f'Error while processing command', description=e.message)
-        await message.reply(embed=embed)
-
-
-@client.event
-async def on_command_error(ctx: Context, error):
-    if 'NotFound:' in str(error):
-        # Print error to console instead of sending embed
-        print(error)
-        return
-
-    embed = Embed(color=Color.red(), title=f'Error while processing command `{ctx.invoked_with}`')
-
-    if type(error) in [errors.PrivateMessageOnly, errors.NoPrivateMessage]:
-        embed.description = str(error)
-    elif type(error) is CommandNotFound:
-        embed.description = 'Invalid command.'
-    else:
-        embed.description = f'`{type(error).__name__}`: {error}'
-
-    await ctx.reply(embed=embed)
+intents = Intents.default()
+intents.members = True
+client = RicoBot(intents=intents)
 
 
 @loop(seconds=3600)
 async def bot_loop():
     # Change presence
-    status = "{0} {1} | {2}help".format(len(client.guilds), "servers", bot_prefix)
+    status = f'{len(client.guilds)} servers | /help'
     activity = Activity(name=status, type=ActivityType.listening)
     await client.change_presence(activity=activity)
 
@@ -69,4 +24,4 @@ async def bot_loop_before():
 
 if __name__ == '__main__':
     bot_loop.start()
-    client.run(get_var('DISCORD_TOKEN'))
+    client.run(client.config['bot']['discord_token'])

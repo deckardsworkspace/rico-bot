@@ -1,9 +1,9 @@
+from math import floor, log, pow
 from typing import Tuple, Union
+from urllib.parse import urlparse, parse_qs
+from .exceptions import *
 import validators
 import re
-from math import ceil, floor, log, pow
-from urllib.parse import urlparse, parse_qs
-from .exception import *
 
 
 def check_ip_addr(url: str) -> bool:
@@ -86,19 +86,18 @@ def machine_readable_time(colon_delimited_time: str) -> int:
     return h * 3600000 + m * 60000 + s * 1000
 
 
-def num_to_emoji(num: int, unicode: bool = False):
-    suffix = '\U0000fe0f\U000020e3'
-    if num == 1:
-        return f'\U00000031{suffix}' if unicode else ':one:'
-    elif num == 2:
-        return f'\U00000032{suffix}' if unicode else ':two:'
-    elif num == 3:
-        return f'\U00000033{suffix}' if unicode else ':three:'
-    elif num == 4:
-        return f'\U00000034{suffix}' if unicode else ':four:'
-    elif num == 5:
-        return f'\U00000035{suffix}' if unicode else ':five:'
-    return ""
+def min_to_dh(mins: int) -> str:
+    days = floor(mins / 1440)
+    extra_min = mins % 1440
+    hours = floor(extra_min / 60)
+    days_plural = 's' if days > 1 else ''
+    hours_plural = 's' if hours > 1 else ''
+
+    if days > 0:
+        if hours > 0:
+            return f'{days:01d} day{days_plural}, {hours:02d} hour{hours_plural}'
+        return f'{days:01d} day{days_plural}'
+    return f'{hours:02d} hour{hours_plural}'
 
 
 def parse_spotify_url(url: str, valid_types: list[str] = ["track", "album", "artist", "playlist"]) -> tuple[str, str]:
@@ -119,11 +118,11 @@ def parse_spotify_url(url: str, valid_types: list[str] = ["track", "album", "art
     return parsed_path[0], parsed_path[1]
 
 
-def reconstruct_url(rec_type: str, rec_id: str) -> str:
-    if "spotify" in rec_type:
+def reconstruct_url(note_type: str, note_id: str) -> str:
+    if "spotify" in note_type:
         # Spotify url
-        split = rec_type.split('-')
-        return 'https://open.spotify.com/{0}/{1}'.format(split[1], rec_id)
-    elif rec_type == "youtube-video":
-        return 'https://www.youtube.com/watch?v={}'.format(rec_id)
-    return rec_id
+        split = note_type.split(':')
+        return 'https://open.spotify.com/{0}/{1}'.format(split[1], note_id)
+    elif note_type == "youtube-video":
+        return 'https://www.youtube.com/watch?v={}'.format(note_id)
+    return note_id

@@ -1,223 +1,199 @@
 from asyncio import CancelledError, TimeoutError
-from math import floor
-from nextcord import Color, Guild, Member, Message, Reaction, Thread
-from nextcord.ext import tasks
-from nextcord.ext.commands import Bot, Cog, command, Context, is_owner
-from pyrebase.pyrebase import Database
+from dataclass.custom_embed import create_error_embed, create_success_embed, CustomEmbed
+from nextcord import ApplicationError, Color, Guild, Interaction, Member, Reaction, slash_command, Thread, User
+from nextcord.ext import application_checks, tasks
+from nextcord.ext.commands import Cog
 from ratelimit import limits, sleep_and_retry
-from typing import List, Union
-from util import RicoEmbed
+from typing import TYPE_CHECKING
+from util.config import get_debug_guilds
+from util.string_util import min_to_dh
+if TYPE_CHECKING:
+    from util.rico_bot import RicoBot
 
 
-def min_to_dh(mins: int) -> str:
-    days = floor(mins / 1440)
-    extra_min = mins % 1440
-    hours = floor(extra_min / 60)
-    days_plural = 's' if days > 1 else ''
-    hours_plural = 's' if hours > 1 else ''
-
-    if days > 0:
-        if hours > 0:
-            return f'{days:01d} day{days_plural}, {hours:02d} hour{hours_plural}'
-        return f'{days:01d} day{days_plural}'
-    return f'{hours:02d} hour{hours_plural}'
+def is_in_thread(itx: Interaction) -> bool:
+    """
+    Check if the command is being invoked from within a thread
+    """
+    result = isinstance(itx.channel, Thread)
+    if not result:
+        raise ApplicationError('This command can only be used from within a thread.')
+    return result
 
 
-async def send_error_embed(ctx: Context, message: Union[str, List[str]]) -> Message:
-    embed = RicoEmbed(
-        color=Color.red(),
-        title=':x:｜Error',
-        description=message
-    )
-    return await embed.send(ctx, as_reply=True)
-
-
-async def send_success_embed(ctx: Context, message: Union[str, List[str]]) -> Message:
-    embed = RicoEmbed(
-        color=Color.green(),
-        title=':white_check_mark:｜Success',
-        description=message
-    )
-    return await embed.send(ctx, as_reply=True)
-
-
-class ThreadManager(Cog):
-    def __init__(self, bot: Bot, db: Database):
-        self.bot = bot
-        self.db = db
+class ThreadsCog(Cog):
+    def __init__(self, bot: 'RicoBot'):
+        self._bot = bot
         self.main.start()
-        print('Loaded cog: ThreadManager')
+        print(f'Loaded cog: {self.__class__.__name__}')
     
-    def is_monitored(self, guild_id: str) -> bool:
-        """Check if a guild is monitored"""
-        monitored_guilds = self.db.child('thread_manager').child('monitored').get().val()
-        if monitored_guilds is None or guild_id not in monitored_guilds.keys() or not monitored_guilds[guild_id]:
-            return False
-        return True
+    async def cog_application_command_before_invoke(self, itx: Interaction):
+        """
+        Ensure that the guild exists in the database before processing any commands
+        """
+        self._bot.api.update_guild(itx.guild_id, itx.guild.name)
 
     @tasks.loop(seconds=3600)
     async def main(self):
-        """Run housekeeping every hour"""
-        if not self.bot.is_closed():
-            await self.unarchive_threads()
+        """
+        Keep threads unarchived for monitored guilds. Run every hour.
+        """
+        if not self._bot.is_closed():
+            for guild in self._bot.guilds:
+                if guild.id in self._bot.api.get_thread_managed_guilds():
+                    await self.unarchive_threads_guild(guild)
 
     @main.before_loop
     async def before_main(self):
-        """Wait until client is ready before housekeeping."""
-        await self.bot.wait_until_ready()
-    
-    @is_owner()
-    @command(name='uaa')
-    async def unarchive_all(self, ctx: Context):
-        """Unarchive all threads in all monitored guilds"""
-        for guild in self.bot.guilds:
-            await self.unarchive_threads_guild(guild)
-        return await send_success_embed(ctx, 'Unarchived all unexcluded threads in all monitored servers')
-
-    @command(name='ua')
-    async def unarchive_guild(self, ctx: Context):
-        """Unarchive all unexcluded threads in this guild"""
-        if not ctx.author.guild_permissions.administrator:
-            return await send_error_embed(ctx, 'This command can only be used by an administrator.')
-        if not self.is_monitored(str(ctx.guild.id)):
-            return await send_error_embed(ctx, 'Thread unarchiving is not enabled on this server. Enable it using the `ttm` command.')
-
-        await self.unarchive_threads_guild(ctx.guild)
-        return await send_success_embed(ctx, 'Unarchived all unexcluded threads in this server')
+        """
+        Wait until client is ready before housekeeping
+        """
+        await self._bot.wait_until_ready()
 
     @sleep_and_retry
     @limits(calls=15, period=5)
-    async def unarchive_thread(self, guild_id: str, thread: Thread):
-        """Unarchive a thread if not excluded from monitoring."""
-        thread_id = str(thread.id)
-        
+    async def unarchive_thread(self, guild_id: int, thread: Thread):
+        """
+        Unarchive a thread if not excluded from monitoring
+        """
         # Check if guild is monitored
-        if not self.is_monitored(guild_id):
+        if guild_id not in self._bot.api.get_thread_managed_guilds():
             # Guild is not monitored. Do nothing.
             return
 
-        # Get list of excluded thread IDs
-        excluded_threads = self.db.child('thread_manager').child('exclude').child(guild_id).get().val()
-        if excluded_threads is None or thread_id not in excluded_threads.keys() or not excluded_threads[thread_id]:
-            # Unarchive thread if not excluded from monitoring
-            if thread.archived:
-                await thread.edit(archived=False)
-    
-    async def unarchive_threads(self):
-        """Keep threads unarchived for monitored guilds"""
+        if thread.id not in self._bot.api.get_excluded_threads(guild_id) and thread.archived:
+            await thread.edit(archived=False)
 
-        # Get list of monitored guilds
-        monitored_guilds = self.db.child('thread_manager').child('monitored').get().val()
-        if monitored_guilds is not None and len(monitored_guilds.keys()):
-            guild_ids = [int(x) for x in monitored_guilds.keys()]
-
-            for guild in self.bot.guilds:
-                if guild.id in guild_ids:
-                    await self.unarchive_threads_guild(guild)
-    
     async def unarchive_threads_guild(self, guild: Guild):
-        """Unarchive all threads in a guild if not excluded"""
-
+        """
+        Unarchive all non-excluded threads in a guild
+        """
         for thread in guild.threads:
-            # Unarchive if not excluded
-            await self.unarchive_thread(str(guild.id), thread)
+            await self.unarchive_thread(guild.id, thread)
     
     @Cog.listener()
     async def on_thread_delete(self, thread: Thread):
-        """Remove deleted thread from DB"""
-        
-        # Get list of excluded thread IDs
-        excluded_threads = self.db.child('thread_manager').child('exclude').child(str(thread.guild.id)).get().val()
-        if excluded_threads is not None and str(thread.id) in excluded_threads.keys():
-            self.db.child('thread_manager').child('exclude').child(str(thread.guild.id)).child(str(thread.id)).remove()
-    
+        """
+        Remove deleted thread from DB
+        """
+        if thread.id in self._bot.api.get_excluded_threads(thread.guild.id):
+            self._bot.api.remove_excluded_thread(thread.guild.id, thread.id)
+
     @Cog.listener()
     async def on_thread_update(self, before: Thread, after: Thread):
         if not before.archived and after.archived:
             # Thread was archived, unarchive if not excluded
-            return await self.unarchive_thread(str(after.guild.id), after)
+            return await self.unarchive_thread(after.guild.id, after)
 
-    @command(name='tte')
-    async def toggle_exclusion(self, ctx: Context):
-        # Only allow command from within threads
-        if not isinstance(ctx.channel, Thread):
-            return await send_error_embed(ctx, 'This command can only be used in a thread.')
-        
-        # Only allow commands from admins and thread owners
-        is_administrator = ctx.author.guild_permissions.administrator
-        is_thread_owner = ctx.author.id == ctx.channel.owner_id
-        if not is_administrator and not is_thread_owner:
-            return await send_error_embed(ctx, 'This command can only be used by an administrator or this thread\'s owner.')
+    @slash_command(name='toggleexclusion', guild_ids=get_debug_guilds())
+    @application_checks.check(is_in_thread)
+    @application_checks.has_guild_permissions(administrator=True)
+    async def toggle_exclusion(self, itx: Interaction):
+        """
+        Exclude or include this thread from being automatically unarchived.
+        """
+        await itx.response.defer()
 
-        # Get list of excluded thread IDs
-        invoked_thread = str(ctx.channel.id)
-        excluded_threads = self.db.child('thread_manager').child('exclude').child(str(ctx.guild.id)).get().val()
-        if excluded_threads is not None and invoked_thread in excluded_threads:
-            # Already in exclude list
-            new_state = not excluded_threads[invoked_thread]
+        # Check if we're monitoring this guild
+        if not self._bot.api.get_thread_manage_status(itx.guild_id):
+            return await itx.followup.send(embed=create_error_embed(
+                title='Can\'t use this command',
+                body='This guild is not being monitored for archived threads. Use `/togglemonitoring` to enable.'
+            ))
+
+        # Check if thread is already excluded
+        if self._bot.api.check_excluded_thread(itx.guild_id, itx.channel_id):
+            # Already in exclude list. Remove from list.
+            self._bot.api.remove_excluded_thread(itx.guild_id, itx.channel_id)
+            await itx.followup.send(embed=create_success_embed(body=f'Thread **{itx.channel.name}** will now be automatically unarchived.'))
         else:
-            # Not in exclude list
-            new_state = True
+            # Not in exclude list. Add to list.
+            self._bot.api.add_excluded_thread(itx.guild_id, itx.channel_id)
         
-        self.db.child('thread_manager').child('exclude').child(str(ctx.guild.id)).update({f'{invoked_thread}': new_state})
-        if not new_state:
-            return await send_success_embed(ctx, f'Thread **{ctx.channel.name}** will be kept unarchived')
-        
-        # If thread is now set to auto archive,
-        # offer the user the option to archive the thread now
-        archive_duration = min_to_dh(ctx.channel.auto_archive_duration)
-        archival_msg = f'Thread **{ctx.channel.name}** will be archived after {archive_duration}'
-        embed = RicoEmbed(
-            color=Color.green(),
-            title=':white_check_mark:｜Excluded thread from persistence',
-            description=[
-                archival_msg,
-                'To archive this thread now, react 🗑️ below.'
-            ]
-        )
-        message = await embed.send(ctx, as_reply=True)
-        embed = message.embeds[0]
-        await message.add_reaction('🗑️')
+            # Offer the user the option to archive the thread now
+            archive_duration = min_to_dh(itx.channel.auto_archive_duration)
+            archival_msg = f'Thread **{itx.channel.name}** will be archived after {archive_duration}'
+            embed = CustomEmbed(
+                color=Color.green(),
+                title=':white_check_mark:｜Excluded thread from persistence',
+                description=[
+                    archival_msg,
+                    'To archive this thread now, react 🗑️ below.'
+                ]
+            )
+            message = await itx.followup.send(embed=embed.get())
+            embed = message.embeds[0]
+            await message.add_reaction('🗑️')
 
-        # Wait for user to react
-        archive_now = False
-        def check(r: Reaction, u: Member):
-            return u == ctx.author and str(r.emoji) == '🗑️'
-        try:
-            r, u = await ctx.bot.wait_for('reaction_add', check=check, timeout=60.0)
-        except (CancelledError, TimeoutError) as _:
-            # Remove prompt from message
-            embed.description = archival_msg
+            # Wait for user to react
+            archive_now = False
+            def check(r: Reaction, u: User | Member):
+                return u.id == itx.user.id and str(r.emoji) == '🗑️'
+            try:
+                r, u = await self._bot.wait_for('reaction_add', check=check, timeout=60.0)
+            except (CancelledError, TimeoutError) as _:
+                # Remove prompt from message
+                embed.description = archival_msg
+            else:
+                # Archive the thread now
+                embed.description = f'Thread **{itx.channel.name}** is now archived'
+                archive_now = True
+            finally:
+                # Remove all reactions to the message
+                await message.clear_reactions()
+                await message.edit(embed=embed)
+                if archive_now:
+                    await itx.channel.edit(archived=True)
+
+    @slash_command(name='togglemonitoring', guild_ids=get_debug_guilds())
+    @application_checks.has_guild_permissions(administrator=True)
+    async def toggle_monitoring(self, itx: Interaction):
+        """
+        Enable or disable automatic unarchiving of threads in this server.
+        """
+        await itx.response.defer()
+
+        # Check monitoring status
+        if self._bot.api.get_thread_manage_status(itx.guild_id):
+            # Already monitoring guild. Disable.
+            self._bot.api.set_thread_manage_status(itx.guild_id, False)
+            await itx.followup.send(embed=create_success_embed(
+                body=f'Thread monitoring disabled for {itx.guild.name}. Inactive threads will be auto-archived.'
+            ))
         else:
-            # Archive the thread now
-            embed.description = f'Thread **{ctx.channel.name}** is now archived'
-            archive_now = True
-        finally:
-            # Remove all reactions to the message
-            await message.clear_reactions()
-            await message.edit(embed=embed)
-            if archive_now:
-                await ctx.channel.edit(archived=True)
+            # Not monitoring guild. Enable.
+            self._bot.api.set_thread_manage_status(itx.guild_id, True)
 
-
-    @command(name='ttm')
-    async def toggle_monitoring(self, ctx: Context):
-        if not ctx.author.guild_permissions.administrator:
-            return await send_error_embed(ctx, 'This command can only be used by an administrator.')
-
-        # Get list of monitored guilds
-        invoked_guild = str(ctx.guild.id)
-        monitored_guilds = self.db.child('thread_manager').child('monitored').get().val()
-        if monitored_guilds is not None and invoked_guild in monitored_guilds:
-            # Already in monitored list
-            new_state = not monitored_guilds[invoked_guild]
-        else:
-            # Not in monitored list
-            new_state = True
-
-        self.db.child('thread_manager').child('monitored').update({f'{invoked_guild}': new_state})
-        if new_state:
             # Immediately unarchive threads
-            await self.unarchive_threads_guild(ctx.guild)
-            return await send_success_embed(ctx, f'Threads in **{ctx.guild.name}** will be kept unarchived')
-        return await send_success_embed(ctx, f'Threads in **{ctx.guild.name}** will be archived automatically')
+            await self.unarchive_threads_guild(itx.guild)
+            await itx.followup.send(embed=create_success_embed(
+                body=f'Thread monitoring enabled for {itx.guild.name}. Inactive threads will be kept unarchived.'
+            ))
+    
+    @slash_command(name='unarchiveglobal', guild_ids=get_debug_guilds())
+    @application_checks.is_owner()
+    async def unarchive_all(self, itx: Interaction):
+        """
+        Unarchive all threads in all monitored guilds
+        """
+        await itx.response.defer(ephemeral=True)
+        for guild in self._bot.guilds:
+            await self.unarchive_threads_guild(guild)
+        return await itx.followup.send(embed=create_success_embed(
+            body='Unarchived all unexcluded threads in all monitored servers'
+        ))
+
+    @slash_command(name='unarchive', guild_ids=get_debug_guilds())
+    @application_checks.has_guild_permissions(administrator=True)
+    async def unarchive_guild(self, itx: Interaction):
+        """
+        Unarchive all unexcluded threads in this guild
+        """
+        await itx.response.defer(ephemeral=True)
+        if not self._bot.api.get_thread_manage_status(itx.guild_id):
+            return await itx.followup.send(embed=create_error_embed(
+                body='Thread unarchiving is not enabled on this server. Enable it using the `ttm` command.')
+            )
+
+        await self.unarchive_threads_guild(itx.guild)
+        return await itx.followup.send(embed=create_success_embed(body='Unarchived all unexcluded threads in this server'))

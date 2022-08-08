@@ -1,27 +1,16 @@
-from .recommendation import Recommendation
-from .export import Export
-from .help import Help
-from .debug import Debug
-from .thread import ThreadManager
-from nextcord.ext.commands import Bot
-from util import get_var, get_pyrebase_config, Spotify
-import pyrebase
+from typing import TYPE_CHECKING
+from .export import ExportCog
+from .notes import NotesCog
+from .thread import ThreadsCog
+if TYPE_CHECKING:
+    from util.rico_bot import RicoBot
 
 
-def setup(bot: Bot):
-    # Instantiate Spotipy
-    spotify = Spotify()
-
-    # Instantiate Pyrebase
-    firebase = pyrebase.initialize_app(get_pyrebase_config())
-    db = firebase.database()
-
+def setup(bot: 'RicoBot'):
     # Add cogs
-    bot.add_cog(Debug(bot))
-    bot.add_cog(Help(bot))
-    bot.add_cog(Export(bot, db, spotify))
-    bot.add_cog(Recommendation(bot, db, spotify))
+    bot.add_cog(ExportCog(bot))
+    bot.add_cog(NotesCog(bot))
+    bot.add_cog(ThreadsCog(bot))
 
-    # Conditional cogs
-    if get_var('ENABLE_THREADMGR') == '1':
-        bot.add_cog(ThreadManager(bot, db))
+    # Sync slash commands
+    bot.loop.create_task(bot.sync_all_application_commands())
