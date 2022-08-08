@@ -31,7 +31,7 @@ class ThreadsCog(Cog):
         """
         Ensure that the guild exists in the database before processing any commands
         """
-        self._bot.db.update_guild(itx.guild_id, itx.guild.name)
+        self._bot.api.update_guild(itx.guild_id, itx.guild.name)
 
     @tasks.loop(seconds=3600)
     async def main(self):
@@ -40,7 +40,7 @@ class ThreadsCog(Cog):
         """
         if not self._bot.is_closed():
             for guild in self._bot.guilds:
-                if guild.id in self._bot.db.get_thread_managed_guilds():
+                if guild.id in self._bot.api.get_thread_managed_guilds():
                     await self.unarchive_threads_guild(guild)
 
     @main.before_loop
@@ -57,11 +57,11 @@ class ThreadsCog(Cog):
         Unarchive a thread if not excluded from monitoring
         """
         # Check if guild is monitored
-        if guild_id not in self._bot.db.get_thread_managed_guilds():
+        if guild_id not in self._bot.api.get_thread_managed_guilds():
             # Guild is not monitored. Do nothing.
             return
 
-        if thread.id not in self._bot.db.get_excluded_threads(guild_id) and thread.archived:
+        if thread.id not in self._bot.api.get_excluded_threads(guild_id) and thread.archived:
             await thread.edit(archived=False)
 
     async def unarchive_threads_guild(self, guild: Guild):
@@ -76,8 +76,8 @@ class ThreadsCog(Cog):
         """
         Remove deleted thread from DB
         """
-        if thread.id in self._bot.db.get_excluded_threads(thread.guild.id):
-            self._bot.db.remove_excluded_thread(thread.guild.id, thread.id)
+        if thread.id in self._bot.api.get_excluded_threads(thread.guild.id):
+            self._bot.api.remove_excluded_thread(thread.guild.id, thread.id)
 
     @Cog.listener()
     async def on_thread_update(self, before: Thread, after: Thread):
@@ -95,20 +95,20 @@ class ThreadsCog(Cog):
         await itx.response.defer()
 
         # Check if we're monitoring this guild
-        if not self._bot.db.get_thread_manage_status(itx.guild_id):
+        if not self._bot.api.get_thread_manage_status(itx.guild_id):
             return await itx.followup.send(embed=create_error_embed(
                 title='Can\'t use this command',
                 body='This guild is not being monitored for archived threads. Use `/togglemonitoring` to enable.'
             ))
 
         # Check if thread is already excluded
-        if self._bot.db.check_excluded_thread(itx.guild_id, itx.channel_id):
+        if self._bot.api.check_excluded_thread(itx.guild_id, itx.channel_id):
             # Already in exclude list. Remove from list.
-            self._bot.db.remove_excluded_thread(itx.guild_id, itx.channel_id)
+            self._bot.api.remove_excluded_thread(itx.guild_id, itx.channel_id)
             await itx.followup.send(embed=create_success_embed(body=f'Thread **{itx.channel.name}** will now be automatically unarchived.'))
         else:
             # Not in exclude list. Add to list.
-            self._bot.db.add_excluded_thread(itx.guild_id, itx.channel_id)
+            self._bot.api.add_excluded_thread(itx.guild_id, itx.channel_id)
         
             # Offer the user the option to archive the thread now
             archive_duration = min_to_dh(itx.channel.auto_archive_duration)
@@ -154,20 +154,20 @@ class ThreadsCog(Cog):
         await itx.response.defer()
 
         # Check monitoring status
-        if self._bot.db.get_thread_manage_status(itx.guild_id):
+        if self._bot.api.get_thread_manage_status(itx.guild_id):
             # Already monitoring guild. Disable.
-            self._bot.db.set_thread_manage_status(itx.guild_id, False)
-            await itx.channel.send(embed=create_success_embed(
-                body=f'Thread monitoring disabled for {itx.guild.name}. All threads will be automatically archived as normal.'
+            self._bot.api.set_thread_manage_status(itx.guild_id, False)
+            await itx.followup.send(embed=create_success_embed(
+                body=f'Thread monitoring disabled for {itx.guild.name}. Inactive threads will be auto-archived.'
             ))
         else:
             # Not monitoring guild. Enable.
-            self._bot.db.set_thread_manage_status(itx.guild_id, True)
+            self._bot.api.set_thread_manage_status(itx.guild_id, True)
 
             # Immediately unarchive threads
             await self.unarchive_threads_guild(itx.guild)
             await itx.followup.send(embed=create_success_embed(
-                body=f'Thread monitoring enabled for {itx.guild.name}. Threads will be kept unarchived.'
+                body=f'Thread monitoring enabled for {itx.guild.name}. Inactive threads will be kept unarchived.'
             ))
     
     @slash_command(name='unarchiveglobal', guild_ids=get_debug_guilds())
@@ -190,7 +190,7 @@ class ThreadsCog(Cog):
         Unarchive all unexcluded threads in this guild
         """
         await itx.response.defer(ephemeral=True)
-        if not self._bot.db.get_thread_manage_status(itx.guild_id):
+        if not self._bot.api.get_thread_manage_status(itx.guild_id):
             return await itx.followup.send(embed=create_error_embed(
                 body='Thread unarchiving is not enabled on this server. Enable it using the `ttm` command.')
             )

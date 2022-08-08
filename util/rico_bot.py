@@ -4,7 +4,7 @@ from nextcord import Interaction
 from nextcord.ext import ipc
 from nextcord.ext.commands import Bot
 from yaml import safe_load
-from .database import Database
+from .api import APIClient
 
 
 class RicoBot(Bot):
@@ -18,8 +18,8 @@ class RicoBot(Bot):
             except Exception as e:
                 raise ValueError(f'Error parsing config.yml: {e}')
         
-        # Create database connection
-        self._db = Database(self.config)
+        # Create API client
+        self._api = APIClient(self.config)
 
         # Create Spotify client
         try:
@@ -49,7 +49,7 @@ class RicoBot(Bot):
     async def on_application_command_error(self, itx: Interaction, error: Exception):
         error_embed = create_error_embed(
             title='Error processing command',
-            body=error
+            body=str(error)
         )
         try:
             if itx.response.is_done():
@@ -63,8 +63,8 @@ class RicoBot(Bot):
         print(f'IPC error: {endpoint}: {error}')
     
     @property
-    def db(self) -> Database:
-        return self._db
+    def api(self) -> APIClient:
+        return self._api
     
     @property
     def spotify(self) -> Spotify:

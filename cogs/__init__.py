@@ -1,13 +1,15 @@
-from nextcord.ext.commands import Bot
+from typing import TYPE_CHECKING
 from .export import ExportCog
-from .recommendation import RecommendationCog
+from .notes import NotesCog
 from .thread import ThreadsCog
+if TYPE_CHECKING:
+    from util.rico_bot import RicoBot
 
 
-def setup(bot: Bot):
+def setup(bot: 'RicoBot'):
     # Add cogs
     bot.add_cog(ExportCog(bot))
-    bot.add_cog(RecommendationCog(bot))
+    bot.add_cog(NotesCog(bot))
     bot.add_cog(ThreadsCog(bot))
 
     # Sync slash commands
