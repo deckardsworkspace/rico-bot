@@ -83,14 +83,16 @@ class ThreadsCog(Cog):
     async def on_thread_update(self, before: Thread, after: Thread):
         if not before.archived and after.archived:
             # Thread was archived, unarchive if not excluded
+            if self._bot.debug:
+                print(f'[DEBUG] Unarchiving thread {after.id} in guild {after.guild.id}')
             return await self.unarchive_thread(after.guild.id, after)
 
-    @slash_command(name='toggleexclusion', guild_ids=get_debug_guilds())
+    @slash_command(name='managethread', guild_ids=get_debug_guilds())
     @application_checks.check(is_in_thread)
     @application_checks.has_guild_permissions(administrator=True)
-    async def toggle_exclusion(self, itx: Interaction):
+    async def manage_thread(self, itx: Interaction):
         """
-        Exclude or include this thread from being automatically unarchived.
+        Exclude this thread from being automatically unarchived.
         """
         await itx.response.defer()
 
@@ -98,77 +100,123 @@ class ThreadsCog(Cog):
         if not self._bot.api.get_thread_manage_status(itx.guild_id):
             return await itx.followup.send(embed=create_error_embed(
                 title='Can\'t use this command',
-                body='This guild is not being monitored for archived threads. Use `/togglemonitoring` to enable.'
+                body='Threads aren\'t being managed in this server. Enable with `/enablemanage`.'
             ))
 
-        # Check if thread is already excluded
-        if self._bot.api.check_excluded_thread(itx.guild_id, itx.channel_id):
-            # Already in exclude list. Remove from list.
-            self._bot.api.remove_excluded_thread(itx.guild_id, itx.channel_id)
-            await itx.followup.send(embed=create_success_embed(body=f'Thread **{itx.channel.name}** will now be automatically unarchived.'))
-        else:
-            # Not in exclude list. Add to list.
-            self._bot.api.add_excluded_thread(itx.guild_id, itx.channel_id)
-        
-            # Offer the user the option to archive the thread now
-            archive_duration = min_to_dh(itx.channel.auto_archive_duration)
-            archival_msg = f'Thread **{itx.channel.name}** will be archived after {archive_duration}'
-            embed = CustomEmbed(
-                color=Color.green(),
-                title=':white_check_mark:｜Excluded thread from persistence',
-                description=[
-                    archival_msg,
-                    'To archive this thread now, react 🗑️ below.'
-                ]
-            )
-            message = await itx.followup.send(embed=embed.get())
-            embed = message.embeds[0]
-            await message.add_reaction('🗑️')
+        # Check if thread is not in excluded list
+        if not self._bot.api.check_excluded_thread(itx.guild_id, itx.channel_id):
+            return await itx.followup.send(embed=create_error_embed(
+                body=f'Thread **{itx.channel.name}** is already being managed.'
+            ))
 
-            # Wait for user to react
-            archive_now = False
-            def check(r: Reaction, u: User | Member):
-                return u.id == itx.user.id and str(r.emoji) == '🗑️'
-            try:
-                r, u = await self._bot.wait_for('reaction_add', check=check, timeout=60.0)
-            except (CancelledError, TimeoutError) as _:
-                # Remove prompt from message
-                embed.description = archival_msg
-            else:
-                # Archive the thread now
-                embed.description = f'Thread **{itx.channel.name}** is now archived'
-                archive_now = True
-            finally:
-                # Remove all reactions to the message
-                await message.clear_reactions()
-                await message.edit(embed=embed)
-                if archive_now:
-                    await itx.channel.edit(archived=True)
+        # Remove from excluded list
+        self._bot.api.remove_excluded_thread(itx.guild_id, itx.channel_id)
+        return await itx.followup.send(embed=create_success_embed(
+            body=f'Thread **{itx.channel.name}** is now being managed.'
+        ))
 
-    @slash_command(name='togglemonitoring', guild_ids=get_debug_guilds())
+    @slash_command(name='unmanagethread', guild_ids=get_debug_guilds())
+    @application_checks.check(is_in_thread)
     @application_checks.has_guild_permissions(administrator=True)
-    async def toggle_monitoring(self, itx: Interaction):
+    async def unmanage_thread(self, itx: Interaction):
         """
-        Enable or disable automatic unarchiving of threads in this server.
+        Allow this thread to be automatically archived after becoming inactive.
+        """
+        await itx.response.defer()
+
+        # Check if we're monitoring this guild
+        if not self._bot.api.get_thread_manage_status(itx.guild_id):
+            return await itx.followup.send(embed=create_error_embed(
+                title='Can\'t use this command',
+                body='Threads aren\'t being managed in this server. Enable with `/enablemanage`.'
+            ))
+
+        # Check if thread is not excluded
+        if self._bot.api.check_excluded_thread(itx.guild_id, itx.channel_id):
+            return await itx.followup.send(embed=create_error_embed(
+                body=f'Thread **{itx.channel.name}** is not being managed.'
+            ))
+
+        # Add to excluded list
+        self._bot.api.add_excluded_thread(itx.guild_id, itx.channel_id)
+
+        # Offer the user the option to archive the thread now
+        archive_duration = min_to_dh(itx.channel.auto_archive_duration)
+        archival_msg = f'Thread **{itx.channel.name}** will be archived after {archive_duration}'
+        message = await itx.followup.send(embed=create_success_embed(
+            title='No longer managing thread',
+            body='\n'.join([
+                archival_msg,
+                'To archive this thread now, react 🗑️ below.'
+            ])
+        ))
+        embed = message.embeds[0]
+        await message.add_reaction('🗑️')
+
+        # Wait for user to react
+        def check(reaction: Reaction, user: User | Member):
+            return user.id == itx.user.id and str(reaction.emoji) == '🗑️'
+        archive_now = False
+        try:
+            r, u = await self._bot.wait_for('reaction_add', check=check, timeout=60.0)
+        except (CancelledError, TimeoutError) as _:
+            # Remove prompt from message
+            embed.description = archival_msg
+        else:
+            # Archive the thread now
+            embed.description = f'Thread **{itx.channel.name}** is now archived'
+            archive_now = True
+        finally:
+            # Remove all reactions to the message
+            await message.clear_reactions()
+            await message.edit(embed=embed)
+            if archive_now:
+                await itx.channel.edit(archived=True)
+
+    @slash_command(name='enablemanage', guild_ids=get_debug_guilds())
+    @application_checks.has_guild_permissions(administrator=True)
+    async def enable_thread_management(self, itx: Interaction):
+        """
+        Enable automatic unarchiving of threads in this server.
         """
         await itx.response.defer()
 
         # Check monitoring status
         if self._bot.api.get_thread_manage_status(itx.guild_id):
-            # Already monitoring guild. Disable.
-            self._bot.api.set_thread_manage_status(itx.guild_id, False)
-            await itx.followup.send(embed=create_success_embed(
-                body=f'Thread monitoring disabled for {itx.guild.name}. Inactive threads will be auto-archived.'
+            # Already monitoring guild
+            return await itx.followup.send(embed=create_error_embed(
+                body=f'Thread management is already enabled for **{itx.guild.name}**'
             ))
-        else:
-            # Not monitoring guild. Enable.
-            self._bot.api.set_thread_manage_status(itx.guild_id, True)
 
-            # Immediately unarchive threads
-            await self.unarchive_threads_guild(itx.guild)
-            await itx.followup.send(embed=create_success_embed(
-                body=f'Thread monitoring enabled for {itx.guild.name}. Inactive threads will be kept unarchived.'
+        # Enable thread management
+        self._bot.api.set_thread_manage_status(itx.guild_id, True)
+        await itx.followup.send(embed=create_success_embed(
+            body=f'Thread management enabled for **{itx.guild.name}**\nInactive threads will be kept unarchived.'
+        ))
+
+        # Immediately unarchive threads
+        await self.unarchive_threads_guild(itx.guild)
+
+    @slash_command(name='disablemanage', guild_ids=get_debug_guilds())
+    @application_checks.has_guild_permissions(administrator=True)
+    async def disable_thread_management(self, itx: Interaction):
+        """
+        Disable automatic unarchiving of threads in this server.
+        """
+        await itx.response.defer()
+
+        # Check monitoring status
+        if not self._bot.api.get_thread_manage_status(itx.guild_id):
+            # Already monitoring guild
+            return await itx.followup.send(embed=create_error_embed(
+                body=f'Thread management is already disabled for **{itx.guild.name}**'
             ))
+
+        # Enable thread management
+        self._bot.api.set_thread_manage_status(itx.guild_id, False)
+        await itx.followup.send(embed=create_success_embed(
+            body=f'Thread management disabled for **{itx.guild.name}**\nInactive threads will be auto-archived.'
+        ))
     
     @slash_command(name='unarchiveglobal', guild_ids=get_debug_guilds())
     @application_checks.is_owner()
@@ -177,13 +225,15 @@ class ThreadsCog(Cog):
         Unarchive all threads in all monitored guilds
         """
         await itx.response.defer(ephemeral=True)
+
         for guild in self._bot.guilds:
             await self.unarchive_threads_guild(guild)
+
         return await itx.followup.send(embed=create_success_embed(
-            body='Unarchived all unexcluded threads in all monitored servers'
+            body='Unarchived all managed threads in all monitored servers'
         ))
 
-    @slash_command(name='unarchive', guild_ids=get_debug_guilds())
+    @slash_command(name='unarchiveall', guild_ids=get_debug_guilds())
     @application_checks.has_guild_permissions(administrator=True)
     async def unarchive_guild(self, itx: Interaction):
         """
@@ -192,8 +242,9 @@ class ThreadsCog(Cog):
         await itx.response.defer(ephemeral=True)
         if not self._bot.api.get_thread_manage_status(itx.guild_id):
             return await itx.followup.send(embed=create_error_embed(
-                body='Thread unarchiving is not enabled on this server. Enable it using the `ttm` command.')
-            )
+                title='Can\'t use this command',
+                body='Threads aren\'t being managed in this server. Enable with `/enablemanage`.'
+            ))
 
         await self.unarchive_threads_guild(itx.guild)
-        return await itx.followup.send(embed=create_success_embed(body='Unarchived all unexcluded threads in this server'))
+        return await itx.followup.send(embed=create_success_embed(body='Unarchived all managed threads in this server'))
