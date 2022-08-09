@@ -81,7 +81,7 @@ class CustomEmbed:
 def create_error_embed(title: Optional[str] = None, body: Optional[str] = None) -> Embed:
     embed = CustomEmbed(
         color=Color.red(),
-        title=f':x:｜{title}' if title else ':x:｜Error processing command',
+        title=f':x:｜{title}' if title else ':x:｜Error',
         description=body
     )
     return embed.get()
