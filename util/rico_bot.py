@@ -61,6 +61,13 @@ class RicoBot(Bot):
 
     async def on_ipc_error(self, endpoint: str, error: Exception):
         print(f'IPC error: {endpoint}: {error}')
+
+    @property
+    def debug(self) -> bool:
+        try:
+            return self.config['bot']['debug']['enabled']
+        except KeyError:
+            return False
     
     @property
     def api(self) -> APIClient:
