@@ -207,7 +207,7 @@ class NotesCog(Cog):
     @slash_command(name='svr-clearnotes', guild_ids=get_debug_guilds())
     @application_checks.guild_only()
     @application_checks.has_guild_permissions(administrator=True)
-    async def clear_notes(self, itx: Interaction):
+    async def clear_server_notes(self, itx: Interaction):
         """
         Clear all the server's notes. Warning: irreversible!
         """
