@@ -18,4 +18,4 @@ WORKDIR /opt/app
 ENV PATH="/opt/venv/bin:${PATH}"
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-CMD ["python3", "bot.py"]
+ENTRYPOINT ["python3", "bot.py"]
