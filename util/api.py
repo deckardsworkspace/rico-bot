@@ -54,7 +54,7 @@ class APIClient:
 
             body = response.json()
             if response.status_code != 200:
-                raise RuntimeError(f'{verb} {url} {response.status_code}: {body["error"]}')
+                raise RuntimeError(f'{verb} {url} {response.status_code}: `{body}`')
         except JSONDecodeError as e:
             raise RuntimeError(f'{verb} {url}: Error decoding JSON ({e})\'')
 
