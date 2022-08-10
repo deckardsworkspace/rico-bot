@@ -20,7 +20,8 @@ class APIClient:
             # Get API base URL
             api_host = config['backend']['host']
             api_port = config['backend']['port']
-            self._base_url = f'http://{api_host}:{api_port}/api/v1'
+            api_prefix = config['backend']['prefix']
+            self._base_url = f'http://{api_host}:{api_port}{api_prefix}'
         except KeyError as e:
             raise RuntimeError(f'Missing required config for API: {e}')
 
