@@ -33,6 +33,7 @@ class RicoBot(Bot):
         # Start IPC server
         self._ipc = ipc.server.Server(
             self,
+            host=self.config['ipc']['host'],
             port=self.config['ipc']['port'],
             secret_key=self.config['ipc']['secret'],
             do_multicast=False
