@@ -113,7 +113,7 @@ class NotesCog(Cog):
         """
         Display your list of notes.
         """
-        await itx.response.defer(ephemeral=True)
+        await itx.response.defer()
 
         # Get notes
         notes = self._bot.api.get_user_notes(itx.user.id)
