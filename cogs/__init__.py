@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 from .export import ExportCog
+from .ipc import IPCCog
 from .notes import NotesCog
 from .thread import ThreadsCog
 if TYPE_CHECKING:
@@ -9,6 +10,7 @@ if TYPE_CHECKING:
 def setup(bot: 'RicoBot'):
     # Add cogs
     bot.add_cog(ExportCog(bot))
+    bot.add_cog(IPCCog(bot))
     bot.add_cog(NotesCog(bot))
     bot.add_cog(ThreadsCog(bot))
 

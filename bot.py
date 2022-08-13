@@ -24,4 +24,5 @@ async def bot_loop_before():
 
 if __name__ == '__main__':
     bot_loop.start()
+    client.ipc.start()
     client.run(client.config['bot']['discord_token'])

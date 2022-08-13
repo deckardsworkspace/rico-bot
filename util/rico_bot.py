@@ -31,10 +31,11 @@ class RicoBot(Bot):
             self._spotify = Spotify(spotify_client_id, spotify_client_secret)
 
         # Start IPC server
-        self.ipc = ipc.server.Server(
+        self._ipc = ipc.server.Server(
             self,
             port=self.config['ipc']['port'],
-            secret_key=self.config['ipc']['secret']
+            secret_key=self.config['ipc']['secret'],
+            do_multicast=False
         )
 
     async def on_ready(self):
@@ -61,6 +62,10 @@ class RicoBot(Bot):
 
     async def on_ipc_error(self, endpoint: str, error: Exception):
         print(f'IPC error: {endpoint}: {error}')
+
+    @property
+    def ipc(self) -> ipc.server.Server:
+        return self._ipc
 
     @property
     def debug(self) -> bool:
